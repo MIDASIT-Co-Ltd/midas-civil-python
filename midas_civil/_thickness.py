@@ -28,7 +28,7 @@ def _ThikADD(self):
 
 def _updateThik(self):
     js2s = {'Assign':{self.ID : _Obj2JS(self)}}
-    MidasAPI('PUT','/db/sect',js2s)
+    MidasAPI('PUT','/db/THIK',js2s)
     return js2s
 
 
@@ -53,7 +53,8 @@ def _JS2Obj(id,js):
     binout = js['bINOUT']
     t_in = js['T_IN']
     t_out = js['T_OUT']
-    offset = js['OFFSET']
+    try : offset = js['OFFSET'] 
+    except: offset = 0
     off_value = js['O_VALUE']
 
     t_out2=-1
@@ -79,7 +80,9 @@ class Thickness(_common):
 
     def __init__(self,thick=0.0,thick_out=-1,offset=0,off_type='rat',name="",id=0):  
             self.ID = id
-            self.NAME = name
+            if name == "":
+                self.NAME = thick
+            else: self.NAME = name
             self.TYPE = 'VALUE'
             self.T_IN = thick
             self.bINOUT = True

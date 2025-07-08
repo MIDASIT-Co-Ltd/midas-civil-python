@@ -38,7 +38,7 @@ class Boundary:
         cls.ElasticLink.sync()
         cls.RigidLink.sync()
         cls.MLFC.sync()
-        cls.PointSpring.delete()
+        cls.PointSpring.sync()
 
 
     class Support:

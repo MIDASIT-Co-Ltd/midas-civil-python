@@ -2,7 +2,7 @@
 from ._mapi import *
 from ._utils import *
 from math import hypot
-
+from ._group import _add_node_2_stGroup
 
 
 
@@ -20,7 +20,24 @@ class Node:
     nodes = []
     ids = []
     Grid ={}
-    def __init__(self,x,y,z,id=0,merge=1):
+    def __init__(self,x,y,z,id=0,group='',merge=1):
+        ''' Create Node object
+
+            Parameters:
+                x: X - ordinate of node
+                y: Y - ordinate of node 
+                z: Z - ordinate of node
+                id: Node ID (default 0 for auto-increment)
+                mat: Material property number (default 1)
+                group: Structure group of the element (str or list; 'SG1' or ['SG1','SG2'])
+                merge: If enabled, checks for existing nodes and return their IDs. No additional/duplicate node will be created.
+            
+            Examples:
+                ```python
+                Node(0,0,0, id =1 , group = 'Support', merge=1)
+                ```
+                
+        '''
 
 
         #----------------- ORIGINAL -----------------------
@@ -37,6 +54,7 @@ class Node:
 
         if id == 0 : self.ID = node_count
         if id != 0 : self.ID = id
+
 
         #REPLACE - No merge check
         if id in Node.ids:
@@ -75,6 +93,8 @@ class Node:
                 Node.nodes.append(self)
                 Node.ids.append(self.ID)
                 Node.Grid[cell_loc].append(self)
+            
+        _add_node_2_stGroup(self.ID,group)
         
 
 
@@ -95,11 +115,11 @@ class Node:
     
     @staticmethod
     def sync():
+        Node.nodes = []
+        Node.ids=[]
         a = Node.get()
         if a != {'message': ''}:
             if list(a['NODE'].keys()) != []:
-                Node.nodes = []
-                Node.ids=[]
                 for j in a['NODE'].keys():
                     Node(round(a['NODE'][j]['X'],6), round(a['NODE'][j]['Y'],6), round(a['NODE'][j]['Z'],6),int(j),0)
 

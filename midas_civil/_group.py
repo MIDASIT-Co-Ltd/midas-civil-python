@@ -18,6 +18,16 @@ def _add_elem_2_stGroup(elemID,groupName):
 
 
 
+def _add_node_2_stGroup(nodeID,groupName):
+    up = 0
+    if groupName in Group.Structure._names:
+        for i in Group.Structure.Groups:
+            if i.NAME == groupName:
+                i.NLIST = list(i.NLIST + [nodeID])
+    else:
+        Group.Structure(groupName)
+        _add_node_2_stGroup(nodeID,groupName)
+
 
 #---------------------------------------------------------------------------------------------------------------
 class Group:
@@ -43,7 +53,6 @@ class Group:
         cls.Load.delete()
         cls.Tendon.delete()
         
-        pass
     
 
 
