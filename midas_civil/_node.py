@@ -115,13 +115,14 @@ class Node:
     
     @staticmethod
     def sync():
-        Node.nodes = []
+        Node.nodes=[]
         Node.ids=[]
+        Node.Grid={}
         a = Node.get()
         if a != {'message': ''}:
             if list(a['NODE'].keys()) != []:
                 for j in a['NODE'].keys():
-                    Node(round(a['NODE'][j]['X'],6), round(a['NODE'][j]['Y'],6), round(a['NODE'][j]['Z'],6),int(j),0)
+                    Node(round(a['NODE'][j]['X'],6), round(a['NODE'][j]['Y'],6), round(a['NODE'][j]['Z'],6), id=int(j), group='', merge=0)
 
     @staticmethod
     def delete2(nodes_list):
@@ -142,6 +143,7 @@ class Node:
             MidasAPI("DELETE",f"/db/NODE/")
             Node.nodes=[]
             Node.ids=[]
+            Node.Grid={}
 
     @staticmethod
     def delete():
