@@ -32,7 +32,7 @@ def _ADD(self):
         Element.ids.append(int(self.ID))
     
     # ------------  Group assignment -----------------------
-    if self._GROUP == '' :
+    if self._GROUP == "" :
         pass
     elif isinstance(self._GROUP, list):
         for gpName in self._GROUP:
@@ -117,17 +117,17 @@ def _JS2Obj(id, js):
     t_limit = js.get('T_LIMIT')
 
     if elem_type == 'BEAM':
-        Element.Beam(args['node'][0], args['node'][1], args['mat'], args['sect'], args['angle'], args['id'])
+        Element.Beam(args['node'][0], args['node'][1], args['mat'], args['sect'], args['angle'], '', args['id'])
     elif elem_type == 'TRUSS':
-        Element.Truss(args['node'][0], args['node'][1], args['mat'], args['sect'], args['angle'], args['id'])
+        Element.Truss(args['node'][0], args['node'][1], args['mat'], args['sect'], args['angle'],'',  args['id'])
     elif elem_type == 'PLATE':
-        Element.Plate(args['node'], args['stype'], args['mat'], args['sect'], args['angle'], args['id'])
+        Element.Plate(args['node'], args['stype'], args['mat'], args['sect'], args['angle'], '', args['id'])
     elif elem_type == 'TENSTR':
-        Element.Tension(args['node'][0], args['node'][1], args['stype'], args['mat'], args['sect'], args['angle'], args['id'], non_len, cable_type, tens, t_limit)
+        Element.Tension(args['node'][0], args['node'][1], args['stype'], args['mat'], args['sect'], args['angle'], '', args['id'], non_len, cable_type, tens, t_limit)
     elif elem_type == 'COMPTR':
-        Element.Compression(args['node'][0], args['node'][1], args['stype'], args['mat'], args['sect'], args['angle'], args['id'], tens, t_limit, non_len)
+        Element.Compression(args['node'][0], args['node'][1], args['stype'], args['mat'], args['sect'], args['angle'], '', args['id'], tens, t_limit, non_len)
     elif elem_type == 'SOLID':
-        Element.Solid(nodes=args['node'], mat=args['mat'], sect=args['sect'], id=args['id'])
+        Element.Solid(nodes=args['node'], mat=args['mat'], sect=args['sect'],group='', id=args['id'])
 
 
 class _common:

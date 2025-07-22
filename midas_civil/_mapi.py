@@ -1,5 +1,6 @@
 import requests
 import sys
+import winreg
 
 
 def Midas_help():
@@ -7,6 +8,8 @@ def Midas_help():
     print("---"*22)
     print("|   HELP MANUAL : https://midas-rnd.github.io/midasapi-python/   |")
     print("---"*22,"\n")
+
+
 
 class MAPI_PRODUCT:
     product = "civil"
@@ -19,16 +22,26 @@ class MAPI_PRODUCT:
 
 class MAPI_KEY:
     """MAPI key from Civil NX.\n\nEg: MAPI_Key("eadsfjaks568wqehhf.ajkgj345")"""
-    data = []
+    data = ""
     
     def __init__(self, mapi_key:str):
-        MAPI_KEY.data = []
-        self.KEY = mapi_key
-        MAPI_KEY.data.append(self.KEY)
+        MAPI_KEY.data = mapi_key
         
     @classmethod
     def get_key(cls):
-        my_key = MAPI_KEY.data[-1]
+        if MAPI_KEY.data == "":
+            try:
+                key_path = r"Software\\MIDAS\\CVLwNX_US\\CONNECTION"  
+                registry_key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_READ)
+                value = winreg.QueryValueEx(registry_key, "Key")
+                my_key = value[0]
+                print(' 🔑  MAPI KEY is not defined. MAPI-KEY is taken from Registry entry.')
+                MAPI_KEY(my_key)
+            except:
+                print(f"🔑   MAPI KEY is not defined. Click on Apps > API Settings to copy the MAPI Key.")
+                sys.exit(0)
+        else:
+            my_key = MAPI_KEY.data
         return my_key
 #---------------------------------------------------------------------------------------------------------------
 

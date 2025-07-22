@@ -2,6 +2,7 @@ import polars as pl
 import json
 import xlsxwriter
 from ._mapi import *
+from ._model import *
 # js_file = open('JSON_Excel Parsing\\test.json','r')
 
 # print(js_file)
@@ -125,7 +126,7 @@ class Result :
 
     # ---------- User defined TABLE (Dynamic Report Table) ------------------------------
     @staticmethod
-    def UserDefinedTable(tableName:str, summary=0):
+    def UserDefinedTable(tableName:str, summary=0, force_unit='KN',len_unit='M'):
         js_dat = {
             "Argument": {
                 "TABLE_NAME": tableName,
@@ -135,11 +136,11 @@ class Result :
                 }
             }
         }
-
+        Model.units(force=force_unit,length=len_unit)
         ss_json = MidasAPI("POST","/post/TABLE",js_dat)
         return _JSToDF_UserDefined(tableName,ss_json,summary)
     
-    # ---------- Result TABLE ------------------------------
+    # ---------- LIST ALL USER DEFINED TABLE ------------------------------
     @staticmethod
     def UserDefinedTables_print():
         ''' Print all the User defined table names '''
@@ -158,18 +159,17 @@ class Result :
 
     # ---------- Result TABLE ------------------------------
     @staticmethod
-    def ResultTable(tabletype:str,elements:list=[],loadcase:list=[],cs_stage=[],force_unit='kN',len_unit='m'):
+    def ResultTable(tabletype:str,keys=[],loadcase:list=[],cs_stage=[],force_unit='KN',len_unit='M'):
         '''
             TableType : REACTIONG | REACTIONL | DISPLACEMENTG | DISPLACEMENTL | TRUSSFORCE | TRUSSSTRESS
+            Keys : List{int} -> Element/ Node IDs  |  str -> Structure Group Name
+            Loadcase : Loadcase name followed by type. eg. DeadLoad(ST)
         '''
+
         js_dat = {
             "Argument": {
                 "TABLE_NAME": "SS_Table",
                 "TABLE_TYPE": tabletype,
-                "UNIT": {
-                    "FORCE": force_unit,
-                    "DIST": len_unit
-                },
                 "STYLES": {
                     "FORMAT": "Fixed",
                     "PLACE": 12
@@ -185,9 +185,17 @@ class Result :
                 js_dat["Argument"]['STAGE_STEP'] = cs_stage
 
 
-        if elements!=[]: js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": elements}
+        if isinstance(keys,list):
+            if keys!=[]:
+                js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": keys}
+        elif isinstance(keys,str):
+            js_dat["Argument"]['NODE_ELEMS'] = {"STRUCTURE_GROUP_NAME": keys}
+
+
         if loadcase!=[]: js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
 
+
+        Model.units(force=force_unit,length=len_unit)
         ss_json = MidasAPI("POST","/post/table",js_dat)
         return _JSToDF_ResTable(ss_json)
 

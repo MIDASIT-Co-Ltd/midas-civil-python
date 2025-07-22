@@ -48,9 +48,9 @@ class Node:
             node_count = max(Node.ids)+1
         
         
-        self.X = x
-        self.Y = y
-        self.Z = z
+        self.X = round(x,6)
+        self.Y = round(y,6)
+        self.Z = round(z,6)
 
         if id == 0 : self.ID = node_count
         if id != 0 : self.ID = id
@@ -94,7 +94,9 @@ class Node:
                 Node.ids.append(self.ID)
                 Node.Grid[cell_loc].append(self)
             
-        _add_node_2_stGroup(self.ID,group)
+        if group !="":
+            _add_node_2_stGroup(self.ID,group)
+
         
 
 

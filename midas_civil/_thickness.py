@@ -81,7 +81,7 @@ class Thickness(_common):
     def __init__(self,thick=0.0,thick_out=-1,offset=0,off_type='rat',name="",id=0):  
             self.ID = id
             if name == "":
-                self.NAME = thick
+                self.NAME = str(thick)
             else: self.NAME = name
             self.TYPE = 'VALUE'
             self.T_IN = thick

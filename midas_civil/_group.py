@@ -3,8 +3,27 @@ from ._mapi import *
 
 
 
+
+
 # ----------- HELPER FUNCTION -----------
-# --------   ADD ELEMENT TO STRUCTURE GROUP -------
+    # --------   RETRIEVE NODE / ELEMENT FROM STRUCTURE GROUP -------
+
+def getNode(groupName):
+    ''' Returns Node ID list in a Structure Group '''
+    for i in Group.Structure.Groups:
+            if i.NAME == groupName:
+                return i.NLIST
+    return []
+
+def getElement(groupName):
+    ''' Returns Element ID list in a Structure Group '''
+    for i in Group.Structure.Groups:
+            if i.NAME == groupName:
+                return i.ELIST
+    return []
+
+
+    # --------   ADD ELEMENT TO STRUCTURE GROUP -------
 
 def _add_elem_2_stGroup(elemID,groupName):
     up = 0
@@ -19,7 +38,6 @@ def _add_elem_2_stGroup(elemID,groupName):
 
 
 def _add_node_2_stGroup(nodeID,groupName):
-    up = 0
     if groupName in Group.Structure._names:
         for i in Group.Structure.Groups:
             if i.NAME == groupName:

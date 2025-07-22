@@ -142,13 +142,13 @@ class LoadCombination:
     
     @classmethod
     def delete(cls, classification = "All", ids = []):
-        json = LoadCombination.call_json(classification)
+        json = LoadCombination.json(classification)
         a = ""
         for i in range(len(ids)):
             a += str(ids[i]) + ","
         a = "/" + a[:-1]
         if json == {}: 
-            print("No load combinations are defined to delete.  Def")
+            print("No load combinations are defined to delete.")
         for i in list(json.keys()):
             MidasAPI("DELETE",LoadCombination.com_map.get(i) + a)
 #---------------------------------------------------------------------------------------------------------------

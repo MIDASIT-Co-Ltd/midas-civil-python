@@ -10,6 +10,8 @@ from ._section import *
 from ._material import *
 from ._thickness import *
 
+from ._tendon import *
+
 class Model:
 
     #4 Function to check analysis status & perform analysis if not analyzed
@@ -238,6 +240,7 @@ class Model:
         Group.create()
         Boundary.create()
         Load.create()
+        Tendon.create()
 
 
 
