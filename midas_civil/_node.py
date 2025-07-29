@@ -12,7 +12,10 @@ def dist_tol(a,b):
 def cell(point,size=1): #SIZE OF GRID
     return (int(point.X//size),int(point.Y//size),int(point.Z//size))
 
-#-- NEW SYSTEM
+
+# -------- FUNCTIONS ARE DEFINED BELOW TO RECOGNISE NODE CLASS ----------------
+
+
 
 #5 Class to create nodes
 class Node:
@@ -161,6 +164,16 @@ class Node:
 
 
 
+# ---- GET NODE OBJECT FROM ID ----------
+
+def nodeByID(nodeID:int) -> Node:
+    ''' Return Node object with the input ID '''
+    for node in Node.nodes:
+        if node.ID == nodeID:
+            return node
+        
+    print(f'There is no node with ID {nodeID}')
+    return None
 
 
 

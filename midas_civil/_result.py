@@ -111,7 +111,7 @@ class LoadCombination:
     @classmethod
     def create(cls, classification = "All"):
         if len(LoadCombination.data) == 0:
-            print("No Load Combinations defined!  Define the load combination using the 'LoadCombination' class before creating these in the model.")
+            # print("No Load Combinations defined!  Define the load combination using the 'LoadCombination' class before creating these in the model.")
             return
         if classification not in LoadCombination.valid:
             print(f'"{classification}" is not a valid input.  It is changed to "General".')

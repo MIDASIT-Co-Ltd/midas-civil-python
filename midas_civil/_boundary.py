@@ -10,6 +10,16 @@ def convList(item):
             return item
 
 
+# -----  Extend for list of nodes/elems -----
+
+def _ADD_Support(self):
+    if isinstance(self.NODE,int):
+        Boundary.Support.sups.append(self)
+    elif isinstance(self.NODE,list):
+        for nID in self.NODE:
+            Boundary.Support(nID,self.CONST,self.GROUP)
+
+
 class Boundary:
 
     @classmethod
@@ -67,7 +77,7 @@ class Boundary:
             self.CONST = string
             self.GROUP = group
             self.ID = len(Boundary.Support.sups) + 1
-            Boundary.Support.sups.append(self)
+            _ADD_Support(self)
     
         @classmethod
         def json(cls):

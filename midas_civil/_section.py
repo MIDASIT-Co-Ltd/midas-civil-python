@@ -732,8 +732,142 @@ class Section:
                 _SectionADD(self)
         
             
+#=======================================================Tapered Group===========================================
 
-
+    class TaperedGroup:
+        
+        data = []
+        
+        def __init__(self, name, elem_list, z_var, y_var, z_exp=None, z_from=None, z_dist=None, 
+                     y_exp=None, y_from=None, y_dist=None, id=""):
+            """
+            Args:
+                name (str): Tapered Group Name (Required).
+                elem_list (list): List of element numbers (Required).
+                z_var (str): Section shape variation for Z-axis: "LINEAR" or "POLY" (Required).
+                y_var (str): Section shape variation for Y-axis: "LINEAR" or "POLY" (Required).
+                z_exp (float, optional): Z-axis exponent. Required if z_var is "POLY".
+                z_from (str, optional): Z-axis symmetric plane ("i" or "j"). Defaults to "i" for "POLY".
+                z_dist (float, optional): Z-axis symmetric plane distance. Defaults to 0 for "POLY".
+                y_exp (float, optional): Y-axis exponent. Required if y_var is "POLY".
+                y_from (str, optional): Y-axis symmetric plane ("i" or "j"). Defaults to "i" for "POLY".
+                y_dist (float, optional): Y-axis symmetric plane distance. Defaults to 0 for "POLY".
+                id (str, optional): ID for the tapered group. Auto-generated if not provided.
             
-
-
+            Example:
+                Section.TapperGroup("Linear", [1, 2, 3], "LINEAR", "LINEAR")
+                Section.TapperGroup("ZPoly", [4, 5], "POLY", "LINEAR", z_exp=2.5)
+            """
+            self.NAME = name
+            self.ELEM_LIST = elem_list
+            self.Z_VAR = z_var
+            self.Y_VAR = y_var
+            
+            # Z-axis parameters (only for POLY)
+            if z_var == "POLY":
+                if z_exp is None:
+                    raise ValueError("z_exp is required when z_var is 'POLY'")
+                self.Z_EXP = z_exp
+                self.Z_FROM = z_from if z_from is not None else "i"
+                self.Z_DIST = z_dist if z_dist is not None else 0
+            else:
+                self.Z_EXP = None
+                self.Z_FROM = None
+                self.Z_DIST = None
+            
+            # Y-axis parameters (only for POLY)
+            if y_var == "POLY":
+                if y_exp is None:
+                    raise ValueError("y_exp is required when y_var is 'POLY'")
+                self.Y_EXP = y_exp
+                self.Y_FROM = y_from if y_from is not None else "i"
+                self.Y_DIST = y_dist if y_dist is not None else 0
+            else:
+                self.Y_EXP = None
+                self.Y_FROM = None
+                self.Y_DIST = None
+            
+            if id == "":
+                id = len(Section.TaperedGroup.data) + 1
+            self.ID = id
+            
+            Section.TaperedGroup.data.append(self)
+        
+        @classmethod
+        def json(cls):
+            json_data = {"Assign": {}}
+            for i in cls.data:
+                # Base data that's always included
+                tapper_data = {
+                    "NAME": i.NAME,
+                    "ELEMLIST": i.ELEM_LIST,
+                    "ZVAR": i.Z_VAR,
+                    "YVAR": i.Y_VAR
+                }
+                
+                # Add Z-axis polynomial parameters only if Z_VAR is "POLY"
+                if i.Z_VAR == "POLY":
+                    tapper_data["ZEXP"] = i.Z_EXP
+                    tapper_data["ZFROM"] = i.Z_FROM
+                    tapper_data["ZDIST"] = i.Z_DIST
+                
+                # Add Y-axis polynomial parameters only if Y_VAR is "POLY"
+                if i.Y_VAR == "POLY":
+                    tapper_data["YEXP"] = i.Y_EXP
+                    tapper_data["YFROM"] = i.Y_FROM
+                    tapper_data["YDIST"] = i.Y_DIST
+                
+                json_data["Assign"][str(i.ID)] = tapper_data
+            
+            return json_data
+        
+        @classmethod
+        def create(cls):
+            MidasAPI("PUT", "/db/tsgr", cls.json())
+        
+        @classmethod
+        def get(cls):
+            return MidasAPI("GET", "/db/tsgr")
+        
+        @classmethod
+        def delete(cls):
+            cls.data = []
+            return MidasAPI("DELETE", "/db/tsgr")
+        
+        @classmethod
+        def sync(cls):
+            cls.data = []
+            response = cls.get()
+            
+            if response and response != {'message': ''}:
+                tsgr_data = response.get('TSGR', {})
+                # Iterate through the dictionary of tapered groups from the API response
+                for tsgr_id, item_data in tsgr_data.items():
+                    # Extract base parameters
+                    name = item_data.get('NAME')
+                    elem_list = item_data.get('ELEMLIST')
+                    z_var = item_data.get('ZVAR')
+                    y_var = item_data.get('YVAR')
+                    
+                    # Extract optional parameters based on variation type
+                    z_exp = item_data.get('ZEXP') if z_var == "POLY" else None
+                    z_from = item_data.get('ZFROM') if z_var == "POLY" else None
+                    z_dist = item_data.get('ZDIST') if z_var == "POLY" else None
+                    
+                    y_exp = item_data.get('YEXP') if y_var == "POLY" else None
+                    y_from = item_data.get('YFROM') if y_var == "POLY" else None
+                    y_dist = item_data.get('YDIST') if y_var == "POLY" else None
+                    
+                    Section.TaperedGroup(
+                        name=name,
+                        elem_list=elem_list,
+                        z_var=z_var,
+                        y_var=y_var,
+                        z_exp=z_exp,
+                        z_from=z_from,
+                        z_dist=z_dist,
+                        y_exp=y_exp,
+                        y_from=y_from,
+                        y_dist=y_dist,
+                        id=tsgr_id
+                    )

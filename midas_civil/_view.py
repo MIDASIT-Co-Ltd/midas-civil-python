@@ -6,6 +6,11 @@ from ._model import *
 class View:
 
     def Capture(location="D:\\API_temp\\img3.jpg",img_w = 1280 , img_h = 720,view='',stage:str=''):
+        ''' Location - image location
+            Image height and width
+            View - 'pre' or 'post'
+            stage - CS name
+        '''
         json_body = {
                 "Argument": {
                     "EXPORT_PATH": location,

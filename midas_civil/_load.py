@@ -2,6 +2,28 @@ from ._mapi import *
 from ._model import *
 from ._group import *
 
+
+
+# -----  Extend for list of nodes/elems -----
+
+def _ADD_NodalLoad(self):
+    if isinstance(self.NODE,int):
+        Load.Nodal.data.append(self)
+    elif isinstance(self.NODE,list):
+        for nID in self.NODE:
+            Load.Nodal(nID,self.LCN,self.LDGR,self.FX,self.FY,self.FZ,self.MX,self.MY,self.MZ,self.ID)
+
+
+def _ADD_BeamLoad(self):
+    if isinstance(self.ELEMENT,int):
+        Load.Beam.data.append(self)
+    elif isinstance(self.ELEMENT,list):
+        for eID in self.ELEMENT:
+            Load.Beam(eID,self.LCN,self.LDGR,self.VALUE,self.DIRECTION,self.ID,self.D,self.P,self.CMD,self.TYPE,self.USE_ECCEN,self.USE_PROJECTION,
+                      self.ECCEN_DIR,self.ECCEN_TYPE,self.IECC,self.JECC,self.USE_H,self.I_H,self.J_H)
+
+
+
 #11 Class to define Load Cases:
 class Load_Case:
     """Type symbol (Refer Static Load Case section in the Onine API Manual, Load Case names.  
@@ -177,7 +199,9 @@ class Load:
             self.MZ = MZ
             if id == "": id = len(Load.Nodal.data) + 1
             self.ID = id
-            Load.Nodal.data.append(self)
+
+            _ADD_NodalLoad(self)
+            # Load.Nodal.data.append(self)
         
         @classmethod
         def json(cls):
@@ -228,9 +252,9 @@ class Load:
     #19 Class to define Beam Loads:
     class Beam:
         data = []
-        def __init__(self, element: int, load_case: str, value: float, load_group: str = "", direction: str = "GZ",
+        def __init__(self, element, load_case: str, load_group: str = "", value: float=0, direction: str = "GZ",
             id = "", D = [0, 1, 0, 0], P = [0, 0, 0, 0], cmd = "BEAM", typ = "UNILOAD", use_ecc = False, use_proj = False,
-            eccn_dir = "LZ", eccn_type = 1, ieccn = 0, jeccn = 0.0000195, adnl_h = False, adnl_h_i = 0, adnl_h_j = 0.0000195): 
+            eccn_dir = "LZ", eccn_type = 1, ieccn = 0, jeccn = 0, adnl_h = False, adnl_h_i = 0, adnl_h_j = 0): 
             """
             element: Element Number 
             load_case (str): Load case name
@@ -276,7 +300,7 @@ class Load:
             if cmd not in ("BEAM", "LINE", "TYPICAL"): cmd = "BEAM"
             if typ not in ("CONLOAD", "CONMOMENT", "UNILOAD", "UNIMOMENT","PRESSURE"): typ = "UNILOAD"
             if use_ecc == False:
-                if ieccn != 0 or jeccn != 0.0000195: use_ecc = True
+                if ieccn != 0 or jeccn != 0: use_ecc = True
             self.ELEMENT = element
             self.LCN = load_case
             self.LDGR = load_group
@@ -289,7 +313,7 @@ class Load:
             self.ECCEN_TYPE = eccn_type
             self.ECCEN_DIR = eccn_dir
             self.IECC = ieccn
-            if jeccn == 0.0000195:
+            if jeccn == 0:
                 self.JECC = 0
                 self.USE_JECC = False
             else:
@@ -299,7 +323,7 @@ class Load:
             self.P = P
             self.USE_H = adnl_h
             self.I_H = adnl_h_i
-            if adnl_h == 0.0000195:
+            if adnl_h == 0:
                 self.USE_JH = False
                 self.J_H = 0
             else:
@@ -309,7 +333,8 @@ class Load:
             if id == "":
                 id = len(Load.Beam.data) + 1
             self.ID = id
-            Load.Beam.data.append(self)
+            _ADD_BeamLoad(self)
+            # Load.Beam.data.append(self)
         
         @classmethod
         def json(cls):
@@ -368,23 +393,23 @@ class Load:
                 for i in a['BMLD'].keys():
                     for j in range(len(a['BMLD'][i]['ITEMS'])):
                         if a['BMLD'][i]['ITEMS'][j]['USE_ECCEN'] == True and a['BMLD'][i]['ITEMS'][j]['USE_ADDITIONAL'] == True:
-                            Load.Beam(i,a['BMLD'][i]['ITEMS'][j]['LCNAME'], a['BMLD'][i]['ITEMS'][j]['P'][0], a['BMLD'][i]['ITEMS'][j]['GROUP_NAME'],
+                            Load.Beam(i,a['BMLD'][i]['ITEMS'][j]['LCNAME'], a['BMLD'][i]['ITEMS'][j]['GROUP_NAME'], a['BMLD'][i]['ITEMS'][j]['P'][0],
                                 a['BMLD'][i]['ITEMS'][j]['DIRECTION'], a['BMLD'][i]['ITEMS'][j]['ID'], a['BMLD'][i]['ITEMS'][j]['D'], a['BMLD'][i]['ITEMS'][j]['P'],
                                 a['BMLD'][i]['ITEMS'][j]['CMD'], a['BMLD'][i]['ITEMS'][j]['TYPE'], a['BMLD'][i]['ITEMS'][j]['USE_ECCEN'], a['BMLD'][i]['ITEMS'][j]['USE_PROJECTION'],
                                 a['BMLD'][i]['ITEMS'][j]['ECCEN_DIR'], a['BMLD'][i]['ITEMS'][j]['ECCEN_TYPE'], a['BMLD'][i]['ITEMS'][j]['I_END'], a['BMLD'][i]['ITEMS'][j]['J_END'],
                                 a['BMLD'][i]['ITEMS'][j]['USE_ADDITIONAL'], a['BMLD'][i]['ITEMS'][j]['ADDITIONAL_I_END'], a['BMLD'][i]['ITEMS'][j]['ADDITIONAL_J_END'])
                         elif a['BMLD'][i]['ITEMS'][j]['USE_ECCEN'] == False and a['BMLD'][i]['ITEMS'][j]['USE_ADDITIONAL'] == True:
-                            Load.Beam(i,a['BMLD'][i]['ITEMS'][j]['LCNAME'], a['BMLD'][i]['ITEMS'][j]['P'][0], a['BMLD'][i]['ITEMS'][j]['GROUP_NAME'],
+                            Load.Beam(i,a['BMLD'][i]['ITEMS'][j]['LCNAME'], a['BMLD'][i]['ITEMS'][j]['GROUP_NAME'], a['BMLD'][i]['ITEMS'][j]['P'][0],
                                 a['BMLD'][i]['ITEMS'][j]['DIRECTION'], a['BMLD'][i]['ITEMS'][j]['ID'], a['BMLD'][i]['ITEMS'][j]['D'], a['BMLD'][i]['ITEMS'][j]['P'],
                                 a['BMLD'][i]['ITEMS'][j]['CMD'], a['BMLD'][i]['ITEMS'][j]['TYPE'], a['BMLD'][i]['ITEMS'][j]['USE_ECCEN'], a['BMLD'][i]['ITEMS'][j]['USE_PROJECTION'],
                                 adnl_h = a['BMLD'][i]['ITEMS'][j]['USE_ADDITIONAL'], adnl_h_i = a['BMLD'][i]['ITEMS'][j]['ADDITIONAL_I_END'], adnl_h_j = a['BMLD'][i]['ITEMS'][j]['ADDITIONAL_J_END'])
                         elif a['BMLD'][i]['ITEMS'][j]['USE_ECCEN'] == True and a['BMLD'][i]['ITEMS'][j]['USE_ADDITIONAL'] == False:
-                            Load.Beam(i,a['BMLD'][i]['ITEMS'][j]['LCNAME'], a['BMLD'][i]['ITEMS'][j]['P'][0], a['BMLD'][i]['ITEMS'][j]['GROUP_NAME'],
+                            Load.Beam(i,a['BMLD'][i]['ITEMS'][j]['LCNAME'], a['BMLD'][i]['ITEMS'][j]['GROUP_NAME'], a['BMLD'][i]['ITEMS'][j]['P'][0],
                                 a['BMLD'][i]['ITEMS'][j]['DIRECTION'], a['BMLD'][i]['ITEMS'][j]['ID'], a['BMLD'][i]['ITEMS'][j]['D'], a['BMLD'][i]['ITEMS'][j]['P'],
                                 a['BMLD'][i]['ITEMS'][j]['CMD'], a['BMLD'][i]['ITEMS'][j]['TYPE'], a['BMLD'][i]['ITEMS'][j]['USE_ECCEN'], a['BMLD'][i]['ITEMS'][j]['USE_PROJECTION'],
                                 a['BMLD'][i]['ITEMS'][j]['ECCEN_DIR'], a['BMLD'][i]['ITEMS'][j]['ECCEN_TYPE'], a['BMLD'][i]['ITEMS'][j]['I_END'], a['BMLD'][i]['ITEMS'][j]['J_END'])
                         else:
-                            Load.Beam(i,a['BMLD'][i]['ITEMS'][j]['LCNAME'], a['BMLD'][i]['ITEMS'][j]['P'][0], a['BMLD'][i]['ITEMS'][j]['GROUP_NAME'],
+                            Load.Beam(i,a['BMLD'][i]['ITEMS'][j]['LCNAME'], a['BMLD'][i]['ITEMS'][j]['GROUP_NAME'],a['BMLD'][i]['ITEMS'][j]['P'][0],
                                 a['BMLD'][i]['ITEMS'][j]['DIRECTION'], a['BMLD'][i]['ITEMS'][j]['ID'], a['BMLD'][i]['ITEMS'][j]['D'], a['BMLD'][i]['ITEMS'][j]['P'],
                                 a['BMLD'][i]['ITEMS'][j]['CMD'], a['BMLD'][i]['ITEMS'][j]['TYPE'], a['BMLD'][i]['ITEMS'][j]['USE_ECCEN'], a['BMLD'][i]['ITEMS'][j]['USE_PROJECTION'])
   
@@ -521,12 +546,13 @@ class Load:
 
     class NodalMass:
         """Creates nodal mass and converts to JSON format.
-        Example: NodalMass(1.5, 2.0, 3.0, 0.1, 0.2, 0.3)
+        Example: NodalMass(1, 1.5, 2.0, 3.0, 0.1, 0.2, 0.3)
         """
         data = []
-        
-        def __init__(self, mX, mY=0, mZ=0, rmX=0, rmY=0, rmZ=0):
+
+        def __init__(self, node_id, mX, mY=0, mZ=0, rmX=0, rmY=0, rmZ=0):
             """
+            node_id (int): Node ID where the mass is applied (Required)
             mX (float): Translational Lumped Mass in GCS X-direction (Required)
             mY (float): Translational Lumped Mass in GCS Y-direction. Defaults to 0
             mZ (float): Translational Lumped Mass in GCS Z-direction. Defaults to 0
@@ -534,6 +560,7 @@ class Load:
             rmY (float): Rotational Mass Moment of Inertia about GCS Y-axis. Defaults to 0
             rmZ (float): Rotational Mass Moment of Inertia about GCS Z-axis. Defaults to 0
             """
+            self.NODE_ID = node_id
             self.MX = mX
             self.MY = mY
             self.MZ = mZ
@@ -547,10 +574,8 @@ class Load:
         def json(cls):
             json_data = {"Assign": {}}
             
-            # Use the last added mass data (or first if only one exists)
-            if cls.data:
-                mass_obj = cls.data[-1]  # Get the most recent mass object
-                json_data["Assign"]["1"] = {
+            for mass_obj in cls.data:
+                json_data["Assign"][mass_obj.NODE_ID] = {
                     "mX": mass_obj.MX,
                     "mY": mass_obj.MY,
                     "mZ": mass_obj.MZ,
@@ -567,23 +592,24 @@ class Load:
         
         @classmethod
         def get(cls):
-            return MidasAPI("GET", "/db/nmas")
+            MidasAPI("GET", "/db/nmas")
         
         @classmethod
         def delete(cls):
             cls.data = []
-            return MidasAPI("DELETE", "/db/nmas")
+            MidasAPI("DELETE", "/db/nmas")
         
         @classmethod
         def sync(cls):
             cls.data = []
             response = cls.get()
             
-            if response != {'message': ''}:
+            if response and response != {'message': ''}:
                 nmas_data = response.get('NMAS', {})
-                if "1" in nmas_data:
-                    item_data = nmas_data["1"]
+        
+                for node_id, item_data in nmas_data.items():
                     Load.NodalMass(
+                        node_id=int(node_id),
                         mX=item_data.get('mX'),
                         mY=item_data.get('mY'),
                         mZ=item_data.get('mZ'),

@@ -8,18 +8,21 @@ from ._mapi import *
 # ----------- HELPER FUNCTION -----------
     # --------   RETRIEVE NODE / ELEMENT FROM STRUCTURE GROUP -------
 
-def getNode(groupName):
+def nodesInGroup(groupName:str) -> list | int:
     ''' Returns Node ID list in a Structure Group '''
     for i in Group.Structure.Groups:
             if i.NAME == groupName:
                 return i.NLIST
+    print('⚠️   Structure group not found !')
     return []
 
-def getElement(groupName):
+
+def elemsInGroup(groupName:str) -> list:
     ''' Returns Element ID list in a Structure Group '''
     for i in Group.Structure.Groups:
             if i.NAME == groupName:
                 return i.ELIST
+    print('⚠️   Structure group not found !')
     return []
 
 

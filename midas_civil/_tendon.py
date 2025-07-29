@@ -668,6 +668,7 @@ class Tendon:
             self.R = R_spline3d
             self.RADIUS = R_round3d
 
+            
 
             #----- 2D Profile Spline (only)-------------
             xy_loc = []
@@ -703,7 +704,25 @@ class Tendon:
             Tendon.Profile.profiles.append(self)
             Tendon.Profile.ids.append(self.ID)
 
+        def update_profile(self,points_xyz):
+            xyz_loc = []
+            bFix = []
+            R_spline3d = []
+            R_round3d = []
 
+            for point in points_xyz:
+                xyz_loc.append(_POINT_(point[0],point[1],point[2]))
+                bFix.append(False) # Default not defining here
+                R_spline3d.append([0,0])   # Default not defining here
+
+            self.P_XYZ = xyz_loc
+            self.INPUT = '3D'
+            self.CURVE = 'SPLINE'
+            self.SHAPE = 'STRAIGHT'
+
+            self.bFIX = bFix
+            self.R = R_spline3d
+            self.RADIUS = R_round3d
 
         @classmethod
         def json(cls):

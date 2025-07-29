@@ -23,6 +23,8 @@ from ._view import *
 from ._movingload import*
 from ._settlement import*
 
+
+
 print('')
 print('*'*20,'  MIDAS CIVIL-NX PYTHON LIBRARY  🐍 ','*'*20)
 print('')

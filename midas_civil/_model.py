@@ -11,6 +11,7 @@ from ._material import *
 from ._thickness import *
 
 from ._tendon import *
+from ._result import *
 
 class Model:
 
@@ -241,6 +242,8 @@ class Model:
         Boundary.create()
         Load.create()
         Tendon.create()
+
+        LoadCombination.create()
 
 
 
