@@ -18,13 +18,13 @@ class MAPI_COUNTRY:
     def __init__(self,country:str):
         ''' Define Civil NX country to automatically set Base URL and MAPI Key from registry.
         ```
-        MAPI_COUNTRY('US')
-        MAPI_COUNTRY('CN')
-
+        MAPI_COUNTRY('US') # For english version
+        MAPI_COUNTRY('KR') # For Korean version
+        MAPI_COUNTRY('CN') # For Chinese version
         ```
         '''
-        if country.lower() == 'cn':
-            MAPI_COUNTRY.country = 'CN'
+        if country.lower() in ['us','cn','kr','jp']:
+            MAPI_COUNTRY.country = country.upper()
         else:
             MAPI_COUNTRY.country = 'US'
         
