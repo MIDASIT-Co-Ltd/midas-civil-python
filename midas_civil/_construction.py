@@ -417,3 +417,567 @@ class CS:
             """Deletes all construction stages from the database and resets the class"""
             cls.stages = []
             return MidasAPI("DELETE", "/db/stag")
+        
+#-----------------------------------------------------------Comp Section for CS--------------------------------------------------------------
+
+    class CompSec:
+        compsecs = []
+
+        def __init__(self, 
+                    activation_stage: str,
+                    section_id: int,
+                    comp_type: str = "GENERAL",
+                    tapered_type: bool = False,
+                    partinfo: list = None,
+                    id: int = None):
+            """
+            Parameters:
+                activation_stage: Active Stage name (required)
+                section_id: Section ID (required)
+                comp_type: Composite Type - "GENERAL" or "USER" (default "GENERAL")
+                tapered_type: Tapered Type - True or False (default False)
+                partinfo: List of part information lists (required)
+                id: The composite section ID (optional)
+            
+            Part Info Format:
+                Each part should be a list with elements in order:
+                [part_number, material_type, material_id, composite_stage, age, 
+                 height, volume_surface_ratio, module_exposed_surface, area, 
+                 asy, asz, ixx, iyy, izz, warea, iw]
+                
+                - part_number: Integer (required)
+                - material_type: "ELEM" or "MATL" (required)
+                - material_id: String (optional, blank for ELEM)
+                - composite_stage: String (optional, blank for active stage)
+                - age: Number (default 0)
+                - height: Number (default AUTO)
+                - volume_surface_ratio: Number (default 0)
+                - module_exposed_surface: Number (default 0)
+                - area: Number (default 1)
+                - asy: Number (default 1)
+                - asz: Number (default 1)
+                - ixx: Number (default 1)
+                - iyy: Number (default 1)
+                - izz: Number (default 1)
+                - warea: Number (default 1)
+                - iw: Number (default 1)
+            
+            Examples:
+                ```python
+                # Basic composite section
+                CompSec("CS1", 1, "GENERAL", False, [
+                    [1, "ELEM", "", "", 2, 1.5, 1.5, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                    [2, "MATL", "3", "CS2", 5, 0.245, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1]
+                ])
+                
+                # With minimal part info (using defaults)
+                CompSec("CS1", 2, "GENERAL", False, [
+                    [1, "ELEM"],
+                    [2, "MATL", "2","CS2"]
+                ])
+                ```
+            """
+            
+            self.ASTAGE = activation_stage
+            self.SEC = section_id
+            self.TYPE = comp_type
+            self.bTAP = tapered_type
+            
+            # Set ID
+            if id is None:
+                self.ID = len(CS.CompSec.compsecs) + 1
+            else:
+                self.ID = id
+            
+            # Process part information
+            self.vPARTINFO = []
+            
+            if partinfo is None:
+                raise ValueError("Part information is required")
+            
+            if not isinstance(partinfo, list):
+                raise ValueError("Part information must be a list of lists")
+            
+            for part_data in partinfo:
+                if not isinstance(part_data, list) or len(part_data) < 2:
+                    raise ValueError("Each part must be a list with at least part number and material type")
+                
+                # Default values for part info
+                defaults = [
+                    None,  # PART (required)
+                    None,  # MTYPE (required)
+                    "",    # MAT
+                    "",    # CSTAGE
+                    0,     # AGE
+                    "AUTO", # PARTINFO_H
+                    0,     # PARTINFO_VS
+                    0,     # PARTINFO_M
+                    1,     # AREA
+                    1,     # ASY
+                    1,     # ASZ
+                    1,     # IXX
+                    1,     # IYY
+                    1,     # IZZ
+                    1,     # WAREA
+                    1      # IW
+                ]
+                
+                # Fill in provided values
+                for i, value in enumerate(part_data):
+                    if i < len(defaults):
+                        defaults[i] = value
+                
+                # Validate required fields
+                if defaults[0] is None:
+                    raise ValueError("Part number is required")
+                if defaults[1] is None:
+                    raise ValueError("Material type is required")
+                if defaults[1] not in ["ELEM", "MATL"]:
+                    raise ValueError("Material type must be 'ELEM' or 'MATL'")
+                
+                # Create part info dictionary
+                part_info = {
+                    "PART": defaults[0],
+                    "MTYPE": defaults[1],
+                    "MAT": defaults[2],
+                    "CSTAGE": defaults[3],
+                    "AGE": defaults[4],
+                    "PARTINFO_H": defaults[5],
+                    "PARTINFO_VS": defaults[6],
+                    "PARTINFO_M": defaults[7],
+                    "AREA": defaults[8],
+                    "ASY": defaults[9],
+                    "ASZ": defaults[10],
+                    "IXX": defaults[11],
+                    "IYY": defaults[12],
+                    "IZZ": defaults[13],
+                    "WAREA": defaults[14],
+                    "IW": defaults[15]
+                }
+                
+                self.vPARTINFO.append(part_info)
+            
+            CS.CompSec.compsecs.append(self)
+        
+        @classmethod
+        def json(cls):
+            """
+            Converts Composite Section data to JSON format 
+            Example:
+                # Get the JSON data for all composite sections
+                json_data = CS.CompSec.json()
+                print(json_data)
+            """
+            json_data = {"Assign": {}}
+            
+            for compsec in cls.compsecs:
+                section_data = {
+                    "SEC": compsec.SEC,
+                    "ASTAGE": compsec.ASTAGE,
+                    "TYPE": compsec.TYPE,
+                    "bTAP": compsec.bTAP,
+                    "vPARTINFO": compsec.vPARTINFO
+                }
+                
+                json_data["Assign"][str(compsec.ID)] = section_data
+            
+            return json_data
+        
+        @classmethod
+        def create(cls):
+            """Creates composite sections in the database"""
+            return MidasAPI("PUT", "/db/cscs", cls.json())
+        
+        @classmethod
+        def get(cls):
+            """Gets composite section data from the database"""
+            return MidasAPI("GET", "/db/cscs")
+        
+        @classmethod
+        def sync(cls):
+            """Updates the CompSec class with data from the database"""
+            cls.compsecs = []
+            response = cls.get()
+            
+            if response != {'message': ''}:
+                if "CSCS" in response:
+                    cscs_data_dict = response["CSCS"]
+                else:
+                    return
+                
+                for cscs_id, cscs_data in cscs_data_dict.items():
+                    # Basic section data
+                    astage = cscs_data.get("ASTAGE")
+                    sec = cscs_data.get("SEC")
+                    comp_type = cscs_data.get("TYPE", "GENERAL")
+                    tapered_type = cscs_data.get("bTAP", False)
+                    partinfo_data = cscs_data.get("vPARTINFO", [])
+                    
+                    # Convert partinfo from dict format to list format
+                    partinfo = []
+                    for part in partinfo_data:
+                        part_list = [
+                            part.get("PART"),
+                            part.get("MTYPE"),
+                            part.get("MAT", ""),
+                            part.get("CSTAGE", ""),
+                            part.get("AGE", 0),
+                            part.get("PARTINFO_H", "AUTO"),
+                            part.get("PARTINFO_VS", 0),
+                            part.get("PARTINFO_M", 0),
+                            part.get("AREA", 1),
+                            part.get("ASY", 1),
+                            part.get("ASZ", 1),
+                            part.get("IXX", 1),
+                            part.get("IYY", 1),
+                            part.get("IZZ", 1),
+                            part.get("WAREA", 1),
+                            part.get("IW", 1)
+                        ]
+                        partinfo.append(part_list)
+                    
+                    # Create a new CompSec object
+                    new_compsec = CS.CompSec(
+                        activation_stage=astage,
+                        section_id=sec,
+                        comp_type=comp_type,
+                        tapered_type=tapered_type,
+                        partinfo=partinfo,
+                        id=int(cscs_id)
+                    )
+                    
+                    # Remove the automatically added instance and replace with synced data
+                    CS.CompSec.compsecs.pop()
+                    CS.CompSec.compsecs.append(new_compsec)
+        
+        @classmethod
+        def delete(cls):
+            """Deletes all composite sections from the database and resets the class"""
+            cls.compsecs = []
+            return MidasAPI("DELETE", "/db/cscs")
+
+
+#-----------------------------------------------------------------------------------------------------------------------------------
+
+    class TimeLoads:
+        timeloads = []
+
+        def __init__(self, 
+                    element_id: int,
+                    day: int,
+                    group: str = "",
+                    id: int = None):
+            """
+            Time Loads for Construction Stage define.
+            
+            Parameters:
+                element_id: Element ID (required)
+                day: Time Loads in days (required)
+                group: Load Group Name (optional, default blank)
+                id: The time loads ID (optional)
+            
+            Examples:
+                ```python
+                CS.TimeLoads(10, 35, "DL")
+                ```
+            """
+            
+            self.ELEMENT_ID = element_id
+            self.DAY = day
+            self.GROUP_NAME = group
+            
+            # Set ID
+            if id is None:
+                self.ID = len(CS.TimeLoads.timeloads) + 1
+            else:
+                self.ID = id
+            
+            CS.TimeLoads.timeloads.append(self)
+        
+        @classmethod
+        def json(cls):
+            """
+            Converts Time Loads data to JSON format 
+            Example:
+                # Get the JSON data for all time loads
+                json_data = CS.TimeLoads.json()
+                print(json_data)
+            """
+            json_data = {"Assign": {}}
+            
+            for timeload in cls.timeloads:
+                items_data = {
+                    "ITEMS": [
+                        {
+                            "ID": 1,
+                            "GROUP_NAME": timeload.GROUP_NAME,
+                            "DAY": timeload.DAY
+                        }
+                    ]
+                }
+                
+                json_data["Assign"][str(timeload.ELEMENT_ID)] = items_data
+            
+            return json_data
+        
+        @classmethod
+        def create(cls):
+            """Creates time loads in the database"""
+            return MidasAPI("PUT", "/db/tmld", cls.json())
+        
+        @classmethod
+        def get(cls):
+            """Gets time loads data from the database"""
+            return MidasAPI("GET", "/db/tmld")
+        
+        @classmethod
+        def sync(cls):
+            """Updates the TimeLoads class with data from the database"""
+            cls.timeloads = []
+            response = cls.get()
+            
+            if response != {'message': ''}:
+                if "TMLD" in response:
+                    stbk_data_dict = response["TMLD"]
+                else:
+                    return
+                
+                for element_id, stbk_data in stbk_data_dict.items():
+                    items = stbk_data.get("ITEMS", [])
+                    
+                    for item in items:
+                        group_name = item.get("GROUP_NAME", "")
+                        day = item.get("DAY", 0)
+                        item_id = item.get("ID", 1)
+                        
+                        # Create a new TimeLoads object
+                        new_timeload = CS.TimeLoads(
+                            element_id=int(element_id),
+                            day=day,
+                            group=group_name,
+                            id=item_id
+                        )
+                        
+                        # Remove the automatically added instance and replace with synced data
+                        CS.TimeLoads.timeloads.pop()
+                        CS.TimeLoads.timeloads.append(new_timeload)
+        
+        @classmethod
+        def delete(cls):
+            """Deletes all time loads from the database and resets the class"""
+            cls.timeloads = []
+            return MidasAPI("DELETE", "/db/tmld")
+
+    class CreepCoeff:
+        creepcoeffs = []
+
+        def __init__(self, 
+                    element_id: int,
+                    creep: float,
+                    group: str = "",
+                    id: int = None):
+            """
+            Creep Coefficient for Construction Stage define.
+            
+            Parameters:
+                element_id: Element ID (required)
+                creep: Creep Coefficient value (required)
+                group: Load Group Name (optional, default blank)
+                id: The creep coefficient ID (optional)
+            
+            Examples:
+                ```python
+                # Basic creep coefficient
+                CS.CreepCoeff(25, 1.2)   
+
+                # With specific ID & Group
+                CS.CreepCoeff(26, 1.5, "GR", id=2)
+                ```
+            """
+            
+            self.ELEMENT_ID = element_id
+            self.CREEP = creep
+            self.GROUP_NAME = group
+            
+            # Set ID
+            if id is None:
+                self.ID = len(CS.CreepCoeff.creepcoeffs) + 1
+            else:
+                self.ID = id
+            
+            CS.CreepCoeff.creepcoeffs.append(self)
+        
+        @classmethod
+        def json(cls):
+            """
+            Converts Creep Coefficient data to JSON format 
+            Example:
+                # Get the JSON data for all creep coefficients
+                json_data = CS.CreepCoeff.json()
+                print(json_data)
+            """
+            json_data = {"Assign": {}}
+            
+            for creepcoeff in cls.creepcoeffs:
+                items_data = {
+                    "ITEMS": [
+                        {
+                            "ID": 1,
+                            "GROUP_NAME": creepcoeff.GROUP_NAME,
+                            "CREEP": creepcoeff.CREEP
+                        }
+                    ]
+                }
+                
+                json_data["Assign"][str(creepcoeff.ELEMENT_ID)] = items_data
+            
+            return json_data
+        
+        @classmethod
+        def create(cls):
+            """Creates creep coefficients in the database"""
+            return MidasAPI("PUT", "/db/crpc", cls.json())
+        
+        @classmethod
+        def get(cls):
+            """Gets creep coefficient data from the database"""
+            return MidasAPI("GET", "/db/crpc")
+        
+        @classmethod
+        def sync(cls):
+            """Updates the CreepCoeff class with data from the database"""
+            cls.creepcoeffs = []
+            response = cls.get()
+            
+            if response != {'message': ''}:
+                if "CRPC" in response:
+                    crpc_data_dict = response["CRPC"]
+                else:
+                    return
+                
+                for element_id, crpc_data in crpc_data_dict.items():
+                    items = crpc_data.get("ITEMS", [])
+                    
+                    for item in items:
+                        group_name = item.get("GROUP_NAME", "")
+                        creep = item.get("CREEP", 0.0)
+                        item_id = item.get("ID", 1)
+                        
+                        # Create a new CreepCoeff object
+                        new_creepcoeff = CS.CreepCoeff(
+                            element_id=int(element_id),
+                            creep=creep,
+                            group=group_name,
+                            id=item_id
+                        )
+                        
+                        # Remove the automatically added instance and replace with synced data
+                        CS.CreepCoeff.creepcoeffs.pop()
+                        CS.CreepCoeff.creepcoeffs.append(new_creepcoeff)
+        
+        @classmethod
+        def delete(cls):
+            """Deletes all creep coefficients from the database and resets the class"""
+            cls.creepcoeffs = []
+            return MidasAPI("DELETE", "/db/crpc")
+
+    class Camber:
+        cambers = []
+
+        def __init__(self, 
+                    node_id: int,
+                    camber: float,
+                    deform: float,
+                    id: int = None):
+            """
+            Camber for Construction Stage define.
+            
+            Parameters:
+                node_id: Node ID (required)
+                camber: User camber value (required)
+                deform: Deformation value (required)
+                id: The camber ID (optional)
+            
+            Examples:
+                ```python
+                
+                CS.Camber(25, 0.17, 0.1)
+                ```
+            """
+            
+            self.NODE_ID = node_id
+            self.USER = camber
+            self.DEFORM = deform
+            
+            # Set ID
+            if id is None:
+                self.ID = len(CS.Camber.cambers) + 1
+            else:
+                self.ID = id
+            
+            CS.Camber.cambers.append(self)
+        
+        @classmethod
+        def json(cls):
+            """
+            Converts Camber data to JSON format 
+            Example:
+                # Get the JSON data for all cambers
+                json_data = CS.Camber.json()
+                print(json_data)
+            """
+            json_data = {"Assign": {}}
+            
+            for camber in cls.cambers:
+                camber_data = {
+                    "DEFORM": camber.DEFORM,
+                    "USER": camber.USER
+                }
+                
+                json_data["Assign"][str(camber.NODE_ID)] = camber_data
+            
+            return json_data
+        
+        @classmethod
+        def create(cls):
+            """Creates cambers in the database"""
+            return MidasAPI("PUT", "/db/cmcs", cls.json())
+        
+        @classmethod
+        def get(cls):
+            """Gets camber data from the database"""
+            return MidasAPI("GET", "/db/cmcs")
+        
+        @classmethod
+        def sync(cls):
+            """Updates the Camber class with data from the database"""
+            cls.cambers = []
+            response = cls.get()
+            
+            if response != {'message': ''}:
+                if "CMCS" in response:
+                    cmcs_data_dict = response["CMCS"]
+                else:
+                    return
+                
+                for node_id, cmcs_data in cmcs_data_dict.items():
+                    deform = cmcs_data.get("DEFORM", 0.0)
+                    user = cmcs_data.get("USER", 0.0)
+                    
+                    # Create a new Camber object
+                    new_camber = CS.Camber(
+                        node_id=int(node_id),
+                        camber=user,
+                        deform=deform,
+                        id=len(cls.cambers) + 1
+                    )
+                    
+                    # Remove the automatically added instance and replace with synced data
+                    CS.Camber.cambers.pop()
+                    CS.Camber.cambers.append(new_camber)
+        
+        @classmethod
+        def delete(cls):
+            """Deletes all cambers from the database and resets the class"""
+            cls.cambers = []
+            return MidasAPI("DELETE", "/db/cmcs")

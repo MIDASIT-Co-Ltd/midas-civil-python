@@ -1,6 +1,7 @@
 from ._mapi import *
 from ._node import *
 from ._group import *
+from ._load import *
 
 def convList(item):
     if type(item) != list:
@@ -57,6 +58,11 @@ class Temperature:
         temps = []
         
         def __init__(self, temperature, lcname, group="", id=None):
+            chk = 0
+            for i in Load_Case.cases:
+                if lcname in i.NAME: chk = 1
+            if chk == 0: Load_Case("T", lcname)
+
             if group:
                 chk = 0
                 try:
@@ -143,6 +149,12 @@ class Temperature:
         temps = []
         
         def __init__(self, element, temperature, lcname, group="", id=None):
+
+            chk = 0
+            for i in Load_Case.cases:
+                if lcname in i.NAME: chk = 1
+            if chk == 0: Load_Case("T", lcname)
+
             if group:
                 chk = 0
                 try:
@@ -256,6 +268,12 @@ class Temperature:
         temps = []
 
         def __init__(self, element, type, lcname, tz, group="", id=None, hz=None, ty=0, hy=None):
+
+            chk = 0
+            for i in Load_Case.cases:
+                if lcname in i.NAME: chk = 1
+            if chk == 0: Load_Case("T", lcname)
+            
             if group:
                 chk = 0
                 try:
@@ -376,6 +394,12 @@ class Temperature:
         temps = []
         
         def __init__(self, node, temperature, lcname, group="", id=None):
+
+            chk = 0
+            for i in Load_Case.cases:
+                if lcname in i.NAME: chk = 1
+            if chk == 0: Load_Case("T", lcname)
+
             if group:
                 chk = 0
                 try:
@@ -500,6 +524,12 @@ class Temperature:
                     raise ValueError("For 'Input' type, both 'elast' and 'thermal' parameters are required.")
 
             # Handle load group creation
+
+            chk = 0
+            for i in Load_Case.cases:
+                if lcname in i.NAME: chk = 1
+            if chk == 0: Load_Case("T", lcname)
+            
             if group:
                 chk = 0
                 try:

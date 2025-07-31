@@ -96,10 +96,12 @@ class Load:
         Sample: Load_SW("Self-Weight", "Z", -1, "DL")"""
         data = []
         def __init__(self, load_case, dir = "Z", value = -1, load_group = ""):
+
             chk = 0
             for i in Load_Case.cases:
                 if load_case in i.NAME: chk = 1
             if chk == 0: Load_Case("D", load_case)
+            
             if load_group != "":
                 chk = 0
                 a = [v['NAME'] for v in Group.Load.json()["Assign"].values()]
