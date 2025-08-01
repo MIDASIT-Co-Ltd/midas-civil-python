@@ -659,7 +659,7 @@ class CS:
 
 #-----------------------------------------------------------------------------------------------------------------------------------
 
-    class TimeLoads:
+    class TimeLoad:
         timeloads = []
 
         def __init__(self, 
@@ -678,7 +678,7 @@ class CS:
             
             Examples:
                 ```python
-                CS.TimeLoads(10, 35, "DL")
+                CS.TimeLoad(10, 35, "DL")
                 ```
             """
             
@@ -688,11 +688,11 @@ class CS:
             
             # Set ID
             if id is None:
-                self.ID = len(CS.TimeLoads.timeloads) + 1
+                self.ID = len(CS.TimeLoad.timeloads) + 1
             else:
                 self.ID = id
             
-            CS.TimeLoads.timeloads.append(self)
+            CS.TimeLoad.timeloads.append(self)
         
         @classmethod
         def json(cls):
@@ -700,7 +700,7 @@ class CS:
             Converts Time Loads data to JSON format 
             Example:
                 # Get the JSON data for all time loads
-                json_data = CS.TimeLoads.json()
+                json_data = CS.TimeLoad.json()
                 print(json_data)
             """
             json_data = {"Assign": {}}
@@ -722,17 +722,17 @@ class CS:
         
         @classmethod
         def create(cls):
-            """Creates time loads in the database"""
+            """Creates time loads in the CIVIL NX"""
             return MidasAPI("PUT", "/db/tmld", cls.json())
         
         @classmethod
         def get(cls):
-            """Gets time loads data from the database"""
+            """Gets time loads data from the CIVIL NX"""
             return MidasAPI("GET", "/db/tmld")
         
         @classmethod
         def sync(cls):
-            """Updates the TimeLoads class with data from the database"""
+            """Updates the TimeLoad class with data from the CIVIL NX"""
             cls.timeloads = []
             response = cls.get()
             
@@ -750,8 +750,8 @@ class CS:
                         day = item.get("DAY", 0)
                         item_id = item.get("ID", 1)
                         
-                        # Create a new TimeLoads object
-                        new_timeload = CS.TimeLoads(
+                        # Create a new TimeLoad object
+                        new_timeload = CS.TimeLoad(
                             element_id=int(element_id),
                             day=day,
                             group=group_name,
@@ -759,12 +759,12 @@ class CS:
                         )
                         
                         # Remove the automatically added instance and replace with synced data
-                        CS.TimeLoads.timeloads.pop()
-                        CS.TimeLoads.timeloads.append(new_timeload)
+                        CS.TimeLoad.timeloads.pop()
+                        CS.TimeLoad.timeloads.append(new_timeload)
         
         @classmethod
         def delete(cls):
-            """Deletes all time loads from the database and resets the class"""
+            """Deletes all time loads from the CIVIL NX and python class"""
             cls.timeloads = []
             return MidasAPI("DELETE", "/db/tmld")
 

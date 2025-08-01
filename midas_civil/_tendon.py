@@ -861,6 +861,12 @@ class Tendon:
             return MidasAPI('GET','/db/TDNA')
         
         @classmethod
+        def delete(cls):
+            cls.profiles=[]
+            cls.ids=[]
+            return MidasAPI('DELETE','/db/TDNA')
+        
+        @classmethod
         def sync(cls):
             a = cls.get()
             if a != {'message': ''}:
