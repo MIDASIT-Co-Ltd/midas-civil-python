@@ -1,4 +1,20 @@
 from ._mapi import *
+import numpy as np
+
+
+def _poly_dir(poly,rot='CCW'):
+    outer_cg = np.mean(poly,axis=0)
+    outer_t = np.subtract(poly,outer_cg)
+    dir = 0
+    for i in range(len(poly)-1):
+        dir+=outer_t[i][0]*outer_t[i+1][1]-outer_t[i][1]*outer_t[i+1][0]
+    if dir < 0:
+        poly.reverse()
+    
+    if rot == 'CW':
+        poly.reverse()
+
+    return poly
 
 
 
@@ -104,6 +120,66 @@ def _Obj2JS(sect):
                     "JOINT": [sect.J1,sect.JL1,sect.JL2,sect.JL3,sect.JL4,sect.JR1,sect.JR2,sect.JR3,sect.JR4]
                 }
             }
+        elif sect.SHAPE in ['VALUE']:
+            js =  {
+                    "SECTTYPE": "PSC",
+                    "SECT_NAME": sect.NAME,
+                    "CALC_OPT": True,
+                    "SECT_BEFORE": {
+                        "SHAPE": "VALU",
+                        "SECT_I": {
+                            "SECT_NAME": "",
+                            "vSIZE": [0.1, 0.1, 0.1, 0.1],
+                            "OUTER_POLYGON": [
+                                {
+                                    "VERTEX": [
+                                        {"X": 5, "Y": 5},
+                                        {"X": -5, "Y": 5}
+                                    ]
+                                }
+                            ]
+                        },
+                        "SHEAR_CHK": True,
+                        "SHEAR_CHK_POS": [[0.1, 0, 0.1], [0, 0, 0]],
+                        "USE_AUTO_QY": [[True, True, True], [False, False, False]],
+                        "WEB_THICK": [0, 0],
+                        "USE_WEB_THICK_SHEAR": [[True, True, True], [False, False, False]]
+                    }
+                }
+            
+            v_list = []
+            for i in sect.OUTER_POLYGON:
+                v_list.append({"X":i[0],"Y":i[1]})
+            js["SECT_BEFORE"]["SECT_I"]["OUTER_POLYGON"][0]["VERTEX"] =v_list
+
+            
+
+            if sect.N_INNER_POLYGON > 0 :
+
+                js["SECT_BEFORE"]["SECT_I"]["INNER_POLYGON"]= []
+
+                mult_ver = []
+                for n in range(sect.N_INNER_POLYGON):
+                    vi_list = []
+
+                    js["SECT_BEFORE"]["SECT_I"]["INNER_POLYGON"]= [
+                        {
+                            "VERTEX": []
+                        }
+                    ]
+                    for i in sect.INNER_POLYGON[n]:
+                        vi_list.append({"X":i[0],"Y":i[1]})
+
+                    ver_json = {"VERTEX": vi_list}
+                    mult_ver.append(ver_json)
+
+                js["SECT_BEFORE"]["SECT_I"]["INNER_POLYGON"] = mult_ver
+
+
+
+
+
+
 
     elif sect.TYPE == 'COMPOSITE':
         if sect.SHAPE in ['CI']:
@@ -572,6 +648,51 @@ class Section:
                 self.BL42	  =	BL42             
 
                 _SectionADD(self)
+
+        class Value(_common):
+            def __init__(self,Name:str,
+                            OuterPolygon:list,InnerPolygon:list=[],
+                            Offset:Offset=Offset.CC(),useShear=True,use7Dof=False,id:int=0):
+                
+                '''
+                    Outer Polygon -> List of points ; Last input is different from first
+                        [(0,0),(1,0),(1,1),(0,1)]
+                    Inner Polygon -> List of points ; Last input is different from first
+                        Only one inner polygon
+                '''
+                
+                self.ID = id
+                self.NAME = Name
+                self.SHAPE = 'VALUE'
+                self.TYPE = 'PSC'
+
+                self.OFFSET = Offset
+                self.USESHEAR = bool(useShear)
+                self.USE7DOF = bool(use7Dof)
+
+
+                self.OUTER_POLYGON = _poly_dir(OuterPolygon)
+                self.INNER_POLYGON = []
+                self.N_INNER_POLYGON = 0
+
+                temp_arr = [] 
+
+                # Finding no. of internal polygons
+                if InnerPolygon != []:
+                    if not isinstance(InnerPolygon[0][0],(int,float)):
+                        self.N_INNER_POLYGON = len(InnerPolygon)
+                        temp_arr = InnerPolygon 
+                        
+                    else:
+                        temp_arr.append(InnerPolygon) #Convert to list
+                        self.N_INNER_POLYGON = 1
+
+                for i in range(len(temp_arr)):
+                    self.INNER_POLYGON.append(_poly_dir(temp_arr[i],'CW'))
+
+
+                _SectionADD(self) 
+
 
     class Composite:
         class PSCI(_common):

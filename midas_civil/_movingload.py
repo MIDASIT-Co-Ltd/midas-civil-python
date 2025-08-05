@@ -4,7 +4,7 @@ from ._model import *
 
 # ----------------------------------------------------------------------------------------------------------------
 
-def El_list(Start_id: int, End_id: int) -> list:
+def _El_list(Start_id: int, End_id: int) -> list:
 
     return list(range(Start_id, End_id + 1))
 
@@ -330,7 +330,7 @@ class MovingLoad:
 
             data = {"Assign": {}}
             for lane in lanes_list:
-                E_list = El_list(lane.Elment_start, lane.Elemnt_end)
+                E_list = _El_list(lane.Elment_start, lane.Elemnt_end)
                 Load_Dist = "CROSS" if lane.Group_Name else "LANE"
                 opt_auto_lane = lane.width > 0 or lane.opt_width > 0
 
