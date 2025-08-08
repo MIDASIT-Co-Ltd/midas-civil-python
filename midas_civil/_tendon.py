@@ -201,7 +201,7 @@ class Tendon:
             Tendon.Property.create()
         if Tendon.Profile.profiles !=[]:
             Tendon.Profile.create()
-        if Tendon.Prestress.load !=[]:
+        if Tendon.Prestress.loads !=[]:
             Tendon.Prestress.create()
 
     class Relaxation:
@@ -880,10 +880,9 @@ class Tendon:
 
 
     class Prestress:
-        """Creates node loads and converts to JSON format.
-        Example: Load_Node(101, "LC1", "Group1", FZ = 10)
+        """Prestress Loading for Tendons.
         """
-        load = []
+        loads = []
         ids = []
         def __init__(self, profile_name, load_case, load_group = "", prestress_type = "STRESS", jack_step = "BEGIN", jack_begin = 0, jack_end=0, grouting_stage = 0, id = 0):
 
@@ -904,7 +903,7 @@ class Tendon:
                 if jack_step not in ['BEGIN' , 'END' , 'BOTH']: jack_step = 'BEGIN'
 
                 self.TDN_ID = 0
-                if id == 0: id = len(Tendon.Prestress.load) + 1
+                if id == 0: id = len(Tendon.Prestress.loads) + 1
                 self.ID = id
             else:
                 self.TDN_ID = -id//100000
@@ -924,14 +923,14 @@ class Tendon:
 
             
 
-            Tendon.Prestress.load.append(self)
+            Tendon.Prestress.loads.append(self)
             Tendon.Prestress.ids.append(self.ID)
             
 
         @classmethod
         def json(cls):
             json = {"Assign": {}}
-            for self in cls.load:
+            for self in cls.loads:
 
                 # Finding Tendon ID
                 tdn_id = self.TDN_ID
@@ -943,7 +942,7 @@ class Tendon:
                             tdn_check=1
                             break
                     if not tdn_check: 
-                        print(f'⚠️   "{self.TDN_NAME}" tendon name is not found for Prestress load application. Prestress load skipped.\n📑  Try Tendon.Profile.sync() to retrieve Profile Names first')
+                        print(f'⚠️   "{self.TDN_NAME}" Tendon name is not found for Prestress load application. Prestress load skipped.\n📑  Try Tendon.Profile.sync() to retrieve Profile Names first')
                         continue
 
 
@@ -973,12 +972,12 @@ class Tendon:
         
         @classmethod
         def delete(cls):
-            cls.load=[]
+            cls.loads=[]
             return MidasAPI("DELETE", "/db/TDPL")
         
         @classmethod
         def sync(cls):
-            cls.load = []
+            cls.loads = []
             a = cls.get()
             if a != {'message': ''}:
                 for i in a['TDPL'].keys():

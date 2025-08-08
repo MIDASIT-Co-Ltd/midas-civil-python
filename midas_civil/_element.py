@@ -231,7 +231,10 @@ class Element:
             _ADD(self)
 
         @staticmethod
-        def SDL(s_loc:list,dir:list,l:float,n:int=1,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0): #CHANGE TO TUPLE
+        def SDL(s_loc:list|Node,dir:list,l:float,n:int=1,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0): #CHANGE TO TUPLE
+                if isinstance(s_loc,Node):
+                    s_loc = (s_loc.X,s_loc.Y,s_loc.Z)
+
                 beam_nodes =[]
                 beam_obj = []
                 s_locc = np.array(s_loc)
@@ -251,7 +254,12 @@ class Element:
                     
 
         @staticmethod
-        def SE(s_loc:list,e_loc:list,n:int=1,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0):
+        def SE(s_loc:list|Node,e_loc:list|Node,n:int=1,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0):
+                if isinstance(s_loc,Node):
+                    s_loc = (s_loc.X,s_loc.Y,s_loc.Z)
+                if isinstance(e_loc,Node):
+                    s_loc = (e_loc.X,e_loc.Y,e_loc.Z)
+
                 beam_nodes =[]
                 beam_obj = []
                 i_loc = np.linspace(s_loc,e_loc,n+1)
@@ -302,7 +310,10 @@ class Element:
             _ADD(self)
 
         @staticmethod
-        def SDL(s_loc:list,dir:list,l:float,n:int=1,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0):
+        def SDL(s_loc:list|Node,dir:list,l:float,n:int=1,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0):
+            if isinstance(s_loc,Node):
+                    s_loc = (s_loc.X,s_loc.Y,s_loc.Z)
+
             beam_nodes =[]
             beam_obj =[]
             s_locc = np.array(s_loc)
@@ -322,7 +333,13 @@ class Element:
                 
 
         @staticmethod
-        def SE(s_loc:list,e_loc:list,n:int=1,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0):
+        def SE(s_loc:list|Node,e_loc:list|Node,n:int=1,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0):
+            
+            if isinstance(s_loc,Node):
+                s_loc = (s_loc.X,s_loc.Y,s_loc.Z)
+            if isinstance(e_loc,Node):
+                s_loc = (e_loc.X,e_loc.Y,e_loc.Z)
+
             beam_nodes =[]
             beam_obj = []
             i_loc = np.linspace(s_loc,e_loc,n+1)
