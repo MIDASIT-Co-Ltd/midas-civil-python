@@ -420,45 +420,52 @@ class Load:
 
     #20 Class to add Load to Mass:
     class LoadToMass:
-        """Creates load to mass conversion and converts to JSON format.
-        Example: LoadToMass("Z", ["DL", "LL"], [1.0, 0.5])
+        """
+        Creates load-to-mass conversion entries and converts them to JSON format.
+
+        Example:
+            Load.LoadToMass("Z", ["DL", "LL"], [1.0, 0.5])
+
+        Args:
+            dir (str): 
+                Mass Direction - "X", "Y", "Z", "XY", "YZ", "XZ", "XYZ".
+                If invalid, defaults to "XYZ".
+            load_case (list | str): 
+                List of load case names or a single case name as string.
+            load_factor (list | float, optional): 
+                List of scale factors corresponding to `load_case`.
+                If None or shorter than `load_case`, remaining factors default to 1.0.
+            nodal_load (bool, optional): 
+                Include nodal loads. Defaults to True.
+            beam_load (bool, optional): 
+                Include beam loads. Defaults to True.
+            floor_load (bool, optional): 
+                Include floor loads. Defaults to True.
+            pressure (bool, optional): 
+                Include pressure loads. Defaults to True.
+            gravity (float, optional): 
+                Gravity acceleration. Defaults to 9.806.
         """
         data = []
         
         def __init__(self, dir, load_case, load_factor=None, nodal_load=True, beam_load=True, 
                     floor_load=True, pressure=True, gravity=9.806):
-            """
-            dir (str): Mass Direction - "X", "Y", "Z", "XY", "YZ", "XZ", "XYZ"
-            load_case (list): List of load case names
-            load_factor (list, optional): List of scale factors corresponding to load cases. 
-                                        If None or shorter than load_case, remaining factors default to 1.0
-            nodal_load (bool): Include nodal loads. Defaults to True
-            beam_load (bool): Include beam loads. Defaults to True  
-            floor_load (bool): Include floor loads. Defaults to True
-            pressure (bool): Include pressure loads. Defaults to True
-            gravity (float): Gravity acceleration. Defaults to 9.806
-            """
-            
-            # Validate direction
+
             valid_directions = ["X", "Y", "Z", "XY", "YZ", "XZ", "XYZ"]
             if dir not in valid_directions:
-                dir = "XYZ"  # Default to XYZ if invalid
+                dir = "XYZ"
                 
-            # Ensure load_case is a list
             if not isinstance(load_case, list):
                 load_case = [load_case]
                 
-            # Handle load_factor - ensure it matches load_case length
             if load_factor is None:
                 load_factor = [1.0] * len(load_case)
             elif not isinstance(load_factor, list):
                 load_factor = [load_factor]
                 
-            # Pad load_factor with 1.0 if shorter than load_case
             while len(load_factor) < len(load_case):
                 load_factor.append(1.0)
                 
-            # Check if load cases exist - give warning if not
             for case in load_case:
                 chk = 0
                 for i in Load_Case.cases:
@@ -482,8 +489,7 @@ class Load:
         def json(cls):
             json_data = {"Assign": {}}
             
-            for load_obj in enumerate(cls.data):
-                # Create vLC array with load case names and factors
+            for idx, load_obj in enumerate(cls.data, start=1):
                 vlc_array = []
                 for i, case_name in enumerate(load_obj.LOAD_CASE):
                     vlc_array.append({
@@ -491,7 +497,7 @@ class Load:
                         "FACTOR": load_obj.LOAD_FACTOR[i]
                     })
                 
-                json_data["Assign"]["1"] = {
+                json_data["Assign"][str(idx)] = {
                     "DIR": load_obj.DIR,
                     "bNODAL": load_obj.NODAL,
                     "bBEAM": load_obj.BEAM, 
@@ -500,7 +506,7 @@ class Load:
                     "GRAV": load_obj.GRAVITY,
                     "vLC": vlc_array
                 }
-                
+            
             return json_data
         
         @classmethod
@@ -523,15 +529,13 @@ class Load:
             
             if response != {'message': ''}:
                 for key, item_data in response.get('LTOM', {}).items():
-                    # Extract load cases and factors from vLC array
                     load_cases = []
                     load_factors = []
                     
-                    for lc_item in item_data.get('vLC'):
+                    for lc_item in item_data.get('vLC', []):
                         load_cases.append(lc_item.get('LCNAME'))
                         load_factors.append(lc_item.get('FACTOR'))
                     
-                    # Create LoadToMass object
                     Load.LoadToMass(
                         dir=item_data.get('DIR'),
                         load_case=load_cases,
@@ -542,6 +546,7 @@ class Load:
                         pressure=item_data.get('bPRES'),
                         gravity=item_data.get('GRAV')
                     )
+
 
     #-----------------------------------------------------------NodalMass-----------------
     #21NodalMass
