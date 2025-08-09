@@ -44,7 +44,8 @@ def _add_node_2_stGroup(nodeID,groupName):
     if groupName in Group.Structure._names:
         for i in Group.Structure.Groups:
             if i.NAME == groupName:
-                i.NLIST = list(i.NLIST + [nodeID])
+                if nodeID not in i.NLIST:
+                    i.NLIST = list(i.NLIST + [nodeID])
     else:
         Group.Structure(groupName)
         _add_node_2_stGroup(nodeID,groupName)
