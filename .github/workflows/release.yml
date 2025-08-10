@@ -33,7 +33,7 @@ jobs:
             echo "No tag found"
             exit 1
           fi
-          
+
   build-and-publish:
     runs-on: ubuntu-latest
 
@@ -72,11 +72,6 @@ jobs:
         with:
           fetch-depth: 0 # Fetch full history to avoid issues with tags and branches
 
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist/
 
       - name: Create GitHub Release
         id: create_release
