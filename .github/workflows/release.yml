@@ -75,6 +75,6 @@ jobs:
 
       - name: Create GitHub Release
         id: create_release
-        run: gh release create ${{ env.TAG_NAME }} dist/* --title ${{ env.TAG_NAME }} --generate-notes
+        run: gh release create ${{ env.TAG_NAME }} --title ${{ env.TAG_NAME }} --generate-notes
         env:
           GH_TOKEN: ${{ github.token }}
