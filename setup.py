@@ -21,5 +21,4 @@ setup(name='midas_civil',
     url='https://github.com/MIDASIT-Co-Ltd/midas-civil-python',
     keywords=['midas','civil','civil nx','bridge'],
     license='MIT',
-
     )

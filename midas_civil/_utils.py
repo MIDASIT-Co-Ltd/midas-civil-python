@@ -81,3 +81,9 @@ def zz_add_to_dict(dictionary, key, value):
         dictionary[key].append(value)
     else:
         dictionary[key] = [value]
+
+
+def _convItem2List(item):
+    if isinstance(item,list):
+        return item
+    return [item]

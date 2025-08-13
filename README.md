@@ -2,10 +2,14 @@
 
 ![MIDAS PYTHON](https://midas-rnd.github.io/midasapi-python/assets/banner.png)
 
+---
+
+[![PyPI Downloads](https://static.pepy.tech/badge/midas-civil)](https://pepy.tech/projects/midas-civil)
+
 **`midas-civil`** is a Python library that provides an interface to interact with MIDAS Civil NX using Python scripts.  
 This library allows engineers and developers to automate tasks, extract structural analysis results, manipulate model data, and integrate MIDAS Civil NX with other tools or pipelines using Python.
 
----
+
 
 ## Features
 

@@ -1,29 +1,44 @@
 
 from ._mapi import *
 
-
-
-
+from ._utils import _convItem2List
+from ._utils import sFlatten
 
 # ----------- HELPER FUNCTION -----------
     # --------   RETRIEVE NODE / ELEMENT FROM STRUCTURE GROUP -------
 
-def nodesInGroup(groupName:str) -> list | int:
+def nodesInGroup(groupName:str|list,unique:bool=True) -> list:
     ''' Returns Node ID list in a Structure Group '''
-    for i in Group.Structure.Groups:
-            if i.NAME == groupName:
-                return i.NLIST
-    print('⚠️   Structure group not found !')
-    return []
+    groupNames = _convItem2List(groupName)
+    nlist = []
+    for gName in groupNames:
+        chk=1
+        for i in Group.Structure.Groups:
+                if i.NAME == gName:
+                    chk=0
+                    nlist.append(i.NLIST)
+        if chk:
+            print(f'⚠️   "{gName}" - Structure group not found !')
+    if unique:
+        return list(dict.fromkeys(sFlatten(nlist)))
+    return sFlatten(nlist)
 
 
-def elemsInGroup(groupName:str) -> list:
+def elemsInGroup(groupName:str|list,unique:bool=True) -> list:
     ''' Returns Element ID list in a Structure Group '''
-    for i in Group.Structure.Groups:
-            if i.NAME == groupName:
-                return i.ELIST
-    print('⚠️   Structure group not found !')
-    return []
+    groupNames = _convItem2List(groupName)
+    elist = []
+    for gName in groupNames:
+        chk=1
+        for i in Group.Structure.Groups:
+                if i.NAME == gName:
+                    chk=0
+                    elist.append(i.ELIST)
+        if chk:
+            print(f'⚠️   "{gName}" - Structure group not found !')
+    if unique:
+        return list(dict.fromkeys(sFlatten(elist)))
+    return sFlatten(elist)
 
 
     # --------   ADD ELEMENT TO STRUCTURE GROUP -------
@@ -116,7 +131,7 @@ class Group:
             if up == 0: print(f"⚠️  Structure group {name} is not defined!")
         
         @classmethod
-        def json(cls):
+        def json(cls) -> dict:
             """Generates the json file for all defined structure groups."""
             json = {"Assign":{}}
             for i in cls.Groups:
@@ -133,7 +148,7 @@ class Group:
             MidasAPI("PUT",cls.url,cls.json())
             
         @classmethod
-        def get(cls):
+        def get(cls) -> dict:
             return MidasAPI("GET",cls.url)
         
 
@@ -177,25 +192,9 @@ class Group:
             else: self.ID= max(Group.Boundary.ids)+1
             Group.Boundary.ids.append(self.ID)
             Group.Boundary.Groups.append(self)
-    
-        # @classmethod
-        # def update(cls, name,operation = "r", nlist = [],elist = [] ):
-        #     """Group name, element list, node list, operation ("add" or "replace").\n
-        #     Sample:  update_SG("Girder", [1,2,...20],[],"replace")"""
-        #     up = 0
-        #     for i in cls.Groups:
-        #         if name == i.NAME:
-        #             up = 1
-        #             if operation == "r":
-        #                 i.ELIST = list(set(elist))
-        #                 i.NLIST = list(set(nlist))
-        #             if operation == "a":
-        #                 i.ELIST = list(set(i.ELIST + elist))
-        #                 i.NLIST = list(set(i.NLIST + nlist))
-        #     if up == 0: print(f"⚠️  Boundary group {name} is not defined!")
         
         @classmethod
-        def json(cls):
+        def json(cls) -> dict:
             "Generates the json file for all defined structure groups."
             json = {"Assign":{}}
             for i in cls.Groups:
@@ -210,7 +209,7 @@ class Group:
             MidasAPI("PUT",cls.url,cls.json())
             
         @classmethod
-        def get(cls):
+        def get(cls) -> dict:
             return MidasAPI("GET",cls.url)
         
 
@@ -247,24 +246,9 @@ class Group:
             Group.Load.ids.append(self.ID)
             Group.Load.Groups.append(self)
     
-        # @classmethod
-        # def update(cls, name,operation = "r", nlist = [],elist = [] ):
-        #     """Group name, element list, node list, operation ("add" or "replace").\n
-        #     Sample:  update_SG("Girder", [1,2,...20],[],"replace")"""
-        #     up = 0
-        #     for i in cls.Groups:
-        #         if name == i.NAME:
-        #             up = 1
-        #             if operation == "r":
-        #                 i.ELIST = list(set(elist))
-        #                 i.NLIST = list(set(nlist))
-        #             if operation == "a":
-        #                 i.ELIST = list(set(i.ELIST + elist))
-        #                 i.NLIST = list(set(i.NLIST + nlist))
-        #     if up == 0: print(f"⚠️  Boundary group {name} is not defined!")
         
         @classmethod
-        def json(cls):
+        def json(cls) -> dict:
             "Generates the json file for all defined structure groups."
             json = {"Assign":{}}
             for i in cls.Groups:
@@ -278,7 +262,7 @@ class Group:
             MidasAPI("PUT",cls.url,cls.json())
             
         @classmethod
-        def get(cls):
+        def get(cls) -> dict:
             return MidasAPI("GET",cls.url)
         
         @classmethod
@@ -312,25 +296,10 @@ class Group:
             else: self.ID= max(Group.Tendon.ids)+1
             Group.Tendon.ids.append(self.ID)
             Group.Tendon.Groups.append(self)
-    
-        # @classmethod
-        # def update(cls, name,operation = "r", nlist = [],elist = [] ):
-        #     """Group name, element list, node list, operation ("add" or "replace").\n
-        #     Sample:  update_SG("Girder", [1,2,...20],[],"replace")"""
-        #     up = 0
-        #     for i in cls.Groups:
-        #         if name == i.NAME:
-        #             up = 1
-        #             if operation == "r":
-        #                 i.ELIST = list(set(elist))
-        #                 i.NLIST = list(set(nlist))
-        #             if operation == "a":
-        #                 i.ELIST = list(set(i.ELIST + elist))
-        #                 i.NLIST = list(set(i.NLIST + nlist))
-        #     if up == 0: print(f"⚠️  Boundary group {name} is not defined!")
+
         
         @classmethod
-        def json(cls):
+        def json(cls) -> dict:
             "Generates the json file for all defined structure groups."
             json = {"Assign":{}}
             for i in cls.Groups:
@@ -344,7 +313,7 @@ class Group:
             MidasAPI("PUT",cls.url,cls.json())
             
         @classmethod
-        def get(cls):
+        def get(cls) -> dict:
             return MidasAPI("GET",cls.url)
         
         @classmethod
