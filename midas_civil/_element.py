@@ -2,9 +2,85 @@ from ._mapi import *
 from ._node import *
 from ._group import _add_elem_2_stGroup
 from ._group import _add_node_2_stGroup
-
 import numpy as np
+from scipy.interpolate import splev, splprep
+from math import hypot
 
+
+def _interpolateAlignment(pointsArray,n_seg=10,deg=1,mSize=0,includePoint:bool=True) -> list:
+    ''' Returns point list and beta angle list'''
+    pointsArray = np.array(pointsArray)
+    x_p, y_p , z_p  = pointsArray[:,0] , pointsArray[:,1] , pointsArray[:,2]
+
+    if deg < 1 :
+        deg = 1
+    if deg > len(pointsArray)-1:
+        deg = len(pointsArray)-1
+
+    #-- Actual length ----
+    dxq = np.diff(x_p)
+    dyq = np.diff(y_p)
+    dzq = np.diff(z_p)
+    dlq=[0]
+
+    for i in range(len(dxq)):
+        dlq.append(hypot(dxq[i],dyq[i],dzq[i]))
+
+    tck, u = splprep([x_p, y_p, z_p], s=0, k=deg)
+
+    u_fine = np.linspace(0, 1, 500)
+    x_den, y_den, z_den = splev(u_fine, tck)
+
+    dx = np.diff(x_den)
+    dy = np.diff(y_den)
+    dz = np.diff(z_den)
+    dl=[]
+    for i in range(len(dx)):
+        dl.append(hypot(dx[i],dy[i],dz[i]))
+
+    cum_l = np.insert(np.cumsum(dl),0,0)
+    total_l = cum_l[-1]
+
+
+    if n_seg==0 or mSize!=0:
+        n_seg=int(total_l/mSize)
+
+
+    eq_len = np.linspace(0,total_l,n_seg+1)
+
+    interp_u = np.interp(eq_len,cum_l,u_fine)
+
+    if includePoint:
+        interp_u = np.sort(np.append(interp_u,u[1:-1])).tolist()
+
+        eq_u = 1/n_seg # for filtering close points
+    
+        new_u = []
+        skip=0
+        for i in range(len(interp_u)-1):
+            if skip == 1:
+                skip = 0 
+                continue
+            if interp_u[i+1]-interp_u[i] < 0.2*eq_u:
+                if interp_u[i] in u:
+                    new_u.append(interp_u[i])
+                    skip=1
+                else:
+                    new_u.append(interp_u[i+1])
+                    skip=1
+            else:
+                new_u.append(interp_u[i])
+        new_u.append(interp_u[-1])
+    else:
+        new_u = interp_u
+
+
+    interp_x, interp_y , interp_z = splev(new_u, tck)
+
+
+    align_fine_points  = [ [round(x,6), round(y,6), round(z,6)] for x, y, z in zip(interp_x, interp_y , interp_z) ]
+
+    return align_fine_points
 
 
 
@@ -268,6 +344,26 @@ class Element:
                     beam_nodes.append(Enode.ID)
                 
                 for i in range(n):
+                    if id == 0 : id_new = 0
+                    else: id_new = id+i
+                    beam_obj.append(Element.Beam(beam_nodes[i],beam_nodes[i+1],mat,sect,angle,group,id_new))
+                
+                return beam_obj
+        
+        @staticmethod
+        def PLine(points_loc:list,n_div:int=0,deg:int=1,includePoint:bool=True,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0):
+
+                beam_nodes =[]
+                beam_obj = []
+                if n_div == 0 :
+                    i_loc = points_loc
+                else:
+                    i_loc = _interpolateAlignment(points_loc,n_div,deg,0,includePoint)
+                for i in i_loc:
+                    Enode=Node(i[0],i[1],i[2])
+                    beam_nodes.append(Enode.ID)
+                
+                for i in range(len(i_loc)-1):
                     if id == 0 : id_new = 0
                     else: id_new = id+i
                     beam_obj.append(Element.Beam(beam_nodes[i],beam_nodes[i+1],mat,sect,angle,group,id_new))

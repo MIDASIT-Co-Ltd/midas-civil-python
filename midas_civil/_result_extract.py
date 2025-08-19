@@ -3,6 +3,9 @@ import json
 import xlsxwriter
 from ._mapi import *
 from ._model import *
+
+from ._mapi import _getUNIT
+from ._mapi import _setUNIT
 # js_file = open('JSON_Excel Parsing\\test.json','r')
 
 # print(js_file)
@@ -136,8 +139,10 @@ class Result :
                 }
             }
         }
+        currUNIT = _getUNIT()
         Model.units(force=force_unit,length=len_unit)
         ss_json = MidasAPI("POST","/post/TABLE",js_dat)
+        _setUNIT(currUNIT)
         return _JSToDF_UserDefined(tableName,ss_json,summary)
     
     # ---------- LIST ALL USER DEFINED TABLE ------------------------------
@@ -194,8 +199,9 @@ class Result :
 
         if loadcase!=[]: js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
 
-
+        currUNIT = _getUNIT()
         Model.units(force=force_unit,length=len_unit)
         ss_json = MidasAPI("POST","/post/table",js_dat)
+        _setUNIT(currUNIT)
         return _JSToDF_ResTable(ss_json)
 

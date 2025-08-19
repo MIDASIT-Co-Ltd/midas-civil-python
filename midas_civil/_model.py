@@ -19,10 +19,19 @@ class Model:
     @staticmethod
     def analyse():
         """Checkes whether a model is analyzed or not and then performs analysis if required."""
-        r = (MidasAPI("POST","/post/TABLE",{"Argument": {"TABLE_NAME": "Reaction(Global)","TABLE_TYPE": "REACTIONG",}}))
-        if 'error' in r.keys():
-            MidasAPI("POST","/doc/SAVE",{"Argument":{}})
-            MidasAPI("POST","/doc/ANAL",{"Assign":{}})
+        json_body = {
+        "Argument": {
+            "HEIGHT" : 1,
+            "WIDTH" : 1,
+            "SET_MODE": "post"
+        }
+        }
+        resp = MidasAPI('POST','/view/CAPTURE',json_body)
+
+        if 'message' in resp or 'error' in resp:
+                MidasAPI("POST","/doc/ANAL",{"Assign":{}})
+                return True
+        print(" ⚠️   Model ananlysed. Switching to post-processing mode.")
 
     #9 Function to remove duplicate nodes and elements from Node & Element classes\
     @staticmethod

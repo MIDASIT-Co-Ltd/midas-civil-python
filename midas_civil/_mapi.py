@@ -130,3 +130,15 @@ def MidasAPI(method:str, command:str, body:dict={})->dict:
     return response.json()
 
 
+#--------------------------------------------------------------------
+
+def _getUNIT():
+    return MidasAPI('GET','/db/UNIT',{})['UNIT']['1']
+
+def _setUNIT(unitJS):
+    js = {
+        "Assign" : {
+            "1" : unitJS
+        }
+    }
+    MidasAPI('PUT','/db/UNIT',js)
