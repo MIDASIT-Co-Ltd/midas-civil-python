@@ -26,6 +26,6 @@ from ._settlement import*
 
 
 print('')
-print('*'*20,'  MIDAS CIVIL-NX PYTHON LIBRARY  🐍 ','*'*20)
+print('*'*20,'  MIDAS CIVIL-NX PYTHON LIBRARY v1.0.2 🐍 ','*'*20)
 print('')
 
