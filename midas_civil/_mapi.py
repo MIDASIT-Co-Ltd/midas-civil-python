@@ -3,6 +3,8 @@ import sys
 import winreg
 
 
+
+
 def Midas_help():
     """MIDAS Documnetation : https://midas-rnd.github.io/midasapi-python """
     print("---"*22)
@@ -69,6 +71,7 @@ class MAPI_BASEURL:
 class MAPI_KEY:
     """MAPI key from Civil NX.\n\nEg: MAPI_Key("eadsfjaks568wqehhf.ajkgj345qfhh")"""
     data = ""
+    count = 1
     
     def __init__(self, mapi_key:str):
         MAPI_KEY.data = mapi_key
@@ -128,6 +131,11 @@ def MidasAPI(method:str, command:str, body:dict={})->dict:
         sys.exit(0)
 
     # print(method, command, response.status_code , "✅")
+    if MAPI_KEY.count == 1:
+        MAPI_KEY.count = 0
+        _checkUSER()
+    
+
 
     return response.json()
 
@@ -146,8 +154,11 @@ def _setUNIT(unitJS):
     MidasAPI('PUT','/db/UNIT',js)
 
 
-
-resp =  MidasAPI('GET','/config/ver',{})['VER']
-print(f"Connected to {resp["NAME"]}   🟢")
-print(f"USER : {resp["USER"]}    |   COMPANY : {resp["COMPANY"]}")
-print("-"*85)
+def _checkUSER():
+    try:
+        resp =  MidasAPI('GET','/config/ver',{})['VER']
+        print(f"Connected to {resp["NAME"]}   🟢")
+        print(f"USER : {resp["USER"]}    |   COMPANY : {resp["COMPANY"]}")
+        print("-"*85)
+    except:
+        print("")

@@ -1,5 +1,5 @@
 import requests
-_version_ = "1.0.3"
+_version_ = "1.0.4"
 
 
 print('')
