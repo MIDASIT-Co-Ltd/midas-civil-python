@@ -15,7 +15,7 @@ class MAPI_COUNTRY:
     
     country = "US"
 
-    def __init__(self,country:str):
+    def __init__(self,country:str="US"):
         ''' Define Civil NX country to automatically set Base URL and MAPI Key from registry.
         ```
         MAPI_COUNTRY('US') # For english version
@@ -35,7 +35,7 @@ class MAPI_COUNTRY:
 class MAPI_BASEURL:
     baseURL = "https://moa-engineers.midasit.com:443/civil"
     
-    def __init__(self, baseURL:str):
+    def __init__(self, baseURL:str = "https://moa-engineers.midasit.com:443/civil"):
         ''' Define the Base URL for API connection.
         ```
         MAPI_BASEURL('https://moa-engineers.midasit.com:443/civil')
@@ -81,13 +81,15 @@ class MAPI_KEY:
                 registry_key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_READ)
                 value = winreg.QueryValueEx(registry_key, "Key")
                 my_key = value[0]
-                print(f' 🔑   MAPI-KEY is taken from Registry entry.  >>  {my_key[:35]}...')
                 MAPI_KEY(my_key)
+                print(f' 🔑   MAPI-KEY is taken from Registry entry.  >>  {my_key[:35]}...')
+                print("-"*85)
             except:
                 print(f"🔑   MAPI KEY is not defined. Click on Apps > API Settings to copy the MAPI Key.\n Define it using MAPI_KEY('xxxx')")
                 sys.exit(0)
         else:
             my_key = MAPI_KEY.data
+        
         return my_key
 #---------------------------------------------------------------------------------------------------------------
 
@@ -142,3 +144,10 @@ def _setUNIT(unitJS):
         }
     }
     MidasAPI('PUT','/db/UNIT',js)
+
+
+
+resp =  MidasAPI('GET','/config/ver',{})['VER']
+print(f"Connected to {resp["NAME"]}   🟢")
+print(f"USER : {resp["USER"]}    |   COMPANY : {resp["COMPANY"]}")
+print("-"*85)

@@ -1,3 +1,21 @@
+import requests
+_version_ = "1.0.3"
+
+
+print('')
+print('*'*20,'  MIDAS CIVIL-NX PYTHON LIBRARY v',_version_,' 🐍 ','*'*20)
+print('')
+
+resp =  requests.get("https://pypi.org/pypi/midas_civil/json").json()
+latest_ver =  resp["info"]["version"]
+if _version_ != latest_ver:
+    print(
+            f"⚠️  Warning: You are using v{_version_}, "
+            f"but the latest available version is v{latest_ver}.\n"
+            f" Run 'pip install midas_civil --upgrade' to update."
+        )
+    print("-"*85)
+
 from ._mapi import *
 from ._model import *
 from ._boundary import *
@@ -22,10 +40,4 @@ from ._view import *
 
 from ._movingload import*
 from ._settlement import*
-
-
-
-print('')
-print('*'*20,'  MIDAS CIVIL-NX PYTHON LIBRARY v1.0.2 🐍 ','*'*20)
-print('')
 
