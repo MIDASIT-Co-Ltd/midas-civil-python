@@ -7,8 +7,8 @@ from ._utils import sFlatten
 # ----------- HELPER FUNCTION -----------
     # --------   RETRIEVE NODE / ELEMENT FROM STRUCTURE GROUP -------
 
-def nodesInGroup(groupName:str|list,unique:bool=True) -> list:
-    ''' Returns Node ID list in a Structure Group '''
+def nodesInGroup(groupName:str,unique:bool=True) -> list:
+    ''' Returns Node ID list in a Structure Group or list of Structure groups'''
     groupNames = _convItem2List(groupName)
     nlist = []
     for gName in groupNames:
@@ -24,7 +24,7 @@ def nodesInGroup(groupName:str|list,unique:bool=True) -> list:
     return sFlatten(nlist)
 
 
-def elemsInGroup(groupName:str|list,unique:bool=True) -> list:
+def elemsInGroup(groupName:str,unique:bool=True) -> list:
     ''' Returns Element ID list in a Structure Group '''
     groupNames = _convItem2List(groupName)
     elist = []

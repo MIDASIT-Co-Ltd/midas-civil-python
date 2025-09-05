@@ -5,6 +5,7 @@ from ._group import _add_node_2_stGroup
 import numpy as np
 from scipy.interpolate import splev, splprep
 from math import hypot
+import math
 
 
 def _interpolateAlignment(pointsArray,n_seg=10,deg=1,mSize=0,includePoint:bool=True) -> list:
@@ -83,8 +84,30 @@ def _interpolateAlignment(pointsArray,n_seg=10,deg=1,mSize=0,includePoint:bool=T
     return align_fine_points
 
 
+def _nodeDIST(a:Node,b:Node):
+    return round(hypot((a.X-b.X),(a.Y-b.Y),(a.Z-b.Z)),6)
+
+def _nodeAngleVector(b:Node,a:Node):
+
+    Z_new = np.array([0.000001,0,1])
+    X_new = np.array([(a.X-b.X),(a.Y-b.Y),(a.Z-b.Z)])
+    Y_new = np.cross(Z_new, X_new)
+
+    Z_new = np.cross(X_new, Y_new) # Recomputing
+
+    X_new = X_new / (np.linalg.norm(X_new)+0.000001)
+    Y_new = Y_new / (np.linalg.norm(Y_new)+0.000001)
+    Z_new = Z_new / (np.linalg.norm(Z_new)+0.000001)
 
 
+    return [X_new,Y_new,Z_new]
+
+
+def _triangleAREA(a:Node,b:Node,c:Node):
+    v1 = np.array([a.X-b.X,a.Y-b.Y,a.Z-b.Z])
+    v2 = np.array([b.X-c.X,b.Y-c.Y,b.Z-c.Z])
+    mag = np.linalg.norm(np.cross(v1, v2))
+    return float(0.5 * mag) , np.cross(v1, v2)/mag
 
 def _ADD(self):
     """
@@ -112,6 +135,7 @@ def _ADD(self):
         self.ID = id
         Element.elements.append(self)
         Element.ids.append(int(self.ID))
+    Element.__elemDIC__[str(self.ID)] = self
     
     # ------------  Group assignment -----------------------
     if self._GROUP == "" :
@@ -232,6 +256,7 @@ class Element:
     """
     elements = []
     ids = []
+    __elemDIC__ = {}
 
     @classmethod
     def json(cls):
@@ -256,6 +281,7 @@ class Element:
         if a and 'ELEM' in a and a['ELEM']:
             Element.elements = []
             Element.ids = []
+            Element.__elemDIC__={}
             for elem_id, data in a['ELEM'].items():
                 _JS2Obj(elem_id, data)
 
@@ -264,12 +290,13 @@ class Element:
         MidasAPI("DELETE", "/db/ELEM")
         Element.elements = []
         Element.ids = []
+        Element.__elemDIC__={}
 
     # --- Element Type Subclasses ---
 
     class Beam(_common):
 
-        def __init__(self, i: int, j: int, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = 0):
+        def __init__(self, i: int, j: int, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = 0,bLocalAxis=False):
             """
             Creates a BEAM element for frame analysis.
             
@@ -304,10 +331,26 @@ class Element:
             self.NODE = [i, j]
             self.ANGLE = angle
             self._GROUP = group
+
+            _n1 = nodeByID(i)
+            _n2 = nodeByID(j)
+            self.LENGTH = _nodeDIST(_n1,_n2)
+
+            if bLocalAxis:
+                _tempAngle = _nodeAngleVector(_n1,_n2)
+                _n1.AXIS = np.add(_n1.AXIS,_tempAngle)
+                _n2.AXIS = np.add(_n2.AXIS,_tempAngle)
+
+                _norm1 = np.linalg.norm(_n1.AXIS ,axis=1,keepdims=True)
+                _n1.AXIS = _n1.AXIS /_norm1
+
+                _norm2 = np.linalg.norm(_n2.AXIS ,axis=1,keepdims=True)
+                _n2.AXIS = _n2.AXIS /_norm2
+
             _ADD(self)
 
         @staticmethod
-        def SDL(s_loc:list|Node,dir:list,l:float,n:int=1,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0): #CHANGE TO TUPLE
+        def SDL(s_loc:list,dir:list,l:float,n:int=1,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0,bLocalAxis=False): #CHANGE TO TUPLE
                 if isinstance(s_loc,Node):
                     s_loc = (s_loc.X,s_loc.Y,s_loc.Z)
 
@@ -324,17 +367,17 @@ class Element:
                 for i in range(n):
                     if id == 0 : id_new = 0
                     else: id_new = id+i
-                    beam_obj.append(Element.Beam(beam_nodes[i],beam_nodes[i+1],mat,sect,angle,group,id_new))
+                    beam_obj.append(Element.Beam(beam_nodes[i],beam_nodes[i+1],mat,sect,angle,group,id_new,bLocalAxis))
                 
                 return beam_obj
                     
 
         @staticmethod
-        def SE(s_loc:list|Node,e_loc:list|Node,n:int=1,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0):
+        def SE(s_loc:list,e_loc:list,n:int=1,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0,bLocalAxis=False):
                 if isinstance(s_loc,Node):
                     s_loc = (s_loc.X,s_loc.Y,s_loc.Z)
                 if isinstance(e_loc,Node):
-                    s_loc = (e_loc.X,e_loc.Y,e_loc.Z)
+                    e_loc = (e_loc.X,e_loc.Y,e_loc.Z)
 
                 beam_nodes =[]
                 beam_obj = []
@@ -346,12 +389,12 @@ class Element:
                 for i in range(n):
                     if id == 0 : id_new = 0
                     else: id_new = id+i
-                    beam_obj.append(Element.Beam(beam_nodes[i],beam_nodes[i+1],mat,sect,angle,group,id_new))
+                    beam_obj.append(Element.Beam(beam_nodes[i],beam_nodes[i+1],mat,sect,angle,group,id_new,bLocalAxis))
                 
                 return beam_obj
         
         @staticmethod
-        def PLine(points_loc:list,n_div:int=0,deg:int=1,includePoint:bool=True,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0):
+        def PLine(points_loc:list,n_div:int=0,deg:int=1,includePoint:bool=True,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0,bLocalAxis=False):
 
                 beam_nodes =[]
                 beam_obj = []
@@ -366,7 +409,7 @@ class Element:
                 for i in range(len(i_loc)-1):
                     if id == 0 : id_new = 0
                     else: id_new = id+i
-                    beam_obj.append(Element.Beam(beam_nodes[i],beam_nodes[i+1],mat,sect,angle,group,id_new))
+                    beam_obj.append(Element.Beam(beam_nodes[i],beam_nodes[i+1],mat,sect,angle,group,id_new,bLocalAxis))
                 
                 return beam_obj
 
@@ -403,10 +446,11 @@ class Element:
             self.NODE = [i, j]
             self.ANGLE = angle
             self._GROUP = group
+            self.LENGTH = _nodeDIST(nodeByID(i),nodeByID(j))
             _ADD(self)
 
         @staticmethod
-        def SDL(s_loc:list|Node,dir:list,l:float,n:int=1,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0):
+        def SDL(s_loc:list,dir:list,l:float,n:int=1,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0):
             if isinstance(s_loc,Node):
                     s_loc = (s_loc.X,s_loc.Y,s_loc.Z)
 
@@ -429,7 +473,7 @@ class Element:
                 
 
         @staticmethod
-        def SE(s_loc:list|Node,e_loc:list|Node,n:int=1,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0):
+        def SE(s_loc:list,e_loc:list,n:int=1,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0):
             
             if isinstance(s_loc,Node):
                 s_loc = (s_loc.X,s_loc.Y,s_loc.Z)
@@ -484,6 +528,17 @@ class Element:
             self.ANGLE = angle
             self.STYPE = stype
             self._GROUP = group
+
+            if len(nodes)==3:
+                self.AREA,self.NORMAL = _triangleAREA(nodeByID(nodes[0]),nodeByID(nodes[1]),nodeByID(nodes[2]))
+            elif len(nodes)==4:
+                a1 , n1 = _triangleAREA(nodeByID(nodes[0]),nodeByID(nodes[1]),nodeByID(nodes[2]))
+                a2 , n2 = _triangleAREA(nodeByID(nodes[2]),nodeByID(nodes[3]),nodeByID(nodes[0]))
+                self.AREA = a1+a2
+                self.NORMAL = (n1+n2)/np.linalg.norm((n1+n2))
+                
+
+
             _ADD(self)
             
     class Tension(_common):
@@ -528,6 +583,7 @@ class Element:
         self.ANGLE = angle
         self.STYPE = stype
         self._GROUP = group
+        self.LENGTH = _nodeDIST(nodeByID(i),nodeByID(j))
         
         # Handle subtype-specific parameters
         if stype == 1:  # Tension-only specific
@@ -588,6 +644,7 @@ class Element:
             self.ANGLE = angle
             self.STYPE = stype
             self._GROUP = group
+            self.LENGTH = _nodeDIST(nodeByID(i),nodeByID(j))
             
             # Handle subtype-specific parameters
             if stype == 1:  # Compression-only specific
@@ -806,12 +863,19 @@ class Element:
 
 # ---- GET ELEMENT OBJECT FROM ID ----------
 
+# def elemByID2(elemID:int) -> Element:
+#     ''' Return Element object with the input ID '''
+#     for elem in Element.elements:
+#         if elem.ID == elemID:
+#             return elem
+        
+#     print(f'There is no element with ID {elemID}')
+#     return None
+
 def elemByID(elemID:int) -> Element:
     ''' Return Element object with the input ID '''
-    for elem in Element.elements:
-        if elem.ID == elemID:
-            return elem
-        
-    print(f'There is no element with ID {elemID}')
-    return None
-
+    try:
+        return (Element.__elemDIC__[str(elemID)])
+    except:
+        print(f'There is no element with ID {elemID}')
+        return None

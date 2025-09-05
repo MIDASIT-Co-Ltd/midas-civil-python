@@ -4,13 +4,11 @@ from ._utils import *
 from math import hypot
 from ._group import _add_node_2_stGroup
 
-
-
 def dist_tol(a,b):
     return hypot((a.X-b.X),(a.Y-b.Y),(a.Z-b.Z)) < 0.00001  #TOLERANCE BUILT IN (UNIT INDEP)
 
 def cell(point,size=1): #SIZE OF GRID
-    return (int(point.X//size),int(point.Y//size),int(point.Z//size))
+    return str(f"{int(point.X//size)},{int(point.Y//size)},{int(point.Z//size)}")
 
 
 # -------- FUNCTIONS ARE DEFINED BELOW TO RECOGNISE NODE CLASS ----------------
@@ -20,9 +18,10 @@ def cell(point,size=1): #SIZE OF GRID
 #5 Class to create nodes
 class Node:
     """X ordinate, Y ordinate, Z ordinate, Node ID (optional). \nSample: Node(1,0,5)"""
-    nodes = []
-    ids = []
-    Grid ={}
+    nodes = [] # Node object stores in a list
+    ids = []    # Node IDs used for auto increment of ID and replacement of nodes
+    Grid ={}    # Node object in cube grid
+    __nodeDic__ = {} # Stores
     def __init__(self,x,y,z,id=0,group='',merge=1):
         ''' Create Node object
 
@@ -61,6 +60,7 @@ class Node:
 
         #REPLACE - No merge check
         if id in Node.ids:
+
             index=Node.ids.index(id)
             n_orig = Node.nodes[index]
             loc_orig = str(cell(n_orig))
@@ -70,38 +70,51 @@ class Node:
             
             zz_add_to_dict(Node.Grid,loc_new,self)
             Node.nodes[index]=self
+            Node.__nodeDic__[str(id)] = self
 
 
         #CREATE NEW - Merge Check based on input
         else:
+            self.AXIS = [[0,0,0],[0,0,0],[0,0,0]]
             cell_loc = str(cell(self))      
 
             if cell_loc in Node.Grid:
+
                 if merge == 1:
                     chk=0   #OPTIONAL
                     for node in Node.Grid[cell_loc]:
                         if dist_tol(self,node):
+  
                             chk=1
                             self.ID=node.ID
+                            self.AXIS = node.AXIS
                     if chk==0:
+
+                        self.AXIS = [[0,0,0],[0,0,0],[0,0,0]]
                         Node.nodes.append(self)
                         Node.ids.append(self.ID)
                         Node.Grid[cell_loc].append(self)
+                        
+
                 else:
+
                     Node.nodes.append(self)
                     Node.ids.append(self.ID)
                     Node.Grid[cell_loc].append(self)
             else:
+
                 Node.Grid[cell_loc]=[]
                 Node.nodes.append(self)
                 Node.ids.append(self.ID)
                 Node.Grid[cell_loc].append(self)
+            Node.__nodeDic__[str(self.ID)] = self
             
         if group !="":
             _add_node_2_stGroup(self.ID,group)
 
         
-
+    def __str__(self):
+        return f"NODE ID : {self.ID} | X:{self.X} , Y:{self.Y} , Z:{self.Z} \n {self.__dict__}"
 
     @classmethod
     def json(cls):
@@ -123,32 +136,13 @@ class Node:
         Node.nodes=[]
         Node.ids=[]
         Node.Grid={}
+        Node.__nodeDic__ = {}
         a = Node.get()
         if a != {'message': ''}:
             if list(a['NODE'].keys()) != []:
                 for j in a['NODE'].keys():
                     Node(round(a['NODE'][j]['X'],6), round(a['NODE'][j]['Y'],6), round(a['NODE'][j]['Z'],6), id=int(j), group='', merge=0)
 
-    @staticmethod
-    def delete2(nodes_list):
-        if type(nodes_list)!=list:
-            nodes_list = [nodes_list]
-        url_add = arr2csv(nodes_list)
-
-        MidasAPI("DELETE",f"/db/NODE/{url_add}")
-
-
-    @staticmethod
-    def delete3(*args):
-        try:
-            args2=sFlatten(args)
-            url_add = arr2csv(args2)
-            MidasAPI("DELETE",f"/db/NODE/{url_add}") 
-        except:
-            MidasAPI("DELETE",f"/db/NODE/")
-            Node.nodes=[]
-            Node.ids=[]
-            Node.Grid={}
 
     @staticmethod
     def delete():
@@ -156,6 +150,7 @@ class Node:
         Node.nodes=[]
         Node.ids=[]
         Node.Grid={}
+        Node.__nodeDic__ = {}
 
 
 
@@ -166,18 +161,132 @@ class Node:
 
 # ---- GET NODE OBJECT FROM ID ----------
 
+# def nodeByID(nodeID:int) -> Node:
+#     ''' Return Node object with the input ID '''
+#     for node in Node.nodes:
+#         if node.ID == nodeID:
+#             return node
+        
+#     print(f'There is no node with ID {nodeID}')
+#     return None
+
+
+
 def nodeByID(nodeID:int) -> Node:
     ''' Return Node object with the input ID '''
-    for node in Node.nodes:
-        if node.ID == nodeID:
-            return node
+    try:
+        return (Node.__nodeDic__[str(nodeID)])
+    except:
+        print(f'There is no node with ID {nodeID}')
+        return None
+
+
+
+
+
+class NodeLocalAxis:
+    skew = []
+    ids = [] 
+
+    def __init__(self,nodeID,type,angle):
+        '''
+        nodeID(int) : ID of the node
+        axis (str) : Axis of rotation, 'X' , 'Y' , 'Z' , 'XYZ' or 'Vector'
+        angle (float) : Angle of rotation if axis = 'X' , 'Y' or 'Z'  ;
+        angle (list : float) = [30,0,0] if type = 'XYZ'
+        angle (list : vector) -> node.AXIS = [[1,0,0],[0,1,0]] if type = 'Vector'
+        '''
+
+        self.ID = nodeID
+
+        if nodeID in NodeLocalAxis.ids:
+            index = NodeLocalAxis.ids.index(nodeID)
+            intial_angle = NodeLocalAxis.skew[index].ANGLE
+            if intial_angle == [[0,0,0],[0,0,0],[0,0,0]]:
+                intial_angle = [[1,0,0],[0,1,0],[0,0,1]]
+
+            if type == 'Vector':
+                self.TYPE = 'VEC'
+                self.VEC = angle
+            elif type == 'X':
+                self.TYPE = 'ANGLE'
+                self.ANGLE = [angle,intial_angle[1],intial_angle[2]]
+            elif type == 'Y':
+                self.TYPE = 'ANGLE'
+                self.ANGLE = [intial_angle[0],angle,intial_angle[2]]
+            elif type == 'Z':
+                self.TYPE = 'ANGLE'
+                self.ANGLE = [intial_angle[0],intial_angle[1],angle]
+            elif type == 'XYZ':
+                self.TYPE = 'ANGLE'
+                self.ANGLE = angle
+            NodeLocalAxis.skew[index] = self
+        else:
+            if type == 'Vector':
+                self.TYPE = 'VEC'
+                self.VEC = angle
+                self.ANGLE = [0,0,0]
+            elif type == 'X':
+                self.TYPE = 'ANGLE'
+                self.ANGLE = [angle,0,0]
+            elif type == 'Y':
+                self.TYPE = 'ANGLE'
+                self.ANGLE = [0,angle,0]
+            elif type == 'Z':
+                self.TYPE = 'ANGLE'
+                self.ANGLE = [0,0,angle]
+            elif type == 'XYZ':
+                self.TYPE = 'ANGLE'
+                self.ANGLE = angle
         
-    print(f'There is no node with ID {nodeID}')
-    return None
+            NodeLocalAxis.skew.append(self)
+            NodeLocalAxis.ids.append(self.ID)
 
+    @classmethod
+    def json(cls):
+        json = {"Assign":{}}
+        for i in cls.skew:
+            if i.TYPE == 'ANGLE':
+                json["Assign"][i.ID]={
+                                    "iMETHOD": 1,
+                                    "ANGLE_X": i.ANGLE[0],
+                                    "ANGLE_Y": i.ANGLE[1],
+                                    "ANGLE_Z": i.ANGLE[2]
+                                }
+            elif i.TYPE == 'VEC':
+                json["Assign"][i.ID]={
+                                    "iMETHOD": 3,
+                                    "V1X": i.VEC[0][0],
+                                    "V1Y": i.VEC[0][1],
+                                    "V1Z": i.VEC[0][2],
+                                    "V2X": i.VEC[1][0],
+                                    "V2Y": i.VEC[1][1],
+                                    "V2Z": i.VEC[1][2]
+                                }
+        return json
+    
+    @staticmethod
+    def create():
+        MidasAPI("PUT","/db/SKEW",NodeLocalAxis.json())
 
+    @staticmethod
+    def delete():
+        MidasAPI("DELETE","/db/SKEW/")
+        NodeLocalAxis.skew=[]
+        NodeLocalAxis.ids=[]
 
+    @staticmethod
+    def get():
+        return MidasAPI("GET","/db/SKEW")
+    
+    # @staticmethod
+    # def sync():
+    #     NodeLocalAxis.skew=[]
+    #     NodeLocalAxis.ids=[]
+    #     a = NodeLocalAxis.get()
+    #     if a != {'message': ''}:
+    #         if list(a['NODE'].keys()) != []:
 
+    #             for j in a['NODE'].keys():
 
-
-
+    #                 Node(round(a['NODE'][j]['X'],6), round(a['NODE'][j]['Y'],6), round(a['NODE'][j]['Z'],6), id=int(j), group='', merge=0)

@@ -247,6 +247,7 @@ class Model:
         if Thickness.thick!=[]: Thickness.create()
         if Node.nodes!=[]: Node.create()
         if Element.elements!=[] : Element.create()
+        if NodeLocalAxis.skew!=[] : NodeLocalAxis.create()
         Group.create()
         Boundary.create()
         Load.create()

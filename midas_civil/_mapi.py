@@ -13,6 +13,13 @@ def Midas_help():
 
 
 
+
+class NX:
+    version_check = True
+    user_print = True
+    debug_print = False
+    
+
 class MAPI_COUNTRY:
     
     country = "US"
@@ -98,7 +105,7 @@ class MAPI_KEY:
 
 #2 midas API link code:
 def MidasAPI(method:str, command:str, body:dict={})->dict:
-    f"""Sends HTTP Request to MIDAS Civil NX
+    """Sends HTTP Request to MIDAS Civil NX
             Parameters:
                 Method: "PUT" , "POST" , "GET" or "DELETE"
                 Command: eg. "/db/NODE"
@@ -130,10 +137,13 @@ def MidasAPI(method:str, command:str, body:dict={})->dict:
         print(f"⚠️  Civil NX model is not connected.  Click on 'Apps> Connect' in Civil NX. \nMake sure the MAPI Key in python code is matching with the MAPI key in Civil NX.\n\n")
         sys.exit(0)
 
-    # print(method, command, response.status_code , "✅")
+    if NX.debug_print:
+        print(method, command, response.status_code , "✅")
+
     if MAPI_KEY.count == 1:
-        MAPI_KEY.count = 0
-        _checkUSER()
+        if NX.user_print:
+            MAPI_KEY.count = 0
+            _checkUSER()
     
 
 
@@ -157,8 +167,8 @@ def _setUNIT(unitJS):
 def _checkUSER():
     try:
         resp =  MidasAPI('GET','/config/ver',{})['VER']
-        print(f"Connected to {resp["NAME"]}   🟢")
-        print(f"USER : {resp["USER"]}    |   COMPANY : {resp["COMPANY"]}")
+        print(f"Connected to {resp['NAME']}   🟢")
+        print(f"USER : {resp['USER']}    |   COMPANY : {resp['COMPANY']}")
         print("-"*85)
     except:
         print("")
