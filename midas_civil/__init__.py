@@ -1,6 +1,6 @@
 import requests
 from ._mapi import *
-_version_ = "1.0.5"
+_version_ = "1.0.6"
 
 
 print('')
