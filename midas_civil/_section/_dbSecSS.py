@@ -1,7 +1,7 @@
 from ._offsetSS import Offset
 from ._offsetSS import _common
 
-class SS_DBUSER(_common):
+class _SS_DBUSER(_common):
 
     """ Create Standard USER DEFINED sections"""
 
@@ -40,4 +40,4 @@ class SS_DBUSER(_common):
     
     @staticmethod
     def _objectify(id,name,type,shape,offset,uShear,u7DOF,js):
-        return SS_DBUSER(name,shape,js['SECT_BEFORE']['SECT_I']['vSIZE'],offset,uShear,u7DOF,id)
+        return _SS_DBUSER(name,shape,js['SECT_BEFORE']['SECT_I']['vSIZE'],offset,uShear,u7DOF,id)

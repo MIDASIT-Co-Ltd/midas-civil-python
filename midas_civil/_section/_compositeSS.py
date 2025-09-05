@@ -1,7 +1,7 @@
 from ._offsetSS import Offset
 from ._offsetSS import _common
 
-class SS_COMP_PSC_I(_common):
+class _SS_COMP_PSC_I(_common):
 
     """ Create Standard USER DEFINED sections"""
 
@@ -178,7 +178,7 @@ class SS_COMP_PSC_I(_common):
         except: e2 = 0
 
 
-        return SS_COMP_PSC_I(name,False,joint,
+        return _SS_COMP_PSC_I(name,False,joint,
                             slab[0],slab[1],slab[2],
                             vA[0],
                             vA[1],vA[2],vA[3],vA[4],vA[5],vA[6],vA[7],vA[8],vA[9],
@@ -190,7 +190,7 @@ class SS_COMP_PSC_I(_common):
                             offset,uShear,u7DOF,id)
     
 
-class SS_COMP_STEEL_I_TYPE1(_common):
+class _SS_COMP_STEEL_I_TYPE1(_common):
 
     """ Create Standard USER DEFINED sections"""
 
@@ -275,7 +275,7 @@ class SS_COMP_STEEL_I_TYPE1(_common):
         except: e2 = 0
 
 
-        return SS_COMP_STEEL_I_TYPE1(name,
+        return _SS_COMP_STEEL_I_TYPE1(name,
                             slab[0],slab[1],slab[2],
                             vS[0],vS[2],vS[3],vS[1],vS[4],vS[5],
                             secti['MATL_ELAST'],secti['MATL_DENS'],secti['MATL_POIS_S'],secti['MATL_POIS_C'],secti['MATL_THERMAL'],

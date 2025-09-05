@@ -1,7 +1,7 @@
 from ._offsetSS import _common
 
 
-class SS_UNSUPP(_common):
+class _SS_UNSUPP(_common):
 
     """ Store Unsupported section"""
 
@@ -29,7 +29,7 @@ class SS_UNSUPP(_common):
         js['SECT_BEFORE']['USE_WARPING_EFFECT'] = sect.USE7DOF
         return js
     
-class SS_STD_DB(_common):
+class _SS_STD_DB(_common):
 
     """ Store Unsupported section"""
 

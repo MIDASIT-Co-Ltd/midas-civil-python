@@ -3,7 +3,7 @@ from ._offsetSS import _common
 
 
 
-class SS_PSC_12CELL(_common):
+class _SS_PSC_12CELL(_common):
     def __init__(self,Name='',Shape='1CEL',Joint=[0,0,0,0,0,0,0,0],
                     HO1=0,HO2=0,HO21=0,HO22=0,HO3=0,HO31=0,
                     BO1=0,BO11=0,BO12=0,BO2=0,BO21=0,BO3=0,
@@ -107,7 +107,7 @@ class SS_PSC_12CELL(_common):
         vC = js['SECT_BEFORE']['SECT_I']['vSIZE_PSC_C']
         vD = js['SECT_BEFORE']['SECT_I']['vSIZE_PSC_D']
         joint = js['SECT_BEFORE']['JOINT']
-        return SS_PSC_12CELL(name,shape,joint,
+        return _SS_PSC_12CELL(name,shape,joint,
                             vA[0],vA[1],vA[2],vA[3],vA[4],vA[5],
                             vB[0],vB[1],vB[2],vB[3],vB[4],vB[5],
                             vC[0],vC[1],vC[2],vC[3],vC[4],vC[5],vC[6],vC[7],vC[8],vC[9],
@@ -122,7 +122,7 @@ class SS_PSC_12CELL(_common):
 
 
 
-class SS_PSC_I(_common):
+class _SS_PSC_I(_common):
     def __init__(self,Name='',Symm = True,Joint=[0,0,0,0,0,0,0,0,0],
                             H1=0,
                             HL1=0,HL2=0,HL21=0,HL22=0,HL3=0,HL4=0,HL41=0,HL42=0,HL5=0,
@@ -261,7 +261,7 @@ class SS_PSC_I(_common):
         vC = js['SECT_BEFORE']['SECT_I']['vSIZE_PSC_C']
         vD = js['SECT_BEFORE']['SECT_I']['vSIZE_PSC_D']
         joint = js['SECT_BEFORE']['JOINT']
-        return SS_PSC_I(name,symm,joint,
+        return _SS_PSC_I(name,symm,joint,
                             vA[0],
                             vA[1],vA[2],vA[3],vA[4],vA[5],vA[6],vA[7],vA[8],vA[9],
                             vB[0],vB[1],vB[2],vB[3],vB[4],vB[5],vB[6],
@@ -300,7 +300,7 @@ def _poly_dir(poly,rot='CCW'):
 
 
 
-class SS_PSC_Value(_common):
+class _SS_PSC_Value(_common):
     def __init__(self,Name:str,
                     OuterPolygon:list,InnerPolygon:list=[],
                     Offset:Offset=Offset.CC(),useShear=True,use7Dof=False,id:int=0):
@@ -422,4 +422,4 @@ class SS_PSC_Value(_common):
                     h_pt.append([pt['X'],pt['Y']])
                 inner_pt.append(h_pt)
 
-        return SS_PSC_Value(name,outer_pt,inner_pt,offset,uShear,u7DOF,id)
+        return _SS_PSC_Value(name,outer_pt,inner_pt,offset,uShear,u7DOF,id)

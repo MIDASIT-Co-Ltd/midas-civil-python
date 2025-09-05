@@ -1,10 +1,8 @@
-print('Section MODULE LOADED...')
-
-from ._pscSS import SS_PSC_12CELL,SS_PSC_I,SS_PSC_Value
-from ._dbSecSS import SS_DBUSER
+from ._pscSS import _SS_PSC_12CELL,_SS_PSC_I,_SS_PSC_Value
+from ._dbSecSS import _SS_DBUSER
 from ._offsetSS import Offset
-from ._unSupp import SS_UNSUPP,SS_STD_DB
-from ._compositeSS import SS_COMP_PSC_I,SS_COMP_STEEL_I_TYPE1
+from ._unSupp import _SS_UNSUPP,_SS_STD_DB
+from ._compositeSS import _SS_COMP_PSC_I,_SS_COMP_STEEL_I_TYPE1
 
 from midas_civil import MidasAPI
 
@@ -74,21 +72,21 @@ def _JS2OBJ(id,js):
 
 
     if type == 'DBUSER':
-        if js['SECT_BEFORE']['DATATYPE'] ==2: obj = SS_DBUSER._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
-        else: obj = SS_STD_DB(id,name,type,shape,offset,uShear,u7DOF,js)
+        if js['SECT_BEFORE']['DATATYPE'] ==2: obj = _SS_DBUSER._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
+        else: obj = _SS_STD_DB(id,name,type,shape,offset,uShear,u7DOF,js)
 
     elif type == 'PSC' :
-        if shape in ['1CEL','2CEL']: obj = SS_PSC_12CELL._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
-        elif shape in ['PSCI']: obj = SS_PSC_I._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
-        elif shape in ['VALU']: obj = SS_PSC_Value._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
-        else: obj = SS_UNSUPP(id,name,type,shape,offset,uShear,u7DOF,js)
+        if shape in ['1CEL','2CEL']: obj = _SS_PSC_12CELL._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
+        elif shape in ['PSCI']: obj = _SS_PSC_I._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
+        elif shape in ['VALU']: obj = _SS_PSC_Value._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
+        else: obj = _SS_UNSUPP(id,name,type,shape,offset,uShear,u7DOF,js)
 
     elif type == 'COMPOSITE':
-        if shape in ['CI']: obj = SS_COMP_PSC_I._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
-        elif shape in ['I']: obj = SS_COMP_STEEL_I_TYPE1._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
-        else: obj = SS_UNSUPP(id,name,type,shape,offset,uShear,u7DOF,js)
+        if shape in ['CI']: obj = _SS_COMP_PSC_I._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
+        elif shape in ['I']: obj = _SS_COMP_STEEL_I_TYPE1._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
+        else: obj = _SS_UNSUPP(id,name,type,shape,offset,uShear,u7DOF,js)
     else :
-        obj = SS_UNSUPP(id,name,type,shape,offset,uShear,u7DOF,js)
+        obj = _SS_UNSUPP(id,name,type,shape,offset,uShear,u7DOF,js)
 
 
     _SectionADD(obj)
@@ -144,7 +142,7 @@ class Section:
     @staticmethod
     def DBUSER(Name='',Shape='',parameters:list=[],Offset=Offset(),useShear=True,use7Dof=False,id:int=0): 
         args = locals()
-        sect_Obj = SS_DBUSER(**args)
+        sect_Obj = _SS_DBUSER(**args)
         _SectionADD(sect_Obj)
         return sect_Obj
     
@@ -158,7 +156,7 @@ class Section:
                     BI1=0,BI11=0,BI12=0,BI21=0,BI3=0,BI31=0,BI32=0,BI4=0,
                     Offset:Offset=Offset.CC(),useShear=True,use7Dof=False,id:int=0):
             args = locals()
-            sect_Obj = SS_PSC_12CELL(**args)
+            sect_Obj = _SS_PSC_12CELL(**args)
             _SectionADD(sect_Obj)
             return sect_Obj
         
@@ -172,7 +170,7 @@ class Section:
                             Offset:Offset=Offset.CC(),useShear=True,use7Dof=False,id:int=0):
              
             args = locals()
-            sect_Obj = SS_COMP_PSC_I(**args)
+            sect_Obj = _SS_COMP_PSC_I(**args)
             
             _SectionADD(sect_Obj)
             return sect_Obj
@@ -183,7 +181,7 @@ class Section:
                     Offset:Offset=Offset.CC(),useShear=True,use7Dof=False,id:int=0):
              
             args = locals()
-            sect_Obj = SS_PSC_Value(**args)
+            sect_Obj = _SS_PSC_Value(**args)
             
             _SectionADD(sect_Obj)
             return sect_Obj
@@ -203,7 +201,7 @@ class Section:
                     Offset:Offset=Offset.CC(),useShear=True,use7Dof=False,id:int=0):
              
             args = locals()
-            sect_Obj = SS_COMP_PSC_I(**args)
+            sect_Obj = _SS_COMP_PSC_I(**args)
             
             _SectionADD(sect_Obj)
             return sect_Obj
@@ -214,7 +212,7 @@ class Section:
                 Offset:Offset=Offset.CC(),useShear=True,use7Dof=False,id:int=0):
              
             args = locals()
-            sect_Obj = SS_COMP_STEEL_I_TYPE1(**args)
+            sect_Obj = _SS_COMP_STEEL_I_TYPE1(**args)
             
             _SectionADD(sect_Obj)
             return sect_Obj
