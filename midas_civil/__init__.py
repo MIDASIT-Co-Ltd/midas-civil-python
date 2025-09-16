@@ -1,6 +1,6 @@
 import requests
 from ._mapi import *
-_version_ = "1.0.7"
+_version_ = "1.0.8"
 
 
 print('')
@@ -42,8 +42,8 @@ from ._temperature import *
 from ._tendon import *
 from ._view import *
 
-from ._movingload import*
-from ._settlement import*
-from ._analysiscontrol import*
-
+from ._movingload import *
+from ._settlement import *
+from ._analysiscontrol import *
+from ._BoundaryChangeAssignment import*
 

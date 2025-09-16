@@ -1,17 +1,18 @@
 from ._offsetSS import Offset
 from ._offsetSS import _common
 
-class _SS_DBUSER(_common):
+class _SS_TAPERED_DBUSER(_common):
 
     """ Create Standard USER DEFINED sections"""
 
-    def __init__(self,Name='',Shape='',parameters:list=[],Offset=Offset(),useShear=True,use7Dof=False,id:int=0):  
+    def __init__(self,Name='',Shape='',params_I:list=[],params_J:list=[],Offset=Offset(),useShear=True,use7Dof=False,id:int=0):  
         """ Shape = 'SB' 'SR' for rectangle \n For cylinder"""
         self.ID = id
         self.NAME = Name
-        self.TYPE = 'DBUSER'
+        self.TYPE = 'TAPERED'
         self.SHAPE = Shape
-        self.PARAMS = parameters
+        self.PARAMS_I = params_I
+        self.PARAMS_J = params_J
         self.OFFSET = Offset
         self.USESHEAR = useShear
         self.USE7DOF = use7Dof
@@ -23,13 +24,16 @@ class _SS_DBUSER(_common):
 
     def toJSON(sect):
         js =  {
-                "SECTTYPE": "DBUSER",
+                "SECTTYPE": sect.TYPE,
                 "SECT_NAME": sect.NAME,
                 "SECT_BEFORE": {
                     "SHAPE": sect.SHAPE,
-                    "DATATYPE": sect.DATATYPE,
+                    "TYPE": sect.DATATYPE,
                     "SECT_I": {
-                        "vSIZE": sect.PARAMS
+                        "vSIZE": sect.PARAMS_I
+                    },
+                    "SECT_J": {
+                        "vSIZE": sect.PARAMS_J
                     }
                 }
             }
@@ -40,18 +44,4 @@ class _SS_DBUSER(_common):
     
     @staticmethod
     def _objectify(id,name,type,shape,offset,uShear,u7DOF,js):
-        return _SS_DBUSER(name,shape,js['SECT_BEFORE']['SECT_I']['vSIZE'],offset,uShear,u7DOF,id)
-    
-    def _centerLine(shape):
-        H = shape.PARAMS[0]
-        B = shape.PARAMS[1]
-        tw = shape.PARAMS[2]
-        tf = shape.PARAMS[3]
-
-        sect_lin_con = [[1,2],[3,1]]
-
-        sect_cg = [0,0]
-
-        sect_shape = [[0,0],[B,0],[0,-H]]
-        sect_thk = [tf,tw]
-        sect_thk_off = [-tf/2,-tw/2]
+        return _SS_TAPERED_DBUSER(name,shape,js['SECT_BEFORE']['SECT_I']['vSIZE'],js['SECT_BEFORE']['SECT_J']['vSIZE'],offset,uShear,u7DOF,id)

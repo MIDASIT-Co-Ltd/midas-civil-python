@@ -157,4 +157,3 @@ class Settlement:
                         a['SMLC'][i]['ST_GROUPS'],
                         int(i)
                     )
-

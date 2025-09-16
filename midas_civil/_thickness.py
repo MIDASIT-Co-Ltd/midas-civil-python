@@ -139,4 +139,3 @@ class Thickness(_common):
                     _JS2Obj(sect_id,a['THIK'][sect_id])
 
 
-

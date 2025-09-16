@@ -3,12 +3,15 @@ from ._dbSecSS import _SS_DBUSER
 from ._offsetSS import Offset
 from ._unSupp import _SS_UNSUPP,_SS_STD_DB
 from ._compositeSS import _SS_COMP_PSC_I,_SS_COMP_STEEL_I_TYPE1
+from ._TapdbSecSS import _SS_TAPERED_DBUSER
+
+from ._tapPSC1CellSS import _SS_TAP_PSC_1CELL
 
 from midas_civil import MidasAPI
 
 
 class _helperSECTION:
-    NAME, SHAPE, TYPE, OFFSET, USESHEAR, USE7DOF = 0,0,0,0,0,0
+    ID, NAME, SHAPE, TYPE, OFFSET, USESHEAR, USE7DOF = 0,0,0,0,0,0,0
     def update():
         pass
     def toJSON():
@@ -85,6 +88,12 @@ def _JS2OBJ(id,js):
         if shape in ['CI']: obj = _SS_COMP_PSC_I._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
         elif shape in ['I']: obj = _SS_COMP_STEEL_I_TYPE1._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
         else: obj = _SS_UNSUPP(id,name,type,shape,offset,uShear,u7DOF,js)
+
+    elif type == 'TAPERED' :
+        if js['SECT_BEFORE']['TYPE'] ==2: obj = _SS_TAPERED_DBUSER._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
+        elif shape in ['1CEL']: obj = _SS_TAP_PSC_1CELL._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
+        else: obj = _SS_UNSUPP(id,name,type,shape,offset,uShear,u7DOF,js)
+
     else :
         obj = _SS_UNSUPP(id,name,type,shape,offset,uShear,u7DOF,js)
 
@@ -106,7 +115,7 @@ class Section:
         json = {"Assign":{}}
         for sect in cls.sect:
             js = sect.toJSON()
-            json["Assign"][sect.ID] = js
+            json["Assign"][str(sect.ID)] = js
         return json
     
     @staticmethod
@@ -216,6 +225,36 @@ class Section:
             
             _SectionADD(sect_Obj)
             return sect_Obj
+    
+    class Tapered:
+
+        @staticmethod
+        def DBUSER(Name='',Shape='',params_I:list=[],params_J:list=[],Offset=Offset(),useShear=True,use7Dof=False,id:int=0):
+            args = locals()
+            sect_Obj = _SS_TAPERED_DBUSER(**args)
+            
+            _SectionADD(sect_Obj)
+            return sect_Obj
+        
+        @staticmethod
+        def PSC1CEL(Name='',Joint=[0,0,0,0,0,0,0,0],
+                    HO1_I=0,HO2_I=0,HO21_I=0,HO22_I=0,HO3_I=0,HO31_I=0,
+                    BO1_I=0,BO11_I=0,BO12_I=0,BO2_I=0,BO21_I=0,BO3_I=0,
+                    HI1_I=0,HI2_I=0,HI21_I=0,HI22_I=0,HI3_I=0,HI31_I=0,HI4_I=0,HI41_I=0,HI42_I=0,HI5_I=0,
+                    BI1_I=0,BI11_I=0,BI12_I=0,BI21_I=0,BI3_I=0,BI31_I=0,BI32_I=0,BI4_I=0,
+
+                    HO1_J=0,HO2_J=0,HO21_J=0,HO22_J=0,HO3_J=0,HO31_J=0,
+                    BO1_J=0,BO11_J=0,BO12_J=0,BO2_J=0,BO21_J=0,BO3_J=0,
+                    HI1_J=0,HI2_J=0,HI21_J=0,HI22_J=0,HI3_J=0,HI31_J=0,HI4_J=0,HI41_J=0,HI42_J=0,HI5_J=0,
+                    BI1_J=0,BI11_J=0,BI12_J=0,BI21_J=0,BI3_J=0,BI31_J=0,BI32_J=0,BI4_J=0,
+
+                    Offset:Offset=Offset.CC(),useShear=True,use7Dof=False,id:int=0):
+            args = locals()
+            sect_Obj = _SS_TAP_PSC_1CELL(**args)
+            
+            _SectionADD(sect_Obj)
+            return sect_Obj
+
         
         
 

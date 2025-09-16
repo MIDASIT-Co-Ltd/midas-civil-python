@@ -1,6 +1,7 @@
 import requests
 import sys
-import winreg
+try:import winreg
+except: pass
 
 
 

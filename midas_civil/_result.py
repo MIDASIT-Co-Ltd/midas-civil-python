@@ -152,4 +152,3 @@ class LoadCombination:
         for i in list(json.keys()):
             MidasAPI("DELETE",LoadCombination.com_map.get(i) + a)
 #---------------------------------------------------------------------------------------------------------------
-

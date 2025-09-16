@@ -204,4 +204,3 @@ class Result :
         ss_json = MidasAPI("POST","/post/table",js_dat)
         _setUNIT(currUNIT)
         return _JSToDF_ResTable(ss_json)
-

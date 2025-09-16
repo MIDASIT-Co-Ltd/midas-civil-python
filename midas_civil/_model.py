@@ -195,46 +195,46 @@ class Model:
 
 
 
-    @staticmethod
-    def _create2(request = "update", set = 1, force = "KN", length = "M", heat = "BTU", temp = "C"):
-        """request["update" to update a model, "call" to get details of existing model], \nforce[Optional], length[Optional], heat[Optional], temp[Optional].  
-        \nSample: model() to update/create model. model("call") to get details of existing model and update classes.\n
-        set = 1 => Functions that don't need to call data from connected model file.\n
-        set = 2 => Functions that may need to call data from connected model file."""
-        Model.units(force, length, heat, temp)
-        if MAPI_KEY.data == []:  print(f"Enter the MAPI key using the MAPI_KEY command.")
-        if MAPI_KEY.data != []:
-            if set == 1:
-                if request == "update" or request == "create" or request == "PUT":
-                    if Node.json() != {"Assign":{}}: Node.create()
-                    if Element.json() != {"Assign":{}}: Element.create()
-                    if Section.json() != {"Assign":{}}: Section.create()
-                    if Group.json_BG() != {"Assign":{}}: Group.create_BG()
-                    if Group.json_LG() != {"Assign":{}}: Group.create_LG()
-                    if Group.json_TG() != {"Assign":{}}: Group.create_TG()
-                    if Material.json() != {"Assign":{}}: Material.create()
-                if request == "call" or request == "GET":
-                    Node.sync()
-                    Element.sync()
-                    Section.sync()
-                    Group.sync()
-                    Material.sync()
-            if set == 2:
-                if request == "update" or request == "create" or request == "PUT":
-                    if Node.json() != {"Assign":{}}: Node.create()
-                    if Element.json() != {"Assign":{}}: Element.create()
-                    if Section.json() != {"Assign":{}}: Section.create()
-                    if Group.json_BG() != {"Assign":{}}: Group.create_BG()
-                    if Group.json_LG() != {"Assign":{}}: Group.create_LG()
-                    if Group.json_TG() != {"Assign":{}}: Group.create_TG()
-                    if Material.json() != {"Assign":{}}: Material.create()
-                    if Group.json_SG() != {"Assign":{}}: Group.create_SG()
-                if request == "call" or request == "GET": 
-                    Node.update_class()
-                    Element.update_class()
-                    Section.update_class()
-                    Group.update_class()
-                    Material.update_class()
+    # @staticmethod
+    # def _create2(request = "update", set = 1, force = "KN", length = "M", heat = "BTU", temp = "C"):
+    #     """request["update" to update a model, "call" to get details of existing model], \nforce[Optional], length[Optional], heat[Optional], temp[Optional].  
+    #     \nSample: model() to update/create model. model("call") to get details of existing model and update classes.\n
+    #     set = 1 => Functions that don't need to call data from connected model file.\n
+    #     set = 2 => Functions that may need to call data from connected model file."""
+    #     Model.units(force, length, heat, temp)
+    #     if MAPI_KEY.data == []:  print(f"Enter the MAPI key using the MAPI_KEY command.")
+    #     if MAPI_KEY.data != []:
+    #         if set == 1:
+    #             if request == "update" or request == "create" or request == "PUT":
+    #                 if Node.json() != {"Assign":{}}: Node.create()
+    #                 if Element.json() != {"Assign":{}}: Element.create()
+    #                 if Section.json() != {"Assign":{}}: Section.create()
+    #                 if Group.json_BG() != {"Assign":{}}: Group.create_BG()
+    #                 if Group.json_LG() != {"Assign":{}}: Group.create_LG()
+    #                 if Group.json_TG() != {"Assign":{}}: Group.create_TG()
+    #                 if Material.json() != {"Assign":{}}: Material.create()
+    #             if request == "call" or request == "GET":
+    #                 Node.sync()
+    #                 Element.sync()
+    #                 Section.sync()
+    #                 Group.sync()
+    #                 Material.sync()
+    #         if set == 2:
+    #             if request == "update" or request == "create" or request == "PUT":
+    #                 if Node.json() != {"Assign":{}}: Node.create()
+    #                 if Element.json() != {"Assign":{}}: Element.create()
+    #                 if Section.json() != {"Assign":{}}: Section.create()
+    #                 if Group.json_BG() != {"Assign":{}}: Group.create_BG()
+    #                 if Group.json_LG() != {"Assign":{}}: Group.create_LG()
+    #                 if Group.json_TG() != {"Assign":{}}: Group.create_TG()
+    #                 if Material.json() != {"Assign":{}}: Material.create()
+    #                 if Group.json_SG() != {"Assign":{}}: Group.create_SG()
+    #             if request == "call" or request == "GET": 
+    #                 Node.update_class()
+    #                 Element.update_class()
+    #                 Section.update_class()
+    #                 Group.update_class()
+    #                 Material.update_class()
 
 
 
@@ -394,7 +394,6 @@ class Model:
             MidasAPI("POST","/doc/IMPORTMXT",{"Argument":str(location)})
         else:
             print('⚠️  Location data in importMCT is missing file extension')
-
 
 
 

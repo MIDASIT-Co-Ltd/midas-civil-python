@@ -1,14 +1,14 @@
 from ._mapi import *
 from ._node import *
 from ._group import _add_elem_2_stGroup
-from ._group import _add_node_2_stGroup
+from ._group import _add_node_2_stGroup,Group
 import numpy as np
 from scipy.interpolate import splev, splprep
 from math import hypot
 import math
 
 
-def _interpolateAlignment(pointsArray,n_seg=10,deg=1,mSize=0,includePoint:bool=True) -> list:
+def _interpolateAlignment(pointsArray,n_seg=10,deg=1,mSize=0,includePoint:bool=True,yEcc=0,zEcc=0) -> list:
     ''' Returns point list and beta angle list'''
     pointsArray = np.array(pointsArray)
     x_p, y_p , z_p  = pointsArray[:,0] , pointsArray[:,1] , pointsArray[:,2]
@@ -84,6 +84,7 @@ def _interpolateAlignment(pointsArray,n_seg=10,deg=1,mSize=0,includePoint:bool=T
     return align_fine_points
 
 
+
 def _nodeDIST(a:Node,b:Node):
     return round(hypot((a.X-b.X),(a.Y-b.Y),(a.Z-b.Z)),6)
 
@@ -108,6 +109,43 @@ def _triangleAREA(a:Node,b:Node,c:Node):
     v2 = np.array([b.X-c.X,b.Y-c.Y,b.Z-c.Z])
     mag = np.linalg.norm(np.cross(v1, v2))
     return float(0.5 * mag) , np.cross(v1, v2)/mag
+
+def _calcVector(deltaLocation):
+    Z_new = np.array([0.000001,0,1])
+    X_new = np.array(deltaLocation)
+    Y_new = np.cross(Z_new, X_new)
+
+    Z_new = np.cross(X_new, Y_new) # Recomputing
+
+    X_new = X_new / (np.linalg.norm(X_new)+0.000001)
+    Y_new = Y_new / (np.linalg.norm(Y_new)+0.000001)
+    Z_new = Z_new / (np.linalg.norm(Z_new)+0.000001)
+
+    return [X_new,Y_new,Z_new]
+
+def _pointOffset(pts,yEcc,zEcc):
+    norm = []
+    norm.append(_calcVector(np.subtract(pts[1],pts[0])))
+
+    for i in range(len(pts)-2):
+        X_new1 = np.array(np.subtract(pts[i+1],pts[i]))
+        X_new2 = np.array(np.subtract(pts[i+2],pts[i+1]))
+
+        X_new1 = X_new1 / (np.linalg.norm(X_new1)+0.000001)
+        X_new2 = X_new2 / (np.linalg.norm(X_new2)+0.000001)
+
+        norm.append(_calcVector(np.add(X_new1,X_new2)))
+
+    norm.append(_calcVector(np.subtract(pts[-1],pts[-2])))
+
+    # print(norm)
+
+    pt_new = []
+    for i in range(len(pts)):
+        pt_new.append(pts[i]+yEcc*norm[i][1]+zEcc*norm[i][2])
+
+    return pt_new
+
 
 def _ADD(self):
     """
@@ -407,6 +445,28 @@ class Element:
                     beam_nodes.append(Enode.ID)
                 
                 for i in range(len(i_loc)-1):
+                    if id == 0 : id_new = 0
+                    else: id_new = id+i
+                    beam_obj.append(Element.Beam(beam_nodes[i],beam_nodes[i+1],mat,sect,angle,group,id_new,bLocalAxis))
+                
+                return beam_obj
+        
+        @staticmethod
+        def PLine2(points_loc:list,n_div:int=0,deg:int=1,includePoint:bool=True,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0,bLocalAxis=False,yEcc=0,zEcc=0):
+
+                beam_nodes =[]
+                beam_obj = []
+                if n_div == 0 :
+                    i_loc = points_loc
+                else:
+                    i_loc = _interpolateAlignment(points_loc,n_div,deg,0,includePoint,yEcc,zEcc)
+
+                i_loc2 = _pointOffset(i_loc,yEcc,zEcc)
+                for i in i_loc2:
+                    Enode=Node(i[0],i[1],i[2])
+                    beam_nodes.append(Enode.ID)
+                
+                for i in range(len(i_loc2)-1):
                     if id == 0 : id_new = 0
                     else: id_new = id+i
                     beam_obj.append(Element.Beam(beam_nodes[i],beam_nodes[i+1],mat,sect,angle,group,id_new,bLocalAxis))

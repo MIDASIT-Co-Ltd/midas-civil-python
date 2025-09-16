@@ -2,6 +2,7 @@
 from ._mapi import *
 from ._utils import *
 from ._load import *
+from ._group import *
 
 
 def _JStoObj_Relax(js):
