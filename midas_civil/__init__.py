@@ -1,22 +1,21 @@
 import requests
+from colorama import Fore,Style
 from ._mapi import *
-_version_ = "1.0.8"
+_version_ = "1.0.9"
 
 
-print('')
-print('*'*20,'  MIDAS CIVIL-NX PYTHON LIBRARY v',_version_,' 🐍 ','*'*20)
-print('')
+print('\n╭────────────────────────────────────────────────────────────────────────────────────╮')
+print(Style.BRIGHT+f'│                      MIDAS CIVIL-NX PYTHON LIBRARY v{_version_}  🐍                      │')
+print('╰────────────────────────────────────────────────────────────────────────────────────╯\n'+Style.RESET_ALL)
 
 if NX.version_check:
     resp =  requests.get("https://pypi.org/pypi/midas_civil/json").json()
     latest_ver =  resp["info"]["version"]
-    if _version_ != latest_ver:
-        print(
-                f"⚠️  Warning: You are using v{_version_}, "
-                f"but the latest available version is v{latest_ver}.\n"
-                f" Run 'pip install midas_civil --upgrade' to update."
-            )
-        print("-"*85)
+    if _version_ != latest_ver:        
+        print(Fore.YELLOW +'╭─ ⚠️   ──────────────────────────────────────────────────────────────────────────────╮')
+        print(f"│    Warning: You are using v{_version_}, but the latest available version is v{latest_ver}.      │")
+        print(f"│    Run 'pip install midas_civil --upgrade' to update.                              │")
+        print('╰────────────────────────────────────────────────────────────────────────────────────╯\n'+Style.RESET_ALL)
 
 
 from ._model import *

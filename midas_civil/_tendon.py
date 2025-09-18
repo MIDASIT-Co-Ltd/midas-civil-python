@@ -761,7 +761,7 @@ class Tendon:
                             array_temp.append({
                                     'PT' : [self.P_XYZ[j].X,self.P_XYZ[j].Y,self.P_XYZ[j].Z],
                                     'bFIX' : self.bFIX[j],
-                                    'R' : self.RADIUS[j]
+                                    'RADIUS' : self.RADIUS[j]
                             })
                     else:
                         for j in range(len(self.P_XYZ)):
@@ -770,6 +770,8 @@ class Tendon:
                                     'bFIX' : self.bFIX[j],
                                     'R' : self.R[j]
                             })
+                    
+                    
                     
                     
                     # --- 3D Main ----

@@ -1,5 +1,6 @@
 import requests
 import sys
+from colorama import Fore, Style
 try:import winreg
 except: pass
 
@@ -8,10 +9,9 @@ except: pass
 
 def Midas_help():
     """MIDAS Documnetation : https://midas-rnd.github.io/midasapi-python """
-    print("---"*22)
-    print("|   HELP MANUAL : https://midas-rnd.github.io/midasapi-python/   |")
-    print("---"*22,"\n")
-
+    print('\n╭────────────────────────────────────────────────────────────────────────────────────╮')
+    print("│         HELP MANUAL   :     https://midas-rnd.github.io/midasapi-python/           │")
+    print('╰────────────────────────────────────────────────────────────────────────────────────╯\n')
 
 
 
@@ -94,7 +94,6 @@ class MAPI_KEY:
                 my_key = value[0]
                 MAPI_KEY(my_key)
                 print(f' 🔑   MAPI-KEY is taken from Registry entry.  >>  {my_key[:35]}...')
-                print("-"*85)
             except:
                 print(f"🔑   MAPI KEY is not defined. Click on Apps > API Settings to copy the MAPI Key.\n Define it using MAPI_KEY('xxxx')")
                 sys.exit(0)
@@ -134,16 +133,21 @@ def MidasAPI(method:str, command:str, body:dict={})->dict:
     elif method == "DELETE":
         response = requests.delete(url=url, headers=headers)
 
-    if response.status_code == 404: 
-        print(f"⚠️  Civil NX model is not connected.  Click on 'Apps> Connect' in Civil NX. \nMake sure the MAPI Key in python code is matching with the MAPI key in Civil NX.\n\n")
-        sys.exit(0)
-
     if NX.debug_print:
         print(method, command, response.status_code , "✅")
 
+
+
     if MAPI_KEY.count == 1:
+        MAPI_KEY.count = 0
+        if response.status_code == 404:
+            print(Fore.RED +'\n╭─ 💀   ─────────────────────────────────────────────────────────────────────────────╮')
+            print(f"│  Civil NX model is not connected.  Click on 'Apps > Connect' in Civil NX.          │")
+            print(f"│  Make sure the MAPI Key in python code is matching with the MAPI key in Civil NX.  │")
+            print('╰────────────────────────────────────────────────────────────────────────────────────╯\n'+Style.RESET_ALL)
+            sys.exit(0)
+
         if NX.user_print:
-            MAPI_KEY.count = 0
             _checkUSER()
     
 
@@ -168,8 +172,25 @@ def _setUNIT(unitJS):
 def _checkUSER():
     try:
         resp =  MidasAPI('GET','/config/ver',{})['VER']
-        print(f"Connected to {resp['NAME']}   🟢")
-        print(f"USER : {resp['USER']}    |   COMPANY : {resp['COMPANY']}")
-        print("-"*85)
+
+        # print(f"{' '*15}Connected to {resp['NAME']}")
+        # print(f"{' '*15}USER : {resp['USER']}          COMPANY : {resp['COMPANY']}")
+
+        ln1 = f"Connected to {resp['NAME']}"
+        ln2 = f"USER : {resp['USER']}          COMPANY : {resp['COMPANY']}"
+
+        lg_ln1 = 63-len(ln1)
+        lg_ln2 = 67-len(ln2)
+
+        line1 = f"│{' '*15} {ln1} {' '*lg_ln1} 🟢 │"
+        line2 = f"│{' '*15} {ln2} {' '*lg_ln2}│"
+        print(Fore.GREEN+'\n╭─ 🔔  ──────────────────────────────────────────────────────────────────────────────╮')
+        print(line1)
+        print(line2)
+        print('╰────────────────────────────────────────────────────────────────────────────────────╯\n'+Style.RESET_ALL)
+
+
+        # print('─'*86)
+
     except:
-        print("")
+        pass

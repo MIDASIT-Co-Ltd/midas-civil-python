@@ -87,3 +87,11 @@ def _convItem2List(item):
     if isinstance(item,list):
         return item
     return [item]
+
+def _matchArray(A,B):
+    A = _convItem2List(A)
+    B = _convItem2List(B)
+    n = len(A)
+    if len(B) >= n:
+        return B[:n]
+    return B + [B[-1]] * (n - len(B))

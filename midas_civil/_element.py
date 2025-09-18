@@ -8,7 +8,7 @@ from math import hypot
 import math
 
 
-def _interpolateAlignment(pointsArray,n_seg=10,deg=1,mSize=0,includePoint:bool=True,yEcc=0,zEcc=0) -> list:
+def _interpolateAlignment(pointsArray,n_seg=10,deg=1,mSize=0,includePoint:bool=True) -> list:
     ''' Returns point list and beta angle list'''
     pointsArray = np.array(pointsArray)
     x_p, y_p , z_p  = pointsArray[:,0] , pointsArray[:,1] , pointsArray[:,2]
@@ -110,7 +110,7 @@ def _triangleAREA(a:Node,b:Node,c:Node):
     mag = np.linalg.norm(np.cross(v1, v2))
     return float(0.5 * mag) , np.cross(v1, v2)/mag
 
-def _calcVector(deltaLocation):
+def _calcVector(deltaLocation,angle=0): # Returns normalised local X,Y,Z for line
     Z_new = np.array([0.000001,0,1])
     X_new = np.array(deltaLocation)
     Y_new = np.cross(Z_new, X_new)
@@ -121,22 +121,45 @@ def _calcVector(deltaLocation):
     Y_new = Y_new / (np.linalg.norm(Y_new)+0.000001)
     Z_new = Z_new / (np.linalg.norm(Z_new)+0.000001)
 
-    return [X_new,Y_new,Z_new]
+    from scipy.spatial.transform import Rotation as R
+    p_y = np.array(Y_new)
+    p_z = np.array(Z_new)
 
-def _pointOffset(pts,yEcc,zEcc):
+    axis = np.array(X_new)
+    theta = np.deg2rad(angle)               # or radians directly
+    rot = R.from_rotvec(axis * theta)           # axis-angle as rotation vector
+    
+    rt_y = rot.apply(p_y)                         # rotated point around axis through origin
+    rt_z = rot.apply(p_z)  
+    
+    return [X_new,rt_y,rt_z]
+
+def _rotatePT(pt,axis,deg):
+    from scipy.spatial.transform import Rotation as R
+    p = np.array(pt)
+    axis = np.array(axis)
+    theta = np.deg2rad(deg)               # or radians directly
+    rot = R.from_rotvec(axis * theta)           # axis-angle as rotation vector
+    return rot.apply(p)                         # rotated point around axis through origin
+
+def _pointOffset(pts,yEcc=0,zEcc=0,angle=0):
+    from ._utils import _matchArray
+
+    angle2 = _matchArray(pts,angle)
+
     norm = []
-    norm.append(_calcVector(np.subtract(pts[1],pts[0])))
+    norm.append(_calcVector(np.subtract(pts[1],pts[0]),angle2[0]))    # first X- along vector
 
-    for i in range(len(pts)-2):
+    for i in range(len(pts)-2): # Averaged X- along vector for middle points
         X_new1 = np.array(np.subtract(pts[i+1],pts[i]))
         X_new2 = np.array(np.subtract(pts[i+2],pts[i+1]))
 
         X_new1 = X_new1 / (np.linalg.norm(X_new1)+0.000001)
         X_new2 = X_new2 / (np.linalg.norm(X_new2)+0.000001)
 
-        norm.append(_calcVector(np.add(X_new1,X_new2)))
+        norm.append(_calcVector(np.add(X_new1,X_new2),angle2[i+1]))
 
-    norm.append(_calcVector(np.subtract(pts[-1],pts[-2])))
+    norm.append(_calcVector(np.subtract(pts[-1],pts[-2]),angle2[-1])) # last X- along vector
 
     # print(norm)
 
@@ -440,6 +463,10 @@ class Element:
                     i_loc = points_loc
                 else:
                     i_loc = _interpolateAlignment(points_loc,n_div,deg,0,includePoint)
+
+                from ._utils import _matchArray
+                angle = _matchArray(i_loc,angle)
+
                 for i in i_loc:
                     Enode=Node(i[0],i[1],i[2])
                     beam_nodes.append(Enode.ID)
@@ -447,29 +474,36 @@ class Element:
                 for i in range(len(i_loc)-1):
                     if id == 0 : id_new = 0
                     else: id_new = id+i
-                    beam_obj.append(Element.Beam(beam_nodes[i],beam_nodes[i+1],mat,sect,angle,group,id_new,bLocalAxis))
+                    beam_obj.append(Element.Beam(beam_nodes[i],beam_nodes[i+1],mat,sect,angle[i],group,id_new,bLocalAxis))
                 
                 return beam_obj
         
         @staticmethod
         def PLine2(points_loc:list,n_div:int=0,deg:int=1,includePoint:bool=True,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0,bLocalAxis=False,yEcc=0,zEcc=0):
-
+                
+                
                 beam_nodes =[]
                 beam_obj = []
                 if n_div == 0 :
                     i_loc = points_loc
                 else:
-                    i_loc = _interpolateAlignment(points_loc,n_div,deg,0,includePoint,yEcc,zEcc)
+                    i_loc = _interpolateAlignment(points_loc,n_div,deg,0,includePoint)
+                
+                from ._utils import _matchArray
+                angle = _matchArray(i_loc,angle)
 
-                i_loc2 = _pointOffset(i_loc,yEcc,zEcc)
+                i_loc2 = _pointOffset(i_loc,yEcc,zEcc,angle)
                 for i in i_loc2:
                     Enode=Node(i[0],i[1],i[2])
                     beam_nodes.append(Enode.ID)
+
                 
+                
+
                 for i in range(len(i_loc2)-1):
                     if id == 0 : id_new = 0
                     else: id_new = id+i
-                    beam_obj.append(Element.Beam(beam_nodes[i],beam_nodes[i+1],mat,sect,angle,group,id_new,bLocalAxis))
+                    beam_obj.append(Element.Beam(beam_nodes[i],beam_nodes[i+1],mat,sect,angle[i],group,id_new,bLocalAxis))
                 
                 return beam_obj
 
