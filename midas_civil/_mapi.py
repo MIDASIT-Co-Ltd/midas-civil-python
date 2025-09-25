@@ -3,6 +3,7 @@ import sys
 from colorama import Fore, Style
 try:import winreg
 except: pass
+import time
 
 
 
@@ -124,6 +125,9 @@ def MidasAPI(method:str, command:str, body:dict={})->dict:
         "MAPI-Key": mapi_key
     }
 
+    start_time = time.perf_counter()
+
+
     if method == "POST":
         response = requests.post(url=url, headers=headers, json=body)
     elif method == "PUT":
@@ -133,8 +137,11 @@ def MidasAPI(method:str, command:str, body:dict={})->dict:
     elif method == "DELETE":
         response = requests.delete(url=url, headers=headers)
 
+    end_time = time.perf_counter()
+    elapsed_time = end_time - start_time
+
     if NX.debug_print:
-        print(method, command, response.status_code , "✅")
+        print(f"{method} |  URL : {command} | STATUS : {response.status_code} | TIME : {elapsed_time:.4f} sec")
 
 
 

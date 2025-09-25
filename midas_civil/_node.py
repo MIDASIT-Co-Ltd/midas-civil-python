@@ -152,6 +152,13 @@ class Node:
         Node.Grid={}
         Node.__nodeDic__ = {}
 
+    @staticmethod
+    def clear():
+        Node.nodes=[]
+        Node.ids=[]
+        Node.Grid={}
+        Node.__nodeDic__ = {}
+
 
 
 

@@ -1,5 +1,6 @@
 from ._offsetSS import Offset
 from ._offsetSS import _common
+import math
 
 
 
@@ -113,6 +114,35 @@ class _SS_PSC_12CELL(_common):
                             vC[0],vC[1],vC[2],vC[3],vC[4],vC[5],vC[6],vC[7],vC[8],vC[9],
                             vD[0],vD[1],vD[2],vD[3],vD[4],vD[5],vD[6],vD[7],
                             offset,uShear,u7DOF,id)
+    
+    def _centerLine(shape,end):
+        if shape.SHAPE == '1CEL':
+            BO1 = shape.BO1
+            BO2 = shape.BO2
+            BO3 = shape.BO3
+            HO1 = shape.HO1
+            HO2 = shape.HO2
+            HO3 = shape.HO3
+            HI1 = shape.HI1
+            HI5 = shape.HI5
+            BI3 = shape.BI3
+
+            sect_lin_con = [[1,2],[2,3],[3,4],[2,5],[3,6],[5,6]]
+
+            sect_cg_LT = [0,0]
+            sect_cg_RB = [2*(BO1+BO2+BO3),-(HO1+HO2+HO3)]
+            sect_cg_CC = [(BO1+BO2+BO3),-(HO1+HO2+HO3)/2]
+
+            sect_shape = [[0,0],[BO1,0],[BO1+2*(BO2+BO3),0],[2*(BO1+BO2+BO3),0],[BO1+BO2,-HO1-HO3-HO2],[BO1+BO2+2*BO3,-HO1-HO3-HO2]]
+            sect_thk = [HO1,HI1,HO1,BO3-BI3,BO3-BI3,HI5]
+            sect_thk_off = [-HO1/2,-HI1/2,-HO1/2,(BO3-BI3)/2,-(BO3-BI3)/2,HI5/2]       
+
+
+
+        sect_cg = (sect_cg_LT,sect_cg_CC,sect_cg_RB)
+
+        return sect_shape, sect_thk ,sect_thk_off, sect_cg , sect_lin_con
+
     
 
 

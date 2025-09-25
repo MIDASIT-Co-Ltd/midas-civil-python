@@ -1621,6 +1621,10 @@ class TDMatLink:
         TDMatLink.mats={}
 
     @staticmethod
+    def clear():
+        TDMatLink.mats={}
+
+    @staticmethod
     def sync():
         a = TDMatLink.get()
         if a != {'message': ''}:

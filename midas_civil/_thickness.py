@@ -127,6 +127,11 @@ class Thickness(_common):
         Thickness.thick=[]
         Thickness.ids=[]
 
+    @staticmethod
+    def clear():
+        Thickness.thick=[]
+        Thickness.ids=[]
+
 
     @staticmethod
     def sync():

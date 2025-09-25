@@ -352,6 +352,12 @@ class Element:
         Element.elements = []
         Element.ids = []
         Element.__elemDIC__={}
+    
+    @staticmethod
+    def clear():
+        Element.elements = []
+        Element.ids = []
+        Element.__elemDIC__={}
 
     # --- Element Type Subclasses ---
 

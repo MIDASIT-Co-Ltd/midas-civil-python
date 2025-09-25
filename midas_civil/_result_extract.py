@@ -135,7 +135,7 @@ class Result :
                 "TABLE_NAME": tableName,
                 "STYLES": {
                     "FORMAT": "Fixed",
-                    "PLACE": 12
+                    "PLACE": 5
                 }
             }
         }
@@ -162,7 +162,7 @@ class Result :
 
 
 
-    # ---------- Result TABLE ------------------------------
+    # ---------- Result TABLE (For ALL TABLES)------------------------------
     @staticmethod
     def ResultTable(tabletype:str,keys=[],loadcase:list=[],cs_stage=[],force_unit='KN',len_unit='M'):
         '''
@@ -177,7 +177,7 @@ class Result :
                 "TABLE_TYPE": tabletype,
                 "STYLES": {
                     "FORMAT": "Fixed",
-                    "PLACE": 12
+                    "PLACE": 5
                 }
             }
         }
@@ -204,3 +204,57 @@ class Result :
         ss_json = MidasAPI("POST","/post/table",js_dat)
         _setUNIT(currUNIT)
         return _JSToDF_ResTable(ss_json)
+    
+
+    class TABLE :
+        @staticmethod
+        def BeamForce_VBM(keys=[],loadcase:list=[],items=['all'],parts=["PartI", "PartJ"],components=['all'],force_unit='KN',len_unit='M'):
+            '''
+                Keys : List{int} -> Element/ Node IDs  |  str -> Structure Group Name
+                Loadcase : Loadcase name followed by type. eg. DeadLoad(ST)
+                Items to display : [ "Axial" , "Shear-y" , "Shear-z" , "Torsion" , "Moment-y" , "Moment-z"]
+                Parts : ["PartI", "Part1/4", "Part2/4", "Part3/4", "PartJ"]
+                Components (colms of tabulart result): [ "Elem", "Load", "Part", "Component", "Axial", "Shear-y", "Shear-z", "Torsion", "Moment-y", "Moment-z" ]
+                
+            '''
+
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Table",
+                    "TABLE_TYPE": "BEAMFORCEVBM",
+                    "STYLES": {
+                        "FORMAT": "Fixed",
+                        "PLACE": 5
+                    },
+                    "PARTS" : parts
+                }
+            }
+
+
+            if isinstance(keys,list):
+                if keys!=[]:
+                    js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": keys}
+            elif isinstance(keys,str):
+                js_dat["Argument"]['NODE_ELEMS'] = {"STRUCTURE_GROUP_NAME": keys}
+
+
+            if loadcase!=[]: js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
+
+            if components!=['all']:
+                if "Elem" not in components: components.append("Elem")
+                if "Load" not in components: components.append("Load")
+                if "Part" not in components: components.append("Part")
+                if "Component" not in components: components.append("Component")
+                js_dat["Argument"]['COMPONENTS'] = components
+            
+            if items!=['all']:
+                js_dat["Argument"]['ITEM_TO_DISPLAY'] = items
+
+
+
+            currUNIT = _getUNIT()
+            Model.units(force=force_unit,length=len_unit)
+            ss_json = MidasAPI("POST","/post/table",js_dat)
+            _setUNIT(currUNIT)
+            return _JSToDF_ResTable(ss_json)
+
