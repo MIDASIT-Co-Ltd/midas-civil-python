@@ -256,7 +256,7 @@ class Load:
         data = []
         def __init__(self, element, load_case: str, load_group: str = "", value: float=0, direction: str = "GZ",
             id = "", D = [0, 1, 0, 0], P = [0, 0, 0, 0], cmd = "BEAM", typ = "UNILOAD", use_ecc = False, use_proj = False,
-            eccn_dir = "LZ", eccn_type = 1, ieccn = 0, jeccn = 0, adnl_h = False, adnl_h_i = 0, adnl_h_j = 0): 
+            eccn_dir = "LY", eccn_type = 1, ieccn = 0, jeccn = 0, adnl_h = False, adnl_h_i = 0, adnl_h_j = 0): 
             """
             element: Element Number 
             load_case (str): Load case name
@@ -738,3 +738,71 @@ class Load:
                             values,
                             item['ID']
                         )
+    class Line:
+        def __init__(self, element_ids, load_case: str, load_group: str = "", D = [0, 1, 0, 0], P = [0, 0, 0, 0], direction: str = "GZ",
+            id = "", typ = "CONLOAD", use_ecc = False, use_proj = False,
+            eccn_dir = "LY", eccn_type = 1, ieccn = 0, jeccn = 0, adnl_h = False, adnl_h_i = 0, adnl_h_j = 0) :
+
+            elem_IDS = []
+            elem_LEN = []
+
+            for eID in element_ids:
+                try: 
+                    elm_len = elemByID(eID).LENGTH
+                    elem_IDS.append(eID)
+                    elem_LEN.append(elm_len)
+                    # print(f"ID = {eID} LEN = {elm_len}")
+                except: pass
+            cum_LEN = np.insert(np.cumsum(elem_LEN),0,0)
+
+
+            if typ == 'CONLOAD':
+                for i in range(len(D)):
+                    for q in range(len(cum_LEN)):
+                        if D[i] >= 0:
+                            if D[i] < cum_LEN[q] :
+                                # print(f'LOADING ELEMENT at {D[i]}m = {elem_IDS[q-1]}')
+                                rel_loc = (D[i] - cum_LEN[q-1]) / elem_LEN[q-1]
+                                # print(f"Relative location = {rel_loc}")
+                                Load.Beam(element=elem_IDS[q-1],load_case=load_case,load_group=load_group,D=[rel_loc],P=[P[i]],direction=direction,
+                                        id = id, typ = "CONLOAD", use_ecc = use_ecc, use_proj = use_proj,
+                                        eccn_dir = eccn_dir, eccn_type = eccn_type, ieccn = ieccn, jeccn = jeccn, adnl_h = adnl_h, adnl_h_i = adnl_h_i, adnl_h_j = adnl_h_j)
+                                break 
+            
+            if typ == 'UNILOAD':
+                D = D[:2]
+                P = P[:2]
+                elms_indx = []
+                for i in range(2):
+                    for q in range(len(cum_LEN)):
+                        if D[i] < cum_LEN[q] :
+                            # print(f'LOADING ELEMENT at {D[i]}m = {elem_IDS[q-1]}')
+                            elms_indx.append(q-1)
+                            # rel_loc = (D[i] - cum_LEN[q-1]) / elem_LEN[q-1]
+                            break 
+                if len(elms_indx)==1: elms_indx.append(len(cum_LEN)-2)
+                # print(f"INDEXs = {elms_indx}")
+                # print("-"*10)
+                # print(f"INDEXs = {elms_indx}")
+                # print("-"*10)
+                if elms_indx != []:
+                    for i in range(elms_indx[0],elms_indx[1]+1):
+
+                        rel1 = (max(D[0],cum_LEN[i]) - cum_LEN[i]) / elem_LEN[i]
+                        rel2 = (min(D[1],cum_LEN[i+1]) - cum_LEN[i]) / elem_LEN[i]
+
+                        p1 = P[0]+(max(D[0],cum_LEN[i])-D[0])*(P[1]-P[0])/(D[1]-D[0])
+                        p2 = P[0]+(min(D[1],cum_LEN[i+1])-D[0])*(P[1]-P[0])/(D[1]-D[0])
+                        if rel2-rel1 == 0: continue
+                        
+
+                        # print(f"Loading ELEM -> {elem_IDS[i]} , D1 = {rel1} , P1 = {p1} | D2 = {rel2} , P2 = {p2}")
+                        # Load.Beam(elem_IDS[i],load_case,load_group,D=[rel1,rel2],P=[p1,p2],typ=typ,direction=direction)
+                        Load.Beam(element=elem_IDS[i],load_case=load_case,load_group=load_group,D=[rel1,rel2],P=[p1,p2],direction=direction,
+                                        id = id, typ = "UNILOAD", use_ecc = use_ecc, use_proj = use_proj,
+                                        eccn_dir = eccn_dir, eccn_type = eccn_type, ieccn = ieccn, jeccn = jeccn, adnl_h = adnl_h, adnl_h_i = adnl_h_i, adnl_h_j = adnl_h_j)
+
+                        
+
+                
+                

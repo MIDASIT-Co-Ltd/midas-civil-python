@@ -47,7 +47,7 @@ class _SS_TAPERED_DBUSER(_common):
     def _objectify(id,name,type,shape,offset,uShear,u7DOF,js):
         return _SS_TAPERED_DBUSER(name,shape,js['SECT_BEFORE']['SECT_I']['vSIZE'],js['SECT_BEFORE']['SECT_J']['vSIZE'],offset,uShear,u7DOF,id)
     
-    def _centerLine(shape,end):
+    def _centerLine(shape,end,*args):
         if end: 
             shape.PARAMS = shape.PARAMS_J
             # print(' J end taken')

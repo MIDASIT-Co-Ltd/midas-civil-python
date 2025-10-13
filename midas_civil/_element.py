@@ -3,10 +3,37 @@ from ._node import *
 from ._group import _add_elem_2_stGroup
 from ._group import _add_node_2_stGroup,Group
 import numpy as np
-from scipy.interpolate import splev, splprep
+from scipy.interpolate import splev, splprep , interp1d , Akima1DInterpolator
 from math import hypot
 import math
+from ._utils import _convItem2List
 
+def _SInterp(angle,num_points):
+    ''' Angle -> Input list | Num Points -> Output length'''
+
+    angle = _convItem2List(angle)
+    if len(angle) == 1 : 
+        angle.append(angle[0])
+        angle.append(angle[0])
+    if len(angle) == 2 : 
+        angle.append(angle[-1])
+        angle[1] = (angle[0]+angle[2])*0.5
+
+    num_angle = len(angle)
+    angle_intrp_x = [0]
+    angle_intrp_y = [angle[0]]
+    for a in range(num_angle-1):
+        angle_intrp_x.append((a+1)*(num_points-1)/(num_angle-1))
+        angle_intrp_y.append(angle[a+1])
+
+    _alignment = Akima1DInterpolator(angle_intrp_x, angle_intrp_y,method='makima')
+    angle_intrp_func = interp1d(angle_intrp_x, angle_intrp_y)
+
+    angle_intrp_finalY = []
+    for i in range(num_points):
+        angle_intrp_finalY.append(_alignment(i))
+
+    return angle_intrp_finalY
 
 def _interpolateAlignment(pointsArray,n_seg=10,deg=1,mSize=0,includePoint:bool=True) -> list:
     ''' Returns point list and beta angle list'''
@@ -146,6 +173,8 @@ def _pointOffset(pts,yEcc=0,zEcc=0,angle=0):
     from ._utils import _matchArray
 
     angle2 = _matchArray(pts,angle)
+    yEcc2 = _matchArray(pts,yEcc)
+    zEcc2 = _matchArray(pts,zEcc)
 
     norm = []
     norm.append(_calcVector(np.subtract(pts[1],pts[0]),angle2[0]))    # first X- along vector
@@ -165,7 +194,7 @@ def _pointOffset(pts,yEcc=0,zEcc=0,angle=0):
 
     pt_new = []
     for i in range(len(pts)):
-        pt_new.append(pts[i]+yEcc*norm[i][1]+zEcc*norm[i][2])
+        pt_new.append(pts[i]+yEcc2[i]*norm[i][1]+zEcc2[i]*norm[i][2])
 
     return pt_new
 
@@ -319,6 +348,10 @@ class Element:
     ids = []
     __elemDIC__ = {}
 
+    
+    lastLoc = (0,0,0) #Last Location created using Beam element
+    '''Last Node Location created by Beam / Truss element - (x,y,z)'''
+
     @classmethod
     def json(cls):
         json_data = {"Assign": {}}
@@ -414,6 +447,8 @@ class Element:
                 _norm2 = np.linalg.norm(_n2.AXIS ,axis=1,keepdims=True)
                 _n2.AXIS = _n2.AXIS /_norm2
 
+            Element.lastLoc = (_n2.X,_n2.Y,_n2.Z)
+
             _ADD(self)
 
         @staticmethod
@@ -430,7 +465,7 @@ class Element:
                     locc = s_locc+i*l*unit_vec/n
                     Enode=Node(locc[0].item(),locc[1].item(),locc[2].item())
                     beam_nodes.append(Enode.ID)
-                
+                Element.lastLoc = (locc[0].item(),locc[1].item(),locc[2].item())
                 for i in range(n):
                     if id == 0 : id_new = 0
                     else: id_new = id+i
@@ -452,7 +487,6 @@ class Element:
                 for i in range(n+1):
                     Enode=Node(i_loc[i][0].item(),i_loc[i][1].item(),i_loc[i][2].item())
                     beam_nodes.append(Enode.ID)
-                
                 for i in range(n):
                     if id == 0 : id_new = 0
                     else: id_new = id+i
@@ -462,6 +496,9 @@ class Element:
         
         @staticmethod
         def PLine(points_loc:list,n_div:int=0,deg:int=1,includePoint:bool=True,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0,bLocalAxis=False):
+                '''
+                angle : float of list(float)
+                '''
 
                 beam_nodes =[]
                 beam_obj = []
@@ -470,23 +507,29 @@ class Element:
                 else:
                     i_loc = _interpolateAlignment(points_loc,n_div,deg,0,includePoint)
 
-                from ._utils import _matchArray
-                angle = _matchArray(i_loc,angle)
+                num_points = len(i_loc)                
+                angle_intrp_finalY = _SInterp(angle,num_points-1) #Beta Angle to be applied to Elements So, n-1
 
                 for i in i_loc:
                     Enode=Node(i[0],i[1],i[2])
                     beam_nodes.append(Enode.ID)
-                
                 for i in range(len(i_loc)-1):
                     if id == 0 : id_new = 0
                     else: id_new = id+i
-                    beam_obj.append(Element.Beam(beam_nodes[i],beam_nodes[i+1],mat,sect,angle[i],group,id_new,bLocalAxis))
+                    beam_obj.append(Element.Beam(beam_nodes[i],beam_nodes[i+1],mat,sect,angle_intrp_finalY[i].item(),group,id_new,bLocalAxis))
                 
                 return beam_obj
         
         @staticmethod
-        def PLine2(points_loc:list,n_div:int=0,deg:int=1,includePoint:bool=True,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0,bLocalAxis=False,yEcc=0,zEcc=0):
-                
+        def PLine2(points_loc:list,n_div:int=0,deg:int=1,includePoint:bool=True,mat:int=1,sect:int=1,angle:list[float]=0, group = "" , id: int = 0,bLocalAxis=False,yEcc:list[float]=0,zEcc:list[float]=0,bAngleInEcc:bool=True):
+                '''
+                Creates a polyline with Eccentricity considering the beta angle provided   
+                angle , yEcc , zEcc : float or list(float)   
+                        [0,10] -> Angle at start = 0 | Angle at end = 10   
+                        [0,10,0] -> Angle at start = 0 |  Angle at mid = 10  |  Angle at end = 0   
+                        Inbetween values are **MAKIMA 1D** interpolated. (not cubic)
+                '''
+                from ._utils import _matchArray
                 
                 beam_nodes =[]
                 beam_obj = []
@@ -495,21 +538,27 @@ class Element:
                 else:
                     i_loc = _interpolateAlignment(points_loc,n_div,deg,0,includePoint)
                 
-                from ._utils import _matchArray
-                angle = _matchArray(i_loc,angle)
+                
+                num_points = len(i_loc)                
+                if bAngleInEcc:
+                    angle_intrp_Ecc = _SInterp(angle,num_points)
+                else:
+                    angle_intrp_Ecc = _matchArray(i_loc,[0])
+                angle_intrp_finalY = _SInterp(angle,num_points-1) #Beta Angle to be applied to Elements So, n-1
+                
+                yEcc_intrp = _SInterp(yEcc,num_points)
+                zEcc_intrp = _SInterp(zEcc,num_points)
 
-                i_loc2 = _pointOffset(i_loc,yEcc,zEcc,angle)
+                i_loc2 = _pointOffset(i_loc,yEcc_intrp,zEcc_intrp,angle_intrp_Ecc)
                 for i in i_loc2:
                     Enode=Node(i[0],i[1],i[2])
                     beam_nodes.append(Enode.ID)
-
-                
                 
 
                 for i in range(len(i_loc2)-1):
                     if id == 0 : id_new = 0
                     else: id_new = id+i
-                    beam_obj.append(Element.Beam(beam_nodes[i],beam_nodes[i+1],mat,sect,angle[i],group,id_new,bLocalAxis))
+                    beam_obj.append(Element.Beam(beam_nodes[i],beam_nodes[i+1],mat,sect,angle_intrp_finalY[i].item(),group,id_new,bLocalAxis))
                 
                 return beam_obj
 
@@ -546,7 +595,9 @@ class Element:
             self.NODE = [i, j]
             self.ANGLE = angle
             self._GROUP = group
-            self.LENGTH = _nodeDIST(nodeByID(i),nodeByID(j))
+            _n2 = nodeByID(j)
+            self.LENGTH = _nodeDIST(nodeByID(i),_n2)
+            Element.lastLoc = (_n2.X,_n2.Y,_n2.Z)
             _ADD(self)
 
         @staticmethod
@@ -977,5 +1028,5 @@ def elemByID(elemID:int) -> Element:
     try:
         return (Element.__elemDIC__[str(elemID)])
     except:
-        print(f'There is no element with ID {elemID}')
+        print(Fore.RED +f'There is no element with ID {elemID}'+Style.RESET_ALL)
         return None

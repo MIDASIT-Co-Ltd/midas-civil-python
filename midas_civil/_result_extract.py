@@ -207,6 +207,7 @@ class Result :
     
 
     class TABLE :
+        
         @staticmethod
         def BeamForce_VBM(keys=[],loadcase:list=[],items=['all'],parts=["PartI", "PartJ"],components=['all'],force_unit='KN',len_unit='M'):
             '''

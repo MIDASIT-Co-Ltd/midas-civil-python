@@ -1,7 +1,7 @@
 import requests
 from colorama import Fore,Style
 from ._mapi import *
-_version_ = "1.1.0"
+_version_ = "1.1.1"
 
 
 print('\n╭────────────────────────────────────────────────────────────────────────────────────╮')

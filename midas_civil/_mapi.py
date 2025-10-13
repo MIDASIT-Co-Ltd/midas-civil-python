@@ -4,7 +4,7 @@ from colorama import Fore, Style
 try:import winreg
 except: pass
 import time
-
+import polars as pl
 
 
 
@@ -19,7 +19,36 @@ def Midas_help():
 class NX:
     version_check = True
     user_print = True
-    debug_print = False
+    debug_request = False
+    debug_requestJSON = False
+    debug_response = False
+
+    _symbol_responseCode_ = {
+        "1" : "⌛",
+        "2" : "✅",
+        "3" : "⚠️",
+        "4" : "💀",
+        "5" : "💀"
+    }
+
+
+    @staticmethod
+    def JSToDF_Results(js_json):
+        res_json = {}
+
+        c=0
+        for heading in js_json["SS_Table"]["HEAD"]:
+            for dat in js_json["SS_Table"]["DATA"]:
+                try:
+                    res_json[heading].append(dat[c])
+                except:
+                    res_json[heading]=[]
+                    res_json[heading].append(dat[c])
+
+            c+=1
+
+        res_df = pl.DataFrame(res_json)
+        return(res_df)
     
 
 class MAPI_COUNTRY:
@@ -125,6 +154,14 @@ def MidasAPI(method:str, command:str, body:dict={})->dict:
         "MAPI-Key": mapi_key
     }
 
+    if MAPI_KEY.count == 1:
+        MAPI_KEY.count =0
+        if NX.user_print:
+            _checkUSER()
+
+
+
+
     start_time = time.perf_counter()
 
 
@@ -140,22 +177,23 @@ def MidasAPI(method:str, command:str, body:dict={})->dict:
     end_time = time.perf_counter()
     elapsed_time = end_time - start_time
 
-    if NX.debug_print:
-        print(f"{method} |  URL : {command} | STATUS : {response.status_code} | TIME : {elapsed_time:.4f} sec")
+    if NX.debug_request:
+        # sym = NX._symbol_responseCode_[str(response.status_code)[0]]
+        # print(Fore.RED+f">>   METHOD : {method} |  URL : {command} | STATUS : "+Fore.YELLOW+f" {response.status_code} "+Fore.RED+f"| TIME : {elapsed_time:.4f} sec "+Style.RESET_ALL)
+        print(Fore.RED+f">>   METHOD : {method} |  URL : {command} | STATUS :  {response.status_code} | TIME : {elapsed_time:.4f} sec "+Style.RESET_ALL)
+    if NX.debug_requestJSON:
+        print(Fore.CYAN+">>  "+str(body)+Style.RESET_ALL)
+    if NX.debug_response:
+        print(Fore.GREEN+">>  "+str(response.json())+Style.RESET_ALL)
 
-
-
-    if MAPI_KEY.count == 1:
-        MAPI_KEY.count = 0
+    if MAPI_KEY.count == 0:
+        MAPI_KEY.count = -1
         if response.status_code == 404:
             print(Fore.RED +'\n╭─ 💀   ─────────────────────────────────────────────────────────────────────────────╮')
             print(f"│  Civil NX model is not connected.  Click on 'Apps > Connect' in Civil NX.          │")
             print(f"│  Make sure the MAPI Key in python code is matching with the MAPI key in Civil NX.  │")
             print('╰────────────────────────────────────────────────────────────────────────────────────╯\n'+Style.RESET_ALL)
             sys.exit(0)
-
-        if NX.user_print:
-            _checkUSER()
     
 
 

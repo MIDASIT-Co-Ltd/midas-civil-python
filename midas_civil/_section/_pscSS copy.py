@@ -1,6 +1,6 @@
 from ._offsetSS import Offset
 from ._offsetSS import _common
-from math import hypot
+import math
 
 
 
@@ -117,335 +117,25 @@ class _SS_PSC_12CELL(_common):
     
     def _centerLine(shape,*args):
         if shape.SHAPE == '1CEL':
-            HO1,HO2,HO21,HO22,HO3,HO31 = shape.HO1,shape.HO2,shape.HO21,shape.HO22,shape.HO3,shape.HO31
-            BO1,BO11,BO12,BO2,BO21,BO3 = shape.BO1,shape.BO11,shape.BO12,shape.BO2,shape.BO21,shape.BO3
-
-            HI1,HI2,HI21,HI22,HI3,HI31,HI4,HI41,HI42,HI5 = shape.HI1,shape.HI2,shape.HI21,shape.HI22,shape.HI3,shape.HI31,shape.HI4,shape.HI41,shape.HI42,shape.HI5
-            BI1,BI11,BI12,BI21,BI3,BI31,BI32,BI4 = shape.BI1,shape.BI11,shape.BI12,shape.BI21,shape.BI3,shape.BI31,shape.BI32,shape.BI4
-
-            JO1,JO2,JO3,JI1,JI2,JI3,JI4,JI5 = shape.JO1,shape.JO2,shape.JO3,shape.JI1,shape.JI2,shape.JI3,shape.JI4,shape.JI5
-
-            sect_cg_LT = [-(BO1+BO2+BO3),0]
-            sect_cg_RB = [(BO1+BO2+BO3),-(HO1+HO2+HO3)]
-            sect_cg_CC = [0,-(HO1+HO2+HO3)/2]
-
-
-
-
-            def perpendicular_point(pt1,pt2,point, l=0):
-                """Function to get orthogonal point on line (x1,y1)-(x2,y2) from point (x3,y3). Enter l=0 for point 3 in between 1 & 2.  Enter l=1 for other scenario."""
-                x1,y1 = pt1
-                x2,y2 = pt2
-                x3,y3 = point
-
-                if x2 != x1:
-                    m = (y2 - y1) / (x2 - x1)
-                    c = y1 - m * x1
-                    x_perp = (x3 + m * (y3 - c)) / (1 + m**2)
-                    y_perp = m * x_perp + c
-                else:
-                    x_perp, y_perp = x1, y3
-                
-                thk = ((x3 - x_perp)**2 + (y3 - y_perp)**2)**0.5
-                return (x_perp, y_perp),thk
-            
-            def distance_point(pt1,pt2):
-                x1,y1 = pt1
-                x2,y2 = pt2
-
-                return hypot((x1-x2),(y1-y2))
-
-
-            HTI = HI1+HI2+HI3+HI4+HI5
-            HTO = HO1+HO2+HO3
-            slope = (HTI-HTO)/(BO1+BO2+BO3)
-
-
-            pt1 = (0,0)
-            pt2 = (0,-HI1)
-            pt5 = (-BI1,-HI1-HI2)
-            pt7 = (-BI3,-HI1-HI2-HI3)
-            pt10 = (0,-HI1-HI2-HI3-HI4)
-            pt11 = (0,-HTI)
-
-            pt12 = (-BO3,-HTI)
-            pt14 = (-BO3-BO2,(-HTI+HTO)-HO1-HO2)
-            pt17 = (-BO3-BO2-BO1,(-HTI+HTO)-HO1)
-            pt18 = (-BO3-BO2-BO1,(-HTI+HTO))
-
-            pt3 = (-BI11,-HI1-HI21)
-            pt4 = (-BI12,-HI1-HI22)
-
-            pt6 = (-BI21,-HI1-HI2-HI31)
-
-            pt8 = (-BI32,-HI1-HI2-HI3-HI4+HI42)
-            pt9 = (-BI31,-HI1-HI2-HI3-HI4+HI41)
-
-            pt13 = (-BO3-BO21,-HO1-HO2-HO3+HO31)
-
-            pt15 = (-BO3-BO2-BO1+BO12,(-HTI+HTO)-HO1-HO22)
-            pt16 = (-BO3-BO2-BO1+BO11,(-HTI+HTO)-HO1-HO21)
-
-
-            pt016 = (-BO3-BO2-BO1+BO11,slope*(-BO3-BO2-BO1+BO11))
-            pt015 = (-BO3-BO2-BO1+BO12,slope*(-BO3-BO2-BO1+BO12))
-            pt014 = (-BO3-BO2,slope*(-BO3-BO2))
-            pt05 = (-BI1,slope*(-BI1))
-            pt04 = (-BI12,slope*(-BI12))
-            pt03 = (-BI11,slope*(-BI11))
-            # ---------------------- OUTER POINTS  ---------------------------
-
-            temppt = [pt016,pt015,pt014,pt05,pt04,pt03]
-            points = []
-
-            #-------
-            points.append(pt1)
-            points.append(pt2)
-            if JI1 : points.append(pt3)
-            if JI2 : points.append(pt4)
-            points.append(pt5)
-            if JI3 : points.append(pt6)
-            points.append(pt7)
-            if JI4 : points.append(pt8)
-            if JI5 : points.append(pt9)
-            points.append(pt10)
-            points.append(pt11)
-            points.append(pt12)
-            if JO3 : points.append(pt13)
-            points.append(pt14)
-            if JO2 : points.append(pt15)
-            if JO1 : points.append(pt16)
-            points.append(pt17)
-            points.append(pt18)
-            points.append(pt1)
-
-            x_values, y_values = zip(*points)
-
-            # -------------------   CENTER LINE POINTS ------------------
-
-            cp1 = (0,-HI1/2)
-
-
-            # cp2 = (-BI11,(-HI1-HI21)/2) #JI1
-            cp2 = np.add(pt3,pt03)/2
-
-            # cp3 = (-BI12,(-HI1-HI22)/2) #JI2
-            cp3 = np.add(pt4,pt04)/2
-            # cp4 = (-BI1,(-HI1-HI2)/2)
-            cp4 = np.add(pt5,pt05)/2
-
-            # cp5 = (-BO3-BO2-BO1,-HO1/2)
-            cp5 = np.add(pt17,pt18)/2
-            # cp6 = (-BO3-BO2-BO1+BO11,(-HO1-HO21)/2) #JO1
-            cp6 = np.add(pt16,pt016)/2
-            # cp7 = (-BO3-BO2-BO1+BO12,(-HO1-HO22)/2) #JO2
-            cp7 = np.add(pt15,pt015)/2
-            # cp8 = (-BO3-BO2,(-HO1-HO2)/2)
-            cp8 = np.add(pt14,pt014)/2
-
-            cp9 = np.add(cp8,cp4)/2
-
-            cp10 = np.add(pt5,pt14)/2
-
-            cp17 = np.add(pt10,pt11)/2
-            cp16 = (-BI31,(-HI1-HI2-HI3-HI4+HI41-HTI)/2) #JI5
-            cp15 = (-BI32,(-HI1-HI2-HI3-HI4+HI42-HTI)/2) #JI4
-            cp14 = (-BI3,(-HI1-HI2-HI3-HTI)/2)
-            cp13 = np.add(pt7,pt12)/2
-
-
-            tpt,TJI3 = perpendicular_point(pt13,pt14,pt6)
-            cp11 = np.add(tpt,pt6)/2  #JI3
-
-
-            tpt,TJO3 = perpendicular_point(pt7,pt6,pt13)
-            cp12 = np.add(tpt,pt13)/2 #JO3
-
-            # if cp12[1] < cp13[1] : 
-            #     print("JO3 invalid")
-
-
-            #----------------------------- THICKNESS COMPUTATION --------------
-
-            THI1 = HI1
-            TJI1 = distance_point(pt3,pt03)
-            TJI2 = distance_point(pt4,pt04)
-            THI2 = distance_point(pt5,pt05)
-            THO2 = distance_point(pt14,pt014)
-            THO1 = distance_point(pt17,pt18)
-            THI3 = (HI4+HI5)
-            THI5 = HI5
-            TJO1 = distance_point(pt16,pt016)
-            TJO2 = distance_point(pt15,pt015)
-            TJI4 = (HI5+HI42)
-            TJI5 = (HI5+HI41)
-
-
-            TX_INT_FLANGE = (HO1+HO2+HI1+HI2)/2
-            tpt,THIO2 = perpendicular_point(pt13,pt14,pt5)
-            TY_INT_FLANGE = THIO2
-
-            TX_BOT_JUNC = hypot(*np.subtract(pt7,pt12))
-
-            tpt,TY_BOT_JUNC = perpendicular_point(pt13,pt14,pt7)
-            # TY_BOT_JUNC = (TY_BOT_JUNC+hypot(*np.subtract(pt7,pt12)))/2
-
-
-
-            top_flange_point =[]
-            top_flange_line = []
-            top_flange_thk = []
-            q=1
-            top_flange_point.append(cp1)
-            if JI1 : 
-                top_flange_point.append(cp2)
-                top_flange_line.append([q,q+1])
-                top_flange_thk.append([THI1,TJI1])
-                q+=1
-            if JI2 : 
-                top_flange_point.append(cp3)
-                top_flange_line.append([q,q+1])
-                q+=1
-                if JI1:
-                    top_flange_thk.append([TJI1,TJI2])
-                else :
-                    top_flange_thk.append([THI1,TJI2])
-            top_flange_point.append(cp4)
-            top_flange_line.append([q,q+1])
-            q+=1
-
-            if JI2:
-                top_flange_thk.append([TJI2,THI2])
-            elif JI1:
-                top_flange_thk.append([TJI1,THI2])
-            else :
-                top_flange_thk.append([THI1,THI2])
-
-
-            top_flange_line.append([q,q+1]) # TO CONNECT WITH WEB
-            q+=1
-            top_flange_thk.append([THI2,TX_INT_FLANGE]) 
-
-
-
-            web_point =[]
-            web_line =[]
-            web_thk = []
-
-            web_point.append(cp9)
-            web_point.append(cp10)
-            web_line.append([q,q+1])
-            q+=1
-            web_thk.append([TY_INT_FLANGE,THIO2])
-            if JI3 : 
-                web_point.append(cp11)
-                web_line.append([q,q+1])
-                q+=1
-                web_thk.append([THIO2,TJI3])
-            if JO3 and cp12[1] < cp13[1]: 
-                web_point.append(cp12)
-                web_line.append([q,q+1])
-                if JI3 : 
-                    web_thk.append([TJI3,TJO3])
-                else:
-                    web_thk.append([THIO2,TJO3])
-                q+=1
-
-            web_point.append(cp13)
-            web_line.append([q,q+1])
-            if JO3:
-                web_thk.append([TJO3,TY_BOT_JUNC])
-            elif JI3:
-                web_thk.append([TJI3,TY_BOT_JUNC])
-            else:
-                web_thk.append([THO2,TY_BOT_JUNC])
-            q+=1
-
-
-
-            bottom_flange_point =[]
-            bottom_flange_line =[]
-            bottom_flange_thk = []
-
-            bottom_flange_line.append([q,q+1]) # TO CONNECT WITH WEB
-            bottom_flange_thk.append([TX_BOT_JUNC,THI3])
-            q+=1
-            bottom_flange_point.append(cp14)
-            if JI4 : 
-                bottom_flange_point.append(cp15)
-                bottom_flange_line.append([q,q+1])
-                q+=1
-                bottom_flange_thk.append([THI3,TJI4])
-            if JI5 : 
-                bottom_flange_point.append(cp16)
-                bottom_flange_line.append([q,q+1])
-                q+=1
-                if JI4:
-                    bottom_flange_thk.append([TJI4,TJI5])
-                else:
-                    bottom_flange_thk.append([THI3,TJI5])
-            bottom_flange_point.append(cp17)
-            bottom_flange_line.append([q,q+1])
-            if JI5:
-                bottom_flange_thk.append([TJI5,THI5])
-            elif JI4:
-                bottom_flange_thk.append([TJI4,THI5])
-            else:
-                bottom_flange_thk.append([THI3,THI5])
-            q+=1 
-
-
-            top_cantelever_point =[]
-            top_cantelever_line =[]
-            top_cantelever_thk =[]
-
-            top_cantelever_line.append([len(top_flange_point)+1,q+1]) # TO CONNECT WITH WEB
-            top_cantelever_thk.append([TX_INT_FLANGE,THO2])
-            q+=1
-            top_cantelever_point.append(cp8)
-            if JO2 : 
-                top_cantelever_point.append(cp7)
-                top_cantelever_line.append([q,q+1])
-                q+=1
-                top_cantelever_thk.append([THO2,TJO2])
-            if JO1 : 
-                top_cantelever_point.append(cp6)
-                top_cantelever_line.append([q,q+1])
-                q+=1
-                if JO2:
-                    top_cantelever_thk.append([TJO2,TJO1])
-                else:
-                    top_cantelever_thk.append([THO2,TJO1])
-            top_cantelever_point.append(cp5)
-            top_cantelever_line.append([q,q+1])
-            if JO1:
-                top_cantelever_thk.append([TJO1,THO1])
-            elif JO2:
-                top_cantelever_thk.append([TJO2,THO1])
-            else:
-                top_cantelever_thk.append([THO2,THO1])
-
-
-            final_points = top_flange_point+web_point+bottom_flange_point+top_cantelever_point
-            final_line = top_flange_line+web_line+bottom_flange_line+top_cantelever_line
-            final_thk = top_flange_thk+web_thk+bottom_flange_thk+top_cantelever_thk
-
-            n_points = len(final_points)
-            sect_shape = final_points
-            for i in range(n_points):
-                sect_shape.append((-final_points[i][0],final_points[i][1]))
-
-
-            sect_lin_con = final_line
-            sect_thk = final_thk
-            
-
-            for q in range(len(final_line)):
-                sect_thk.append([final_thk[q][1],final_thk[q][0]])
-                sect_lin_con.append([final_line[q][1]+n_points,final_line[q][0]+n_points])
-
-            sect_thk_off = [0 for _ in sect_thk]
-            
+            BO1 = shape.BO1
+            BO2 = shape.BO2
+            BO3 = shape.BO3
+            HO1 = shape.HO1
+            HO2 = shape.HO2
+            HO3 = shape.HO3
+            HI1 = shape.HI1
+            HI5 = shape.HI5
+            BI3 = shape.BI3
+
+            sect_lin_con = [[1,2],[2,3],[3,4],[2,5],[3,6],[5,6]]
+
+            sect_cg_LT = [0,0]
+            sect_cg_RB = [2*(BO1+BO2+BO3),-(HO1+HO2+HO3)]
+            sect_cg_CC = [(BO1+BO2+BO3),-(HO1+HO2+HO3)/2]
+
+            sect_shape = [[0,0],[BO1,0],[BO1+2*(BO2+BO3),0],[2*(BO1+BO2+BO3),0],[BO1+BO2,-HO1-HO3-HO2],[BO1+BO2+2*BO3,-HO1-HO3-HO2]]
+            sect_thk = [HO1,HI1,HO1,BO3-BI3,BO3-BI3,HI5]
+            sect_thk_off = [-HO1/2,-HI1/2,-HO1/2,(BO3-BI3)/2,-(BO3-BI3)/2,HI5/2]       
 
 
 
@@ -454,6 +144,9 @@ class _SS_PSC_12CELL(_common):
         return sect_shape, sect_thk ,sect_thk_off, sect_cg , sect_lin_con
 
     
+
+
+
 
 
 

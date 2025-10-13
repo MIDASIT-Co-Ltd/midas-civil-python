@@ -43,7 +43,7 @@ class _SS_DBUSER(_common):
     def _objectify(id,name,type,shape,offset,uShear,u7DOF,js):
         return _SS_DBUSER(name,shape,js['SECT_BEFORE']['SECT_I']['vSIZE'],offset,uShear,u7DOF,id)
     
-    def _centerLine(shape,end):
+    def _centerLine(shape,*args):
         if shape.SHAPE == 'SB' :
             H,B = shape.PARAMS[:2]
 
@@ -54,13 +54,13 @@ class _SS_DBUSER(_common):
             sect_cg_RB = [B/2,-H/2]
 
             if H > B :
-                sect_shape = [[0,0],[0,H/2],[0,-H/2],[0,H/4],[0,-H/4]]
-                sect_thk = [B,B,B,B]
-                sect_thk_off = [0,0,0,0]
+                sect_shape = [[0,0],[0,H/2],[0,-H/2]]
+                sect_thk = [B,B]
+                sect_thk_off = [0,0]
             else : 
-                sect_shape = [[0,0],[B/2,0],[-B/2,0],[B/4,0],[-B/4,0]]
-                sect_thk = [H,H,H,H]
-                sect_thk_off = [0,0,0,0]
+                sect_shape = [[0,0],[B/2,0],[-B/2,0]]
+                sect_thk = [H,H]
+                sect_thk_off = [0,0]
 
         elif shape.SHAPE == 'L' :
             H,B,tw,tf = shape.PARAMS[:4]

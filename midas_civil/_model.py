@@ -252,6 +252,7 @@ class Model:
         Boundary.create()
         Load.create()
         Tendon.create()
+        if Section.TaperedGroup.data !=[] : Section.TaperedGroup.create()
 
         LoadCombination.create()
 

@@ -263,8 +263,8 @@ class Section:
         
         data = []
         
-        def __init__(self, name, elem_list, z_var, y_var, z_exp=None, z_from=None, z_dist=None, 
-                     y_exp=None, y_from=None, y_dist=None, id=""):
+        def __init__(self, name, elem_list, z_var="LINEAR", y_var="LINEAR", z_exp=2.0, z_from="i", z_dist=0, 
+                     y_exp=2.0, y_from="i", y_dist=0, id=""):
             """
             Args:
                 name (str): Tapered Group Name (Required).

@@ -28,6 +28,7 @@
 #     return(b)
 #---------------------------------------------------------------------------------------------------------------
 
+import numpy as np
 
 def sFlatten(list_of_list):
     # list_of_list = [list_of_list]
@@ -84,11 +85,13 @@ def zz_add_to_dict(dictionary, key, value):
 
 
 def _convItem2List(item):
-    if isinstance(item,list):
+    if isinstance(item,(list,np.ndarray)):
         return item
     return [item]
 
 def _matchArray(A,B):
+    '''Matches B to length of A   
+    Return B'''
     A = _convItem2List(A)
     B = _convItem2List(B)
     n = len(A)
