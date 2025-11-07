@@ -168,7 +168,7 @@ class Result :
         '''
             TableType : REACTIONG | REACTIONL | DISPLACEMENTG | DISPLACEMENTL | TRUSSFORCE | TRUSSSTRESS
             Keys : List{int} -> Element/ Node IDs  |  str -> Structure Group Name
-            Loadcase : Loadcase name followed by type. eg. DeadLoad(ST)
+            Loadcase : Loadcase/Combination name followed by type. eg. DeadLoad(ST)
         '''
 
         js_dat = {
@@ -212,7 +212,7 @@ class Result :
         def BeamForce_VBM(keys=[],loadcase:list=[],items=['all'],parts=["PartI", "PartJ"],components=['all'],force_unit='KN',len_unit='M'):
             '''
                 Keys : List{int} -> Element/ Node IDs  |  str -> Structure Group Name
-                Loadcase : Loadcase name followed by type. eg. DeadLoad(ST)
+                Loadcase : Loadcase/Combination name followed by type. eg. ["DeadLoad(ST)"]
                 Items to display : [ "Axial" , "Shear-y" , "Shear-z" , "Torsion" , "Moment-y" , "Moment-z"]
                 Parts : ["PartI", "Part1/4", "Part2/4", "Part3/4", "PartJ"]
                 Components (colms of tabulart result): [ "Elem", "Load", "Part", "Component", "Axial", "Shear-y", "Shear-z", "Torsion", "Moment-y", "Moment-z" ]

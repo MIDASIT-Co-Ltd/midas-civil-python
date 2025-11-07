@@ -1,7 +1,7 @@
 from ._mapi import *
 from ._node import *
 from ._group import _add_elem_2_stGroup
-from ._group import _add_node_2_stGroup,Group
+from ._group import _add_node_2_stGroup,Group,nodesInGroup
 import numpy as np
 from scipy.interpolate import splev, splprep , interp1d , Akima1DInterpolator
 from math import hypot
@@ -408,6 +408,7 @@ class Element:
                 angle: Beta angle for section orientation in degrees (default 0.0)
                 group: Structure group of the element (str or list; 'SG1' or ['SG1','SG2'])
                 id: Element ID (default 0 for auto-increment)
+                
             
             Examples:
                 ```python
@@ -495,7 +496,7 @@ class Element:
                 return beam_obj
         
         @staticmethod
-        def PLine(points_loc:list,n_div:int=0,deg:int=1,includePoint:bool=True,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0,bLocalAxis=False):
+        def PLine(points_loc:list,n_div:int=0,deg:int=1,includePoint:bool=False,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0,bLocalAxis=False):
                 '''
                 angle : float of list(float)
                 '''
@@ -691,6 +692,38 @@ class Element:
 
 
             _ADD(self)
+
+        # @staticmethod
+        # def fromPoints(points: list, meshSize:float=0, stype: int = 1, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = 0): #CHANGE TO TUPLE
+        #         # INPUTS POINTS and create a triangular meshing with given mesh size  |  If meshSize = 0 , half of shortest length will be taken as mesh size
+        #         return 0
+        
+        @staticmethod
+        def loftGroups(strGroups: list, stype: int = 1, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = 0): #CHANGE TO TUPLE
+                # INPUTS 2 or more structure groups to create rectangular plates between the nodes | No. of nodes should be same in the Str Group
+            """
+            INPUTS 2 or more structure groups to create rectangular plates between the nodes  
+            No. of nodes should be same in the Str Group
+            """
+            n_groups = len(strGroups)
+            if n_groups < 2 :
+                print("⚠️ No. of structure groups in Plate.loftGroups in less than 2")
+                return False
+            plate_obj = []
+            for ng in range(n_groups-1):
+                nID_A = nodesInGroup(strGroups[ng])
+                nID_B = nodesInGroup(strGroups[ng+1])
+
+                min_len = min(len(nID_A),len(nID_B))
+                if min_len < 2 :
+                    print("⚠️ No. of nodes in Plate.loftGroups in less than 2")
+                    return False
+
+                for i in range(min_len-1):
+                    pt_array = [nID_A[i],nID_B[i],nID_B[i+1],nID_A[i+1]]
+                    plate_obj.append(Element.Plate(pt_array,stype,mat,sect,angle,group,id))
+
+            return plate_obj
             
     class Tension(_common):
      def __init__(self, i: int, j: int, stype: int, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = 0, non_len: float = None, cable_type: int = None, tens: float = None, t_limit: float = None):

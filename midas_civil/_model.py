@@ -12,6 +12,7 @@ from ._thickness import *
 
 from ._tendon import *
 from ._result import *
+from ._movingload import *
 
 class Model:
 
@@ -237,7 +238,17 @@ class Model:
     #                 Material.update_class()
 
 
-
+    @staticmethod
+    def maxID(dbNAME:str = 'NODE') -> int :
+        ''' 
+        Returns maximum ID of a DB in CIVIL NX
+        dbNAME - 'NODE' , 'ELEM' , 'THIK' , 'SECT' 
+        If no data exist, 0 is returned
+        '''
+        dbJS = MidasAPI('GET',f'/db/{dbNAME}')
+        if dbJS == {'message': ''}:
+            return 0
+        return int(list(dbJS[dbNAME].keys())[-1])
 
     @staticmethod
     def create():
@@ -253,8 +264,9 @@ class Model:
         Load.create()
         Tendon.create()
         if Section.TaperedGroup.data !=[] : Section.TaperedGroup.create()
-
+        MovingLoad.create()
         LoadCombination.create()
+        
 
 
 

@@ -1,7 +1,7 @@
 import requests
 from colorama import Fore,Style
 from ._mapi import *
-_version_ = "1.1.1"
+_version_ = "1.1.2"
 
 
 print('\n╭────────────────────────────────────────────────────────────────────────────────────╮')
@@ -33,7 +33,7 @@ from ._material import *
 # from ._section import *
 from ._section import *
 
-from ._result_extract import *
+# from ._result_extract import *
 from ._construction import *
 from ._thickness import *
 from ._temperature import *
@@ -45,4 +45,6 @@ from ._movingload import *
 from ._settlement import *
 from ._analysiscontrol import *
 from ._BoundaryChangeAssignment import*
+
+from ._result_test import *
 

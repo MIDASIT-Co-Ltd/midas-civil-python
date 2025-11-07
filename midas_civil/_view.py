@@ -1,14 +1,21 @@
 from ._mapi import *
 from ._model import *
 
-class Display:
+class View:
+    '''
+    Contains option for Viewport display
 
-    Hidden = False
+    **Hidden** - View.Hidden   
+    **Active** - View.Active   
+    **Angle** - View.Angle   
+    '''
+
+    Hidden:bool = False
     '''Toggle Hidden mode ie. 3D section display or line'''
 
     class __ActiveMeta__(type):
         @property
-        def mode(cls):
+        def mode(cls) :
             ''' Mode - > "All" , "Active" , "Identity" '''
             return cls.__mode__
 
@@ -18,13 +25,14 @@ class Display:
             cls.__default__ = False
     
     class Active(metaclass = __ActiveMeta__ ):
+        
         '''Sets Elements to be Active for View.Capture() or View.CaptureResults()
 
         **Mode** - "All" , "Active" , "Identity"   
         **Node_List** - Node to be active when Mode is "Active"   
         **Elem_List** - Element to be active when Mode is "Active"   
         **Identity_Type** - "Group" , "Boundary Group" , "Load Group" , "Named Plane"   
-        **Identity_List** - String list of all the idenity items   
+        **Identity_List** - String list of all the idenity items  
         '''
         __mode__ = "All"
         __default__ = True
@@ -32,6 +40,22 @@ class Display:
         elem_list = []
         ident_type = "Group"
         ident_list = []
+
+        def __init__(self,mode='All',node_list=[],elem_list=[],ident_type='Group',ident_list=[]):
+            '''Sets Elements to be Active for View.Capture() or View.CaptureResults()
+
+            **Mode** - "All" , "Active" , "Identity"   
+            **Node_List** - Node to be active when Mode is "Active"   
+            **Elem_List** - Element to be active when Mode is "Active"   
+            **Identity_Type** - "Group" , "Boundary Group" , "Load Group" , "Named Plane"   
+            **Identity_List** - String list of all the idenity items  
+            '''
+            View.Active.mode = mode
+            View.Active.node_list = node_list
+            View.Active.elem_list = elem_list
+            View.Active.ident_type = ident_type
+            View.Active.ident_list = ident_list
+            
 
         
 
@@ -73,6 +97,10 @@ class Display:
             cls.__newV__ = True
 
     class Angle(metaclass = __AngleMeta__) :
+        '''
+        **Horizontal** - Horizontal angle of the Viewport  
+        **Vertical** - Vertical angle of the Viewport  
+        '''
         __horizontal__ = 30
         __vertical__ = 15
         __newH__ = False
@@ -90,8 +118,22 @@ class Display:
 
 
 class ResultGraphic:
+    '''
+    Contains Result Graphics type and options for Result Graphics display   
+
+    **Contour** - ResultGraphic.Contour   
+    **Legend** - ResultGraphic.Legend   
+    **Values** - ResultGraphic.Values   
+    **Deform** - ResultGraphic.Deform  
+    **Results images** - ResultGraphic.BeamDiagram ,  ResultGraphic.DisplacementContour , ...   
+    '''
 
     class Contour:
+        '''
+        **use** - ( True or False ) Shows contour in the Result Image
+        **num_Color** (default - 12) - Number of colors in Contours 6, 12, 18, 24
+        **color** (default - "rgb") - Color Table - "vrgb" | "rgb" | "rbg" | "gray scaled"  
+        '''
         use = True
         num_color = 12
         color = "rgb"
@@ -106,6 +148,12 @@ class ResultGraphic:
             return json_body
         
     class Legend:
+        '''
+        **use** - ( True or False ) Shows Legend in the Result Image  
+        **position**  - Position of Legend - "left" | "right"  
+        **bExponent** - True -> Shows exponential values in legend  | False -> Shows fixed values in legend  
+        **num_decimal**  -  Number of decimal values shown in legend  
+        '''
         use = True
         position = "right"
         bExponent = False
@@ -122,6 +170,12 @@ class ResultGraphic:
             return json_body
         
     class Values:
+        '''
+        **use** - ( True or False ) Shows result Values in the Result Image  
+        **orient_angle**  - Orientation angle of Values (0,15,30,45,60,75,90)
+        **bExpo** - True -> Shows exponential values in viewport  | False -> Shows fixed values in viewport  
+        **num_decimal**  -  Number of decimal values shown in viewport  
+        '''
         use = False
         bExpo = False
         num_decimal = 2
@@ -138,6 +192,13 @@ class ResultGraphic:
             return json_body
         
     class Deform:
+        '''
+        **use** - ( True or False ) Shows Deformation in the Result Image   
+        **scale**  - Deformation scale factor  
+        **bRealDeform** - False -> Shows Nodal Deform  | True -> Shows Real Deform  
+        **bRealDisp**  -  Shows real displacement (Auto-Scale Off)  
+        **bRelativeDisp**  -  The structure's deformation is shown graphically in relation to a minimum nodal displacement set at 0  
+        '''
         use = False
         scale = 1.0
         bRealDeform = False
@@ -211,10 +272,12 @@ class ResultGraphic:
         
         return json_body
 
-class View:
+class Image:
     @staticmethod
     def Capture(location="D:\\API_temp\\img3.jpg",img_w = 1280 , img_h = 720,view='pre',stage:str=''):
-        ''' Location - image location
+        ''' 
+        Capture the image in the viewport
+            Location - image location
             Image height and width
             View - 'pre' or 'post'
             stage - CS name
@@ -222,14 +285,15 @@ class View:
         json_body = {
                 "Argument": {
                     "SET_MODE":"pre",
-                    "SET_HIDDEN":Display.Hidden,
+                    "SET_HIDDEN":View.Hidden,
                     "EXPORT_PATH": location,
                     "HEIGHT": img_h,
                     "WIDTH": img_w,
-                    "ACTIVE" : Display.Active._json(),
-                    "ANGLE":Display.Angle._json()
+                    "ANGLE":View.Angle._json()
                 }
             }
+        if View.Active.__default__ ==False:
+            json_body['Argument']['ACTIVE'] = View.Active._json()
         
         if view=='post':
             json_body['Argument']['SET_MODE'] = 'post'
@@ -244,6 +308,7 @@ class View:
     @staticmethod
     def CaptureResults(ResultGraphic:dict,location:str="D:\\API_temp\\img3.jpg",img_w:int = 1280 , img_h:int = 720,CS_StageName:str=''):
         ''' 
+        Capture Result Graphic in CIVIL NX   
             Result Graphic - ResultGraphic JSON (ResultGraphic.BeamDiagram())
             Location - image location
             Image height and width
@@ -252,15 +317,17 @@ class View:
         json_body = {
                 "Argument":{
                     "SET_MODE":"post",
-                    "SET_HIDDEN":Display.Hidden,
+                    "SET_HIDDEN":View.Hidden,
                     "EXPORT_PATH":location,
                     "HEIGHT":img_h,
                     "WIDTH":img_w,
-                    "ACTIVE":Display.Active._json(),
-                    "ANGLE":Display.Angle._json(),
+                    "ANGLE":View.Angle._json(),
                     "RESULT_GRAPHIC": ResultGraphic
                 }
                 }
+        if View.Active.__default__ ==False:
+            json_body['Argument']['ACTIVE'] = View.Active._json()
+
         if CS_StageName != '':
             json_body['Argument']['STAGE_NAME'] = CS_StageName
         MidasAPI('POST','/view/CAPTURE',json_body)

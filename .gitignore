@@ -1,3 +1,7 @@
 test_code/
+test_code2/
+Result Test/
 midas_civil/__pycache__/
 midas_civil/_section/__pycache__/
+midas_civil/_utilsFunc/__pycache__/
+cmd_check.py

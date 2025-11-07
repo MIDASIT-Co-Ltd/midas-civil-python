@@ -116,7 +116,7 @@ class _SS_PSC_12CELL(_common):
                             offset,uShear,u7DOF,id)
     
     def _centerLine(shape,*args):
-        if shape.SHAPE == '1CEL':
+        if shape.SHAPE in ['1CEL','2CEL'] :
             HO1,HO2,HO21,HO22,HO3,HO31 = shape.HO1,shape.HO2,shape.HO21,shape.HO22,shape.HO3,shape.HO31
             BO1,BO11,BO12,BO2,BO21,BO3 = shape.BO1,shape.BO11,shape.BO12,shape.BO2,shape.BO21,shape.BO3
 
@@ -124,6 +124,7 @@ class _SS_PSC_12CELL(_common):
             BI1,BI11,BI12,BI21,BI3,BI31,BI32,BI4 = shape.BI1,shape.BI11,shape.BI12,shape.BI21,shape.BI3,shape.BI31,shape.BI32,shape.BI4
 
             JO1,JO2,JO3,JI1,JI2,JI3,JI4,JI5 = shape.JO1,shape.JO2,shape.JO3,shape.JI1,shape.JI2,shape.JI3,shape.JI4,shape.JI5
+
 
             sect_cg_LT = [-(BO1+BO2+BO3),0]
             sect_cg_RB = [(BO1+BO2+BO3),-(HO1+HO2+HO3)]
@@ -281,7 +282,7 @@ class _SS_PSC_12CELL(_common):
             TJI5 = (HI5+HI41)
 
 
-            TX_INT_FLANGE = (HO1+HO2+HI1+HI2)/2
+            TX_INT_FLANGE = (HO1+HO2+HI1+HI2)/3
             tpt,THIO2 = perpendicular_point(pt13,pt14,pt5)
             TY_INT_FLANGE = THIO2
 
@@ -327,6 +328,7 @@ class _SS_PSC_12CELL(_common):
             top_flange_thk.append([THI2,TX_INT_FLANGE]) 
 
 
+            # print(top_flange_thk)
 
             web_point =[]
             web_line =[]
@@ -358,9 +360,8 @@ class _SS_PSC_12CELL(_common):
             elif JI3:
                 web_thk.append([TJI3,TY_BOT_JUNC])
             else:
-                web_thk.append([THO2,TY_BOT_JUNC])
+                web_thk.append([THIO2,TY_BOT_JUNC])
             q+=1
-
 
 
             bottom_flange_point =[]
@@ -386,6 +387,7 @@ class _SS_PSC_12CELL(_common):
                     bottom_flange_thk.append([THI3,TJI5])
             bottom_flange_point.append(cp17)
             bottom_flange_line.append([q,q+1])
+            n_cp17 = q+1
             if JI5:
                 bottom_flange_thk.append([TJI5,THI5])
             elif JI4:
@@ -431,6 +433,11 @@ class _SS_PSC_12CELL(_common):
             final_thk = top_flange_thk+web_thk+bottom_flange_thk+top_cantelever_thk
 
             n_points = len(final_points)
+
+            if shape.SHAPE == '2CEL':
+                final_line.append([1,n_cp17])
+                final_thk.append([2*BI4,2*BI4])
+
             sect_shape = final_points
             for i in range(n_points):
                 sect_shape.append((-final_points[i][0],final_points[i][1]))
@@ -446,8 +453,7 @@ class _SS_PSC_12CELL(_common):
 
             sect_thk_off = [0 for _ in sect_thk]
             
-
-
+        
 
         sect_cg = (sect_cg_LT,sect_cg_CC,sect_cg_RB)
 

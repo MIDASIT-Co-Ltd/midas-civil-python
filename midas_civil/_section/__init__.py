@@ -5,7 +5,7 @@ from ._unSupp import _SS_UNSUPP,_SS_STD_DB
 from ._compositeSS import _SS_COMP_PSC_I,_SS_COMP_STEEL_I_TYPE1
 from ._TapdbSecSS import _SS_TAPERED_DBUSER
 
-from ._tapPSC1CellSS import _SS_TAP_PSC_1CELL
+from ._tapPSC12CellSS import _SS_TAP_PSC_12CELL
 
 from midas_civil import MidasAPI
 
@@ -72,8 +72,6 @@ def _JS2OBJ(id,js):
     offset = off_JS2Obj(js['SECT_BEFORE'])
     uShear = js['SECT_BEFORE']['USE_SHEAR_DEFORM']
     u7DOF = js['SECT_BEFORE']['USE_WARPING_EFFECT']
-
-
     if type == 'DBUSER':
         if js['SECT_BEFORE']['DATATYPE'] ==2: obj = _SS_DBUSER._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
         else: obj = _SS_STD_DB(id,name,type,shape,offset,uShear,u7DOF,js)
@@ -90,8 +88,12 @@ def _JS2OBJ(id,js):
         else: obj = _SS_UNSUPP(id,name,type,shape,offset,uShear,u7DOF,js)
 
     elif type == 'TAPERED' :
-        if js['SECT_BEFORE']['TYPE'] ==2: obj = _SS_TAPERED_DBUSER._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
-        elif shape in ['1CEL']: obj = _SS_TAP_PSC_1CELL._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
+        try:
+            typeDB = js['SECT_BEFORE']['TYPE']
+        except: typeDB = 0
+        if typeDB == 2: 
+            obj = _SS_TAPERED_DBUSER._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
+        elif shape in ['1CEL','2CEL']: obj = _SS_TAP_PSC_12CELL._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
         else: obj = _SS_UNSUPP(id,name,type,shape,offset,uShear,u7DOF,js)
 
     else :
@@ -237,7 +239,7 @@ class Section:
             return sect_Obj
         
         @staticmethod
-        def PSC1CEL(Name='',Joint=[0,0,0,0,0,0,0,0],
+        def PSC12CEL(Name='',Shape='1CEL',Joint=[0,0,0,0,0,0,0,0],
                     HO1_I=0,HO2_I=0,HO21_I=0,HO22_I=0,HO3_I=0,HO31_I=0,
                     BO1_I=0,BO11_I=0,BO12_I=0,BO2_I=0,BO21_I=0,BO3_I=0,
                     HI1_I=0,HI2_I=0,HI21_I=0,HI22_I=0,HI3_I=0,HI31_I=0,HI4_I=0,HI41_I=0,HI42_I=0,HI5_I=0,
@@ -250,7 +252,7 @@ class Section:
 
                     Offset:Offset=Offset.CC(),useShear=True,use7Dof=False,id:int=0):
             args = locals()
-            sect_Obj = _SS_TAP_PSC_1CELL(**args)
+            sect_Obj = _SS_TAP_PSC_12CELL(**args)
             
             _SectionADD(sect_Obj)
             return sect_Obj
