@@ -565,10 +565,10 @@ def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList):
     
 
     Element.clear()
-    Element.ids = [utils.maxID('ELEM')]
+    Element.ids = [Model.maxID('ELEM')]
 
     Thickness.clear()
-    Thickness.ids = [utils.maxID('THIK')]
+    Thickness.ids = [Model.maxID('THIK')]
 
     # Boundary.RigidLink
     # Boundary.RigidLink.sync()
