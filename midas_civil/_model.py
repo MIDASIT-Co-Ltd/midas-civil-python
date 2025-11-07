@@ -248,7 +248,7 @@ class Model:
         dbJS = MidasAPI('GET',f'/db/{dbNAME}')
         if dbJS == {'message': ''}:
             return 0
-        return int(list(dbJS[dbNAME].keys())[-1])
+        return max(map(int, list(dbJS[dbNAME].keys())))
 
     @staticmethod
     def create():
