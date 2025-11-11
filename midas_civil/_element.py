@@ -35,7 +35,7 @@ def _SInterp(angle,num_points):
 
     return angle_intrp_finalY
 
-def _interpolateAlignment(pointsArray,n_seg=10,deg=1,mSize=0,includePoint:bool=True) -> list:
+def _interpolateAlignment(pointsArray,n_seg=10,deg=1,mSize=0,includePoint:bool=True,div_axis="L") -> list:
     ''' Returns point list and beta angle list'''
     pointsArray = np.array(pointsArray)
     x_p, y_p , z_p  = pointsArray[:,0] , pointsArray[:,1] , pointsArray[:,2]
@@ -46,13 +46,6 @@ def _interpolateAlignment(pointsArray,n_seg=10,deg=1,mSize=0,includePoint:bool=T
         deg = len(pointsArray)-1
 
     #-- Actual length ----
-    dxq = np.diff(x_p)
-    dyq = np.diff(y_p)
-    dzq = np.diff(z_p)
-    dlq=[0]
-
-    for i in range(len(dxq)):
-        dlq.append(hypot(dxq[i],dyq[i],dzq[i]))
 
     tck, u = splprep([x_p, y_p, z_p], s=0, k=deg)
 
@@ -74,9 +67,19 @@ def _interpolateAlignment(pointsArray,n_seg=10,deg=1,mSize=0,includePoint:bool=T
         n_seg=int(total_l/mSize)
 
 
-    eq_len = np.linspace(0,total_l,n_seg+1)
+    if div_axis == "X":
+        eq_x = np.linspace(x_p[0],x_p[-1],n_seg+1)
+        interp_u = np.interp(eq_x,x_den,u_fine)
+    elif div_axis == "Y":
+        eq_y = np.linspace(y_p[0],y_p[-1],n_seg+1)
+        interp_u = np.interp(eq_y,y_den,u_fine)
+    elif div_axis == "Z":
+        eq_z = np.linspace(z_p[0],z_p[-1],n_seg+1)
+        interp_u = np.interp(eq_z,z_den,u_fine)
+    else :
+        eq_len = np.linspace(0,total_l,n_seg+1)
+        interp_u = np.interp(eq_len,cum_l,u_fine)
 
-    interp_u = np.interp(eq_len,cum_l,u_fine)
 
     if includePoint:
         interp_u = np.sort(np.append(interp_u,u[1:-1])).tolist()
@@ -496,7 +499,7 @@ class Element:
                 return beam_obj
         
         @staticmethod
-        def PLine(points_loc:list,n_div:int=0,deg:int=1,includePoint:bool=False,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0,bLocalAxis=False):
+        def PLine(points_loc:list,n_div:int=0,deg:int=1,includePoint:bool=False,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0,bLocalAxis=False,div_axis="L"):
                 '''
                 angle : float of list(float)
                 '''
@@ -506,7 +509,7 @@ class Element:
                 if n_div == 0 :
                     i_loc = points_loc
                 else:
-                    i_loc = _interpolateAlignment(points_loc,n_div,deg,0,includePoint)
+                    i_loc = _interpolateAlignment(points_loc,n_div,deg,0,includePoint,div_axis)
 
                 num_points = len(i_loc)                
                 angle_intrp_finalY = _SInterp(angle,num_points-1) #Beta Angle to be applied to Elements So, n-1
@@ -522,7 +525,7 @@ class Element:
                 return beam_obj
         
         @staticmethod
-        def PLine2(points_loc:list,n_div:int=0,deg:int=1,includePoint:bool=True,mat:int=1,sect:int=1,angle:list[float]=0, group = "" , id: int = 0,bLocalAxis=False,yEcc:list[float]=0,zEcc:list[float]=0,bAngleInEcc:bool=True):
+        def PLine2(points_loc:list,n_div:int=0,deg:int=1,includePoint:bool=False,mat:int=1,sect:int=1,angle:list[float]=0, group = "" , id: int = 0,bLocalAxis=False,div_axis="L",yEcc:list[float]=0,zEcc:list[float]=0,bAngleInEcc:bool=True):
                 '''
                 Creates a polyline with Eccentricity considering the beta angle provided   
                 angle , yEcc , zEcc : float or list(float)   
@@ -537,7 +540,7 @@ class Element:
                 if n_div == 0 :
                     i_loc = points_loc
                 else:
-                    i_loc = _interpolateAlignment(points_loc,n_div,deg,0,includePoint)
+                    i_loc = _interpolateAlignment(points_loc,n_div,deg,0,includePoint,div_axis)
                 
                 
                 num_points = len(i_loc)                

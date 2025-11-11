@@ -279,59 +279,6 @@ class Result :
         return _JSToDF_ResTable(ss_json)
     
 
-    # class TABLE :
-        
-    #     @staticmethod
-    #     def BeamForce_VBM(keys=[],loadcase:list=[],items=['all'],parts=["PartI", "PartJ"],components=['all'],force_unit='KN',len_unit='M'):
-    #         '''
-    #             Keys : List{int} -> Element/ Node IDs  |  str -> Structure Group Name
-    #             Loadcase : Loadcase/Combination name followed by type. eg. ["DeadLoad(ST)"]
-    #             Items to display : [ "Axial" , "Shear-y" , "Shear-z" , "Torsion" , "Moment-y" , "Moment-z"]
-    #             Parts : ["PartI", "Part1/4", "Part2/4", "Part3/4", "PartJ"]
-    #             Components (colms of tabulart result): [ "Elem", "Load", "Part", "Component", "Axial", "Shear-y", "Shear-z", "Torsion", "Moment-y", "Moment-z" ]
-                
-    #         '''
-
-    #         js_dat = {
-    #             "Argument": {
-    #                 "TABLE_NAME": "SS_Table",
-    #                 "TABLE_TYPE": "BEAMFORCEVBM",
-    #                 "STYLES": {
-    #                     "FORMAT": "Fixed",
-    #                     "PLACE": 5
-    #                 },
-    #                 "PARTS" : parts
-    #             }
-    #         }
-
-
-    #         if isinstance(keys,list):
-    #             if keys!=[]:
-    #                 js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": keys}
-    #         elif isinstance(keys,str):
-    #             js_dat["Argument"]['NODE_ELEMS'] = {"STRUCTURE_GROUP_NAME": keys}
-
-
-    #         if loadcase!=[]: js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
-
-    #         if components!=['all']:
-    #             if "Elem" not in components: components.append("Elem")
-    #             if "Load" not in components: components.append("Load")
-    #             if "Part" not in components: components.append("Part")
-    #             if "Component" not in components: components.append("Component")
-    #             js_dat["Argument"]['COMPONENTS'] = components
-            
-    #         if items!=['all']:
-    #             js_dat["Argument"]['ITEM_TO_DISPLAY'] = items
-
-
-
-    #         currUNIT = _getUNIT()
-    #         Model.units(force=force_unit,length=len_unit)
-    #         ss_json = MidasAPI("POST","/post/table",js_dat)
-    #         _setUNIT(currUNIT)
-    #         return _JSToDF_ResTable(ss_json)
-
     class TABLE :
         
         @staticmethod
@@ -612,6 +559,2711 @@ class Result :
             
             return res_df
 
+        @staticmethod
+        def TrussStress(keys=[], loadcase:list=[], components=['all'], 
+                        force_unit='KN', len_unit='M', 
+                        activationCSstep=False, stage_step:list=[], 
+                        number_format="Fixed", digit=5, 
+                        output_path_json=None, output_path_excel=None,
+                        existing_excel_input: list = None):
+            '''
+            Fetches Truss Stress result tables.
+            
+            Args:
+                keys (list/str): List of Element IDs or a Structure Group Name.
+                loadcase (list): List of load case names, e.g., ["DL(ST)"].
+                components (list): Table components to include. Defaults to ['all'].
+                force_unit (str): Force unit (e.g., "KN", "N").
+                len_unit (str): Length unit (e.g., "M", "MM").
+                activationCSstep (bool): Activate construction stage steps.
+                stage_step (list): List of stage steps, e.g., ["CS1:001(first)"].
+                number_format (str): Number format ("Fixed", "Scientific", "General").
+                digit (int): Number of decimal places (0-15).
+                output_path_json (str): Optional. File path to save the raw JSON response.
+                output_path_excel (str): Optional. File path to save the result table as a new Excel file.
+                existing_excel_input (list): Optional. List to write to an existing file: [excel_path, sheet_name, start_cell].
+            
+            Returns:
+                polars.DataFrame: A DataFrame containing the result table.
+            '''
+            
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Table",
+                    "TABLE_TYPE": "TRUSSSTRESS",
+                    "STYLES": {
+                        "FORMAT": number_format,
+                        "PLACE": digit
+                    },
+                    "UNIT": {
+                        "FORCE": force_unit,
+                        "DIST": len_unit
+                    }
+                }
+            }
+
+            if output_path_json:
+                js_dat["Argument"]["EXPORT_PATH"] = output_path_json
+
+            if isinstance(keys, list) and keys:
+                js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": keys}
+            elif isinstance(keys, str):
+                js_dat["Argument"]['NODE_ELEMS'] = {"STRUCTURE_GROUP_NAME": keys}
+
+            if loadcase:
+                js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
+
+            if components != ['all']:
+                js_dat["Argument"]['COMPONENTS'] = components
+
+            if activationCSstep:
+                js_dat["Argument"]['OPT_CS'] = True
+                if stage_step:
+                    js_dat["Argument"]['STAGE_STEP'] = stage_step
+
+            currUNIT = _getUNIT()
+            Model.units(force=force_unit,length=len_unit)
+            ss_json = MidasAPI("POST","/post/table",js_dat)
+            _setUNIT(currUNIT)
+            
+            res_df = _JSToDF_ResTable(ss_json)
+
+            if output_path_excel and not res_df.is_empty():
+                try:
+                    res_df.write_excel(output_path_excel,
+                                    autofit=True,
+                                    autofilter=True,
+                                    table_style="Table Style Light 8",
+                                    header_format={"bold":True})
+                    print(f"✅ Successfully saved Truss Stress table to: {output_path_excel}")
+                except Exception as e:
+                    print(f"⚠️ Error saving Excel file: {e}")
+            
+            if existing_excel_input and not res_df.is_empty():
+                _write_df_to_existing_excel(res_df, existing_excel_input)
+            
+            return res_df
+
+        @staticmethod
+        def BeamForce(keys=[], loadcase:list=[], parts=["PartI", "PartJ"], 
+                      components=['all'], force_unit='KN', len_unit='M', 
+                      activationCSstep=False, stage_step:list=[], 
+                      number_format="Fixed", digit=5, 
+                      output_path_json=None, output_path_excel=None,
+                      existing_excel_input: list = None):
+            '''
+            Fetches standard Beam Force result tables.
+            
+            Args:
+                keys (list/str): List of Element IDs or a Structure Group Name.
+                loadcase (list): List of load case names, e.g., ["Selfweight(ST)"].
+                parts (list): Element parts: ["PartI", "Part1/4", "PartJ", etc.].
+                components (list): Table components to include. Defaults to ['all'].
+                force_unit (str): Force unit (e.g., "KN", "N").
+                len_unit (str): Length unit (e.g., "M", "MM").
+                activationCSstep (bool): Activate construction stage steps.
+                stage_step (list): List of stage steps, e.g., ["CS3:001(first)"].
+                number_format (str): Number format ("Fixed", "Scientific", "General").
+                digit (int): Number of decimal places (0-15).
+                output_path_json (str): Optional. File path to save the raw JSON response.
+                output_path_excel (str): Optional. File path to save the result table as a new Excel file.
+                existing_excel_input (list): Optional. List to write to an existing file: [excel_path, sheet_name, start_cell].
+            
+            Returns:
+                polars.DataFrame: A DataFrame containing the result table.
+            '''
+            
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Table",
+                    "TABLE_TYPE": "BEAMFORCE",
+                    "STYLES": {
+                        "FORMAT": number_format,
+                        "PLACE": digit
+                    },
+                    "UNIT": {
+                        "FORCE": force_unit,
+                        "DIST": len_unit
+                    },
+                    "PARTS" : parts
+                }
+            }
+
+            if output_path_json:
+                js_dat["Argument"]["EXPORT_PATH"] = output_path_json
+
+            if isinstance(keys, list) and keys:
+                js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": keys}
+            elif isinstance(keys, str):
+                js_dat["Argument"]['NODE_ELEMS'] = {"STRUCTURE_GROUP_NAME": keys}
+
+            if loadcase:
+                js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
+
+            if components != ['all']:
+                js_dat["Argument"]['COMPONENTS'] = components
+
+            if activationCSstep:
+                js_dat["Argument"]['OPT_CS'] = True
+                if stage_step:
+                    js_dat["Argument"]['STAGE_STEP'] = stage_step
+
+            currUNIT = _getUNIT()
+            Model.units(force=force_unit,length=len_unit)
+            ss_json = MidasAPI("POST","/post/table",js_dat)
+            _setUNIT(currUNIT)
+            
+            res_df = _JSToDF_ResTable(ss_json)
+
+            if output_path_excel and not res_df.is_empty():
+                try:
+                    res_df.write_excel(output_path_excel,
+                                    autofit=True,
+                                    autofilter=True,
+                                    table_style="Table Style Light 8",
+                                    header_format={"bold":True})
+                    print(f"✅ Successfully saved Beam Force table to: {output_path_excel}")
+                except Exception as e:
+                    print(f"⚠️ Error saving Excel file: {e}")
+            
+            if existing_excel_input and not res_df.is_empty():
+                _write_df_to_existing_excel(res_df, existing_excel_input)
+            
+            return res_df
+
+        @staticmethod
+        def BeamForce_VBM(keys=[], loadcase:list=[], items=['all'], parts=["PartI", "PartJ"], 
+                          components=['all'], force_unit='KN', len_unit='M', 
+                          activationCSstep=False, stage_step:list=[], 
+                          number_format="Fixed", digit=5, 
+                          output_path_json=None, output_path_excel=None,
+                          existing_excel_input: list = None):
+            '''
+            Fetches Beam Force (View by Max Value) result tables.
+            
+            Args:
+                keys (list/str): List of Element IDs or a Structure Group Name.
+                loadcase (list): List of load case names, e.g., ["STLENV_STR(CB:max)"].
+                items (list): Items to display: ["Axial", "Shear-y", "Moment-z", etc.].
+                parts (list): Element parts: ["PartI", "Part1/4", "PartJ", etc.].
+                components (list): Table components to include. Defaults to ['all'].
+                force_unit (str): Force unit (e.g., "KN", "N").
+                len_unit (str): Length unit (e.g., "M", "MM").
+                activationCSstep (bool): Activate construction stage steps.
+                stage_step (list): List of stage steps, e.g., ["CS1:001(first)"].
+                number_format (str): Number format ("Fixed", "Scientific", "General").
+                digit (int): Number of decimal places (0-15).
+                output_path_json (str): Optional. File path to save the raw JSON response.
+                output_path_excel (str): Optional. File path to save the result table as a new Excel file.
+                existing_excel_input (list): Optional. List to write to an existing file: [excel_path, sheet_name, start_cell].
+            
+            Returns:
+                polars.DataFrame: A DataFrame containing the result table.
+            '''
+            
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Table",
+                    "TABLE_TYPE": "BEAMFORCEVBM",
+                    "STYLES": {
+                        "FORMAT": number_format,
+                        "PLACE": digit
+                    },
+                    "UNIT": {
+                        "FORCE": force_unit,
+                        "DIST": len_unit
+                    },
+                    "PARTS" : parts
+                }
+            }
+
+            if output_path_json:
+                js_dat["Argument"]["EXPORT_PATH"] = output_path_json
+
+            if isinstance(keys, list) and keys:
+                js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": keys}
+            elif isinstance(keys, str):
+                js_dat["Argument"]['NODE_ELEMS'] = {"STRUCTURE_GROUP_NAME": keys}
+
+            if loadcase:
+                js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
+
+            if components != ['all']:
+                js_dat["Argument"]['COMPONENTS'] = components
+            
+            if items != ['all']:
+                js_dat["Argument"]['ITEM_TO_DISPLAY'] = items
+
+            if activationCSstep:
+                js_dat["Argument"]['OPT_CS'] = True
+                if stage_step:
+                    js_dat["Argument"]['STAGE_STEP'] = stage_step
+
+            currUNIT = _getUNIT()
+            Model.units(force=force_unit,length=len_unit)
+            ss_json = MidasAPI("POST","/post/table",js_dat)
+            _setUNIT(currUNIT)
+            
+            res_df = _JSToDF_ResTable(ss_json)
+
+            if output_path_excel and not res_df.is_empty():
+                try:
+                    res_df.write_excel(output_path_excel,
+                                    autofit=True,
+                                    autofilter=True,
+                                    table_style="Table Style Light 8",
+                                    header_format={"bold":True})
+                    print(f"✅ Successfully saved Beam Force (VBM) table to: {output_path_excel}")
+                except Exception as e:
+                    print(f"⚠️ Error saving Excel file: {e}")
+            
+            if existing_excel_input and not res_df.is_empty():
+                _write_df_to_existing_excel(res_df, existing_excel_input)
+            
+            return res_df
+
+        @staticmethod
+        def BeamForce_StaticPrestress(keys=[], loadcase:list=[], parts=["PartI", "PartJ"], 
+                                      components=['all'], force_unit='KN', len_unit='M', 
+                                      number_format="Fixed", digit=5, 
+                                      output_path_json=None, output_path_excel=None,
+                                      existing_excel_input: list = None):
+            '''
+            Fetches Beam Force (Static Prestress) result tables.
+            Note: Construction Stage options are not applicable to this table type.
+            
+            Args:
+                keys (list/str): List of Element IDs or a Structure Group Name.
+                loadcase (list): List of load case names, e.g., ["Prestress(ST)"].
+                parts (list): Element parts: ["PartI", "PartJ", etc.].
+                components (list): Table components to include. Defaults to ['all'].
+                force_unit (str): Force unit (e.g., "KN", "N").
+                len_unit (str): Length unit (e.g., "M", "MM").
+                number_format (str): Number format ("Fixed", "Scientific", "General").
+                digit (int): Number of decimal places (0-15).
+                output_path_json (str): Optional. File path to save the raw JSON response.
+                output_path_excel (str): Optional. File path to save the result table as a new Excel file.
+                existing_excel_input (list): Optional. List to write to an existing file: [excel_path, sheet_name, start_cell].
+            
+            Returns:
+                polars.DataFrame: A DataFrame containing the result table.
+            '''
+            
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Table",
+                    "TABLE_TYPE": "BEAMFORCESTP",
+                    "STYLES": {
+                        "FORMAT": number_format,
+                        "PLACE": digit
+                    },
+                    "UNIT": {
+                        "FORCE": force_unit,
+                        "DIST": len_unit
+                    },
+                    "PARTS" : parts
+                }
+            }
+
+            if output_path_json:
+                js_dat["Argument"]["EXPORT_PATH"] = output_path_json
+
+            if isinstance(keys, list) and keys:
+                js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": keys}
+            elif isinstance(keys, str):
+                js_dat["Argument"]['NODE_ELEMS'] = {"STRUCTURE_GROUP_NAME": keys}
+
+            if loadcase:
+                js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
+
+            if components != ['all']:
+                js_dat["Argument"]['COMPONENTS'] = components
+            
+            # Note: 'OPT_CS' and 'STAGE_STEP' are intentionally omitted
+            # as per documentation
+
+            currUNIT = _getUNIT()
+            Model.units(force=force_unit,length=len_unit)
+            ss_json = MidasAPI("POST","/post/table",js_dat)
+            _setUNIT(currUNIT)
+            
+            res_df = _JSToDF_ResTable(ss_json)
+
+            if output_path_excel and not res_df.is_empty():
+                try:
+                    res_df.write_excel(output_path_excel,
+                                    autofit=True,
+                                    autofilter=True,
+                                    table_style="Table Style Light 8",
+                                    header_format={"bold":True})
+                    print(f"✅ Successfully saved Beam Force (Static Prestress) table to: {output_path_excel}")
+                except Exception as e:
+                    print(f"⚠️ Error saving Excel file: {e}")
+            
+            if existing_excel_input and not res_df.is_empty():
+                _write_df_to_existing_excel(res_df, existing_excel_input)
+            
+            return res_df
+
+        @staticmethod
+        def BeamStress(keys=[], loadcase:list=[], parts=["PartI", "PartJ"], 
+                       components=['all'], force_unit='KN', len_unit='M', 
+                       activationCSstep=False, stage_step:list=[], 
+                       number_format="Fixed", digit=5, 
+                       output_path_json=None, output_path_excel=None,
+                       existing_excel_input: list = None):
+            '''
+            Fetches standard Beam Stress result tables.
+            
+            Args:
+                keys (list/str): List of Element IDs or a Structure Group Name.
+                loadcase (list): List of load case names, e.g., ["Selfweight(ST)"].
+                parts (list): Element parts: ["PartI", "PartJ", etc.].
+                components (list): Table components to include. Defaults to ['all'].
+                force_unit (str): Force unit (e.g., "KN", "N").
+                len_unit (str): Length unit (e.g., "M", "MM").
+                activationCSstep (bool): Activate construction stage steps.
+                stage_step (list): List of stage steps, e.g., ["CS3:001(first)"].
+                number_format (str): Number format ("Fixed", "Scientific", "General").
+                digit (int): Number of decimal places (0-15).
+                output_path_json (str): Optional. File path to save the raw JSON response.
+                output_path_excel (str): Optional. File path to save the result table as a new Excel file.
+                existing_excel_input (list): Optional. List to write to an existing file: [excel_path, sheet_name, start_cell].
+            
+            Returns:
+                polars.DataFrame: A DataFrame containing the result table.
+            '''
+            
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Table",
+                    "TABLE_TYPE": "BEAMSTRESS",
+                    "STYLES": {
+                        "FORMAT": number_format,
+                        "PLACE": digit
+                    },
+                    "UNIT": {
+                        "FORCE": force_unit,
+                        "DIST": len_unit
+                    },
+                    "PARTS" : parts
+                }
+            }
+
+            if output_path_json:
+                js_dat["Argument"]["EXPORT_PATH"] = output_path_json
+
+            if isinstance(keys, list) and keys:
+                js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": keys}
+            elif isinstance(keys, str):
+                js_dat["Argument"]['NODE_ELEMS'] = {"STRUCTURE_GROUP_NAME": keys}
+
+            if loadcase:
+                js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
+
+            if components != ['all']:
+                js_dat["Argument"]['COMPONENTS'] = components
+
+            if activationCSstep:
+                js_dat["Argument"]['OPT_CS'] = True
+                if stage_step:
+                    js_dat["Argument"]['STAGE_STEP'] = stage_step
+
+            currUNIT = _getUNIT()
+            Model.units(force=force_unit,length=len_unit)
+            ss_json = MidasAPI("POST","/post/table",js_dat)
+            _setUNIT(currUNIT)
+            
+            res_df = _JSToDF_ResTable(ss_json)
+
+            if output_path_excel and not res_df.is_empty():
+                try:
+                    res_df.write_excel(output_path_excel,
+                                    autofit=True,
+                                    autofilter=True,
+                                    table_style="Table Style Light 8",
+                                    header_format={"bold":True})
+                    print(f"✅ Successfully saved Beam Stress table to: {output_path_excel}")
+                except Exception as e:
+                    print(f"⚠️ Error saving Excel file: {e}")
+            
+            if existing_excel_input and not res_df.is_empty():
+                _write_df_to_existing_excel(res_df, existing_excel_input)
+            
+            return res_df
+
+        @staticmethod
+        def BeamStress_VBM(keys=[], loadcase:list=[], items=['all'], parts=["PartI", "PartJ"], 
+                           components=['all'], force_unit='KN', len_unit='M', 
+                           activationCSstep=False, stage_step:list=[], 
+                           number_format="Fixed", digit=5, 
+                           output_path_json=None, output_path_excel=None,
+                           existing_excel_input: list = None):
+            '''
+            Fetches Beam Stress (View by Max Value) result tables.
+            
+            Args:
+                keys (list/str): List of Element IDs or a Structure Group Name.
+                loadcase (list): List of load case names, e.g., ["STLENV_SER(CB:max)"].
+                items (list): Items to display: ["Axial", "Shear-y", "Bend(+y)", etc.].
+                parts (list): Element parts: ["PartI", "PartJ", etc.].
+                components (list): Table components to include. Defaults to ['all'].
+                force_unit (str): Force unit (e.g., "KN", "N").
+                len_unit (str): Length unit (e.g., "M", "MM").
+                activationCSstep (bool): Activate construction stage steps.
+                stage_step (list): List of stage steps.
+                number_format (str): Number format ("Fixed", "Scientific", "General").
+                digit (int): Number of decimal places (0-15).
+                output_path_json (str): Optional. File path to save the raw JSON response.
+                output_path_excel (str): Optional. File path to save the result table as a new Excel file.
+                existing_excel_input (list): Optional. List to write to an existing file: [excel_path, sheet_name, start_cell].
+            
+            Returns:
+                polars.DataFrame: A DataFrame containing the result table.
+            '''
+            
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Table",
+                    "TABLE_TYPE": "BEAMSTRESSVBM",
+                    "STYLES": {
+                        "FORMAT": number_format,
+                        "PLACE": digit
+                    },
+                    "UNIT": {
+                        "FORCE": force_unit,
+                        "DIST": len_unit
+                    },
+                    "PARTS" : parts
+                }
+            }
+
+            if output_path_json:
+                js_dat["Argument"]["EXPORT_PATH"] = output_path_json
+
+            if isinstance(keys, list) and keys:
+                js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": keys}
+            elif isinstance(keys, str):
+                js_dat["Argument"]['NODE_ELEMS'] = {"STRUCTURE_GROUP_NAME": keys}
+
+            if loadcase:
+                js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
+            
+            if items != ['all']:
+                js_dat["Argument"]['ITEM_TO_DISPLAY'] = items
+
+            if components != ['all']:
+                js_dat["Argument"]['COMPONENTS'] = components
+
+            if activationCSstep:
+                js_dat["Argument"]['OPT_CS'] = True
+                if stage_step:
+                    js_dat["Argument"]['STAGE_STEP'] = stage_step
+
+            currUNIT = _getUNIT()
+            Model.units(force=force_unit,length=len_unit)
+            ss_json = MidasAPI("POST","/post/table",js_dat)
+            _setUNIT(currUNIT)
+            
+            res_df = _JSToDF_ResTable(ss_json)
+
+            if output_path_excel and not res_df.is_empty():
+                try:
+                    res_df.write_excel(output_path_excel,
+                                    autofit=True,
+                                    autofilter=True,
+                                    table_style="Table Style Light 8",
+                                    header_format={"bold":True})
+                    print(f"✅ Successfully saved Beam Stress (VBM) table to: {output_path_excel}")
+                except Exception as e:
+                    print(f"⚠️ Error saving Excel file: {e}")
+            
+            if existing_excel_input and not res_df.is_empty():
+                _write_df_to_existing_excel(res_df, existing_excel_input)
+            
+            return res_df
+
+        @staticmethod
+        def BeamStress_7DOF(keys=[], loadcase:list=[], parts=["PartI", "PartJ"], 
+                            section_position=['Max'], components=['all'], 
+                            force_unit='KN', len_unit='M', 
+                            activationCSstep=False, stage_step:list=[], 
+                            number_format="Fixed", digit=5, 
+                            output_path_json=None, output_path_excel=None,
+                            existing_excel_input: list = None):
+            '''
+            Fetches Beam Stress (7th DOF) result tables.
+            
+            Args:
+                keys (list/str): List of Element IDs or a Structure Group Name.
+                loadcase (list): List of load case names, e.g., ["EccentricLoads(ST)"].
+                parts (list): Element parts: ["PartI", "PartJ", etc.].
+                section_position (list): Section positions: ["Pos-1", "Pos-4", "Max", etc.].
+                components (list): Table components to include. Defaults to ['all'].
+                force_unit (str): Force unit (e.g., "KN", "N").
+                len_unit (str): Length unit (e.g., "M", "MM").
+                activationCSstep (bool): Activate construction stage steps.
+                stage_step (list): List of stage steps, e.g., ["CS3:001(first)"].
+                number_format (str): Number format ("Fixed", "Scientific", "General").
+                digit (int): Number of decimal places (0-15).
+                output_path_json (str): Optional. File path to save the raw JSON response.
+                output_path_excel (str): Optional. File path to save the result table as a new Excel file.
+                existing_excel_input (list): Optional. List to write to an existing file: [excel_path, sheet_name, start_cell].
+            
+            Returns:
+                polars.DataFrame: A DataFrame containing the result table.
+            '''
+            
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Table",
+                    "TABLE_TYPE": "BEAMSTRESS7DOF",
+                    "STYLES": {
+                        "FORMAT": number_format,
+                        "PLACE": digit
+                    },
+                    "UNIT": {
+                        "FORCE": force_unit,
+                        "DIST": len_unit
+                    },
+                    "PARTS" : parts
+                }
+            }
+
+            if section_position:
+                js_dat["Argument"]["SECTION_POSITION"] = section_position
+
+            if output_path_json:
+                js_dat["Argument"]["EXPORT_PATH"] = output_path_json
+
+            if isinstance(keys, list) and keys:
+                js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": keys}
+            elif isinstance(keys, str):
+                js_dat["Argument"]['NODE_ELEMS'] = {"STRUCTURE_GROUP_NAME": keys}
+
+            if loadcase:
+                js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
+
+            if components != ['all']:
+                js_dat["Argument"]['COMPONENTS'] = components
+
+            if activationCSstep:
+                js_dat["Argument"]['OPT_CS'] = True
+                if stage_step:
+                    js_dat["Argument"]['STAGE_STEP'] = stage_step
+
+            currUNIT = _getUNIT()
+            Model.units(force=force_unit,length=len_unit)
+            ss_json = MidasAPI("POST","/post/table",js_dat)
+            _setUNIT(currUNIT)
+            
+            res_df = _JSToDF_ResTable(ss_json)
+
+            if output_path_excel and not res_df.is_empty():
+                try:
+                    res_df.write_excel(output_path_excel,
+                                    autofit=True,
+                                    autofilter=True,
+                                    table_style="Table Style Light 8",
+                                    header_format={"bold":True})
+                    print(f"✅ Successfully saved Beam Stress (7DOF) table to: {output_path_excel}")
+                except Exception as e:
+                    print(f"⚠️ Error saving Excel file: {e}")
+            
+            if existing_excel_input and not res_df.is_empty():
+                _write_df_to_existing_excel(res_df, existing_excel_input)
+            
+            return res_df
+
+        @staticmethod
+        def BeamStress_PSC(keys=[], loadcase:list=[], parts=["PartI", "PartJ"], 
+                           section_position=['All'], components=['all'], 
+                           force_unit='KN', len_unit='M', 
+                           activationCSstep=False, stage_step:list=[], 
+                           number_format="Fixed", digit=5, 
+                           output_path_json=None, output_path_excel=None,
+                           existing_excel_input: list = None):
+            '''
+            Fetches Beam Stress (PSC) result tables.
+            
+            Args:
+                keys (list/str): List of Element IDs or a Structure Group Name.
+                loadcase (list): List of load case names, e.g., ["Selfweight(ST)"].
+                parts (list): Element parts: ["PartI", "PartJ", etc.].
+                section_position (list): Section positions: ["Pos-1", "Pos-10", "Max", "Min", "All"].
+                components (list): Table components to include. Defaults to ['all'].
+                force_unit (str): Force unit (e.g., "KN", "N").
+                len_unit (str): Length unit (e.g., "M", "MM").
+                activationCSstep (bool): Activate construction stage steps.
+                stage_step (list): List of stage steps, e.g., ["CS3:001(first)"].
+                number_format (str): Number format ("Fixed", "Scientific", "General").
+                digit (int): Number of decimal places (0-15).
+                output_path_json (str): Optional. File path to save the raw JSON response.
+                output_path_excel (str): Optional. File path to save the result table as a new Excel file.
+                existing_excel_input (list): Optional. List to write to an existing file: [excel_path, sheet_name, start_cell].
+            
+            Returns:
+                polars.DataFrame: A DataFrame containing the result table.
+            '''
+            
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Table",
+                    "TABLE_TYPE": "BEAMSTRESSPSC",
+                    "STYLES": {
+                        "FORMAT": number_format,
+                        "PLACE": digit
+                    },
+                    "UNIT": {
+                        "FORCE": force_unit,
+                        "DIST": len_unit
+                    },
+                    "PARTS" : parts
+                }
+            }
+
+            if section_position:
+                js_dat["Argument"]["SECTION_POSITION"] = section_position
+
+            if output_path_json:
+                js_dat["Argument"]["EXPORT_PATH"] = output_path_json
+
+            if isinstance(keys, list) and keys:
+                js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": keys}
+            elif isinstance(keys, str):
+                js_dat["Argument"]['NODE_ELEMS'] = {"STRUCTURE_GROUP_NAME": keys}
+
+            if loadcase:
+                js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
+            
+            if components != ['all']:
+                js_dat["Argument"]['COMPONENTS'] = components
+
+            if activationCSstep:
+                js_dat["Argument"]['OPT_CS'] = True
+                if stage_step:
+                    js_dat["Argument"]['STAGE_STEP'] = stage_step
+
+            currUNIT = _getUNIT()
+            Model.units(force=force_unit,length=len_unit)
+            ss_json = MidasAPI("POST","/post/table",js_dat)
+            _setUNIT(currUNIT)
+            
+            res_df = _JSToDF_ResTable(ss_json)
+
+            if output_path_excel and not res_df.is_empty():
+                try:
+                    res_df.write_excel(output_path_excel,
+                                    autofit=True,
+                                    autofilter=True,
+                                    table_style="Table Style Light 8",
+                                    header_format={"bold":True})
+                    print(f"✅ Successfully saved Beam Stress (PSC) table to: {output_path_excel}")
+                except Exception as e:
+                    print(f"⚠️ Error saving Excel file: {e}")
+            
+            if existing_excel_input and not res_df.is_empty():
+                _write_df_to_existing_excel(res_df, existing_excel_input)
+            
+            return res_df
+
+        @staticmethod
+        def BeamStress_7DOF_PSC(keys=[], loadcase:list=[], parts=["PartI", "PartJ"], 
+                               section_position=['All'], components=['all'], 
+                               force_unit='KN', len_unit='M', 
+                               activationCSstep=False, stage_step:list=[], 
+                               number_format="Fixed", digit=5, 
+                               output_path_json=None, output_path_excel=None,
+                               existing_excel_input: list = None):
+            '''
+            Fetches Beam Stress (7th DOF PSC) result tables.
+            
+            Args:
+                keys (list/str): List of Element IDs or a Structure Group Name.
+                loadcase (list): List of load case names, e.g., ["EccentricLoads(ST)"].
+                parts (list): Element parts: ["PartI", "PartJ", etc.].
+                section_position (list): Section positions: ["Pos-1", "Pos-10", "Max", "Min", "All"].
+                components (list): Table components to include. Defaults to ['all'].
+                force_unit (str): Force unit (e.g., "KN", "N").
+                len_unit (str): Length unit (e.g., "M", "MM").
+                activationCSstep (bool): Activate construction stage steps.
+                stage_step (list): List of stage steps, e.g., ["CS3:001(first)"].
+                number_format (str): Number format ("Fixed", "Scientific", "General").
+                digit (int): Number of decimal places (0-15).
+                output_path_json (str): Optional. File path to save the raw JSON response.
+                output_path_excel (str): Optional. File path to save the result table as a new Excel file.
+                existing_excel_input (list): Optional. List to write to an existing file: [excel_path, sheet_name, start_cell].
+            
+            Returns:
+                polars.DataFrame: A DataFrame containing the result table.
+            '''
+            
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Table",
+                    "TABLE_TYPE": "BEAMSTRESS7DOFPSC",
+                    "STYLES": {
+                        "FORMAT": number_format,
+                        "PLACE": digit
+                    },
+                    "UNIT": {
+                        "FORCE": force_unit,
+                        "DIST": len_unit
+                    },
+                    "PARTS" : parts
+                }
+            }
+
+            if section_position:
+                js_dat["Argument"]["SECTION_POSITION"] = section_position
+
+            if output_path_json:
+                js_dat["Argument"]["EXPORT_PATH"] = output_path_json
+
+            if isinstance(keys, list) and keys:
+                js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": keys}
+            elif isinstance(keys, str):
+                js_dat["Argument"]['NODE_ELEMS'] = {"STRUCTURE_GROUP_NAME": keys}
+
+            if loadcase:
+                js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
+            
+            if components != ['all']:
+                js_dat["Argument"]['COMPONENTS'] = components
+
+            if activationCSstep:
+                js_dat["Argument"]['OPT_CS'] = True
+                if stage_step:
+                    js_dat["Argument"]['STAGE_STEP'] = stage_step
+
+            currUNIT = _getUNIT()
+            Model.units(force=force_unit,length=len_unit)
+            ss_json = MidasAPI("POST","/post/table",js_dat)
+            _setUNIT(currUNIT)
+            
+            res_df = _JSToDF_ResTable(ss_json)
+
+            if output_path_excel and not res_df.is_empty():
+                try:
+                    res_df.write_excel(output_path_excel,
+                                    autofit=True,
+                                    autofilter=True,
+                                    table_style="Table Style Light 8",
+                                    header_format={"bold":True})
+                    print(f"✅ Successfully saved Beam Stress (7DOF PSC) table to: {output_path_excel}")
+                except Exception as e:
+                    print(f"⚠️ Error saving Excel file: {e}")
+            
+            if existing_excel_input and not res_df.is_empty():
+                _write_df_to_existing_excel(res_df, existing_excel_input)
+            
+            return res_df
+
+        @staticmethod
+        def PlateForce(keys=[], loadcase:list=[], components=['all'], 
+                       force_unit='KN', len_unit='M', 
+                       activationCSstep=False, stage_step:list=[], 
+                       avg_nodal_result=False,
+                       number_format="Fixed", digit=5, 
+                       output_path_json=None, output_path_excel=None,
+                       existing_excel_input: list = None,
+                       type:str="Local"):
+            '''
+            Fetches Plate Force (Local or Global) result tables.
+            
+            Args:
+                keys (list/str): List of Element IDs or a Structure Group Name.
+                loadcase (list): List of load case names, e.g., ["DL(ST)"].
+                components (list): Table components to include. Defaults to ['all'].
+                force_unit (str): Force unit (e.g., "KN", "N").
+                len_unit (str): Length unit (e.g., "M", "MM").
+                activationCSstep (bool): Activate construction stage steps.
+                stage_step (list): List of stage steps, e.g., ["CS2:001(first)"].
+                avg_nodal_result (bool): Option to average nodal results.
+                number_format (str): Number format ("Fixed", "Scientific", "General").
+                digit (int): Number of decimal places (0-15).
+                output_path_json (str): Optional. File path to save the raw JSON response.
+                output_path_excel (str): Optional. File path to save the result table as a new Excel file.
+                existing_excel_input (list): Optional. List to write to an existing file: [excel_path, sheet_name, start_cell].
+                type (str): Plate Force type. "Local" or "Global".
+            
+            Returns:
+                polars.DataFrame: A DataFrame containing the result table.
+            '''
+            
+            table_type_map = {
+                "Local": "PLATEFORCEL",
+                "Global": "PLATEFORCEG"
+            }
+            table_type = table_type_map.get(type.capitalize(), "PLATEFORCEL")
+
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Table",
+                    "TABLE_TYPE": table_type,
+                    "STYLES": {
+                        "FORMAT": number_format,
+                        "PLACE": digit
+                    },
+                    "UNIT": {
+                        "FORCE": force_unit,
+                        "DIST": len_unit
+                    }
+                }
+            }
+            
+            if avg_nodal_result:
+                js_dat["Argument"]["AVERAGE_NODAL_RESULT"] = True
+
+            if output_path_json:
+                js_dat["Argument"]["EXPORT_PATH"] = output_path_json
+
+            if isinstance(keys, list) and keys:
+                js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": keys}
+            elif isinstance(keys, str):
+                js_dat["Argument"]['NODE_ELEMS'] = {"STRUCTURE_GROUP_NAME": keys}
+
+            if loadcase:
+                js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
+            
+            if components != ['all']:
+                js_dat["Argument"]['COMPONENTS'] = components
+
+            if activationCSstep:
+                js_dat["Argument"]['OPT_CS'] = True
+                if stage_step:
+                    js_dat["Argument"]['STAGE_STEP'] = stage_step
+
+            currUNIT = _getUNIT()
+            Model.units(force=force_unit,length=len_unit)
+            ss_json = MidasAPI("POST","/post/table",js_dat)
+            _setUNIT(currUNIT)
+            
+            res_df = _JSToDF_ResTable(ss_json)
+
+            if output_path_excel and not res_df.is_empty():
+                try:
+                    res_df.write_excel(output_path_excel,
+                                    autofit=True,
+                                    autofilter=True,
+                                    table_style="Table Style Light 8",
+                                    header_format={"bold":True})
+                    print(f"✅ Successfully saved Plate Force ({type}) table to: {output_path_excel}")
+                except Exception as e:
+                    print(f"⚠️ Error saving Excel file: {e}")
+            
+            if existing_excel_input and not res_df.is_empty():
+                _write_df_to_existing_excel(res_df, existing_excel_input)
+            
+            return res_df
+
+        # ---------- NEW FUNCTIONS ADDED BELOW ----------
+
+        @staticmethod
+        def BeamStress_Equivalent(keys=[], loadcase:list=[], parts=["PartI", "PartJ"], 
+                                  section_position=['Maximum'], components=['all'], 
+                                  force_unit='KN', len_unit='M', 
+                                  activationCSstep=False, stage_step:list=[], 
+                                  number_format="Fixed", digit=5, 
+                                  output_path_json=None, output_path_excel=None,
+                                  existing_excel_input: list = None):
+            '''
+            Fetches Beam Stress (Equivalent) result tables.
+            
+            Args:
+                keys (list/str): List of Element IDs or a Structure Group Name.
+                loadcase (list): List of load case names, e.g., ["Selfweight(ST)"].
+                parts (list): Element parts: ["PartI", "PartJ", etc.].
+                section_position (list): Section positions: ["Maximum", "1", "12", etc.].
+                components (list): Table components to include. Defaults to ['all'].
+                force_unit (str): Force unit (e.g., "N", "KN").
+                len_unit (str): Length unit (e.g., "mm", "M").
+                activationCSstep (bool): Activate construction stage steps.
+                stage_step (list): List of stage steps, e.g., ["CS3:001(first)"].
+                number_format (str): Number format ("Fixed", "Scientific", "General").
+                digit (int): Number of decimal places (0-15).
+                output_path_json (str): Optional. File path to save the raw JSON response.
+                output_path_excel (str): Optional. File path to save the result table as a new Excel file.
+                existing_excel_input (list): Optional. List to write to an existing file: [excel_path, sheet_name, start_cell].
+            
+            Returns:
+                polars.DataFrame: A DataFrame containing the result table.
+            '''
+            
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Table",
+                    "TABLE_TYPE": "BEAMSTRESSDETAIL",
+                    "STYLES": {
+                        "FORMAT": number_format,
+                        "PLACE": digit
+                    },
+                    "UNIT": {
+                        "FORCE": force_unit,
+                        "DIST": len_unit
+                    },
+                    "PARTS" : parts
+                }
+            }
+
+            if section_position:
+                js_dat["Argument"]["SECTION_POSITION"] = section_position
+
+            if output_path_json:
+                js_dat["Argument"]["EXPORT_PATH"] = output_path_json
+
+            if isinstance(keys, list) and keys:
+                js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": keys}
+            elif isinstance(keys, str):
+                js_dat["Argument"]['NODE_ELEMS'] = {"STRUCTURE_GROUP_NAME": keys}
+
+            if loadcase:
+                js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
+            
+            if components != ['all']:
+                js_dat["Argument"]['COMPONENTS'] = components
+
+            if activationCSstep:
+                js_dat["Argument"]['OPT_CS'] = True
+                if stage_step:
+                    js_dat["Argument"]['STAGE_STEP'] = stage_step
+
+            currUNIT = _getUNIT()
+            Model.units(force=force_unit,length=len_unit)
+            ss_json = MidasAPI("POST","/post/table",js_dat)
+            _setUNIT(currUNIT)
+            
+            res_df = _JSToDF_ResTable(ss_json)
+
+            if output_path_excel and not res_df.is_empty():
+                try:
+                    res_df.write_excel(output_path_excel,
+                                    autofit=True,
+                                    autofilter=True,
+                                    table_style="Table Style Light 8",
+                                    header_format={"bold":True})
+                    print(f"✅ Successfully saved Beam Stress (Equivalent) table to: {output_path_excel}")
+                except Exception as e:
+                    print(f"⚠️ Error saving Excel file: {e}")
+            
+            if existing_excel_input and not res_df.is_empty():
+                _write_df_to_existing_excel(res_df, existing_excel_input)
+            
+            return res_df
+
+        @staticmethod
+        def PlateForce_UnitLength(keys=[], loadcase:list=[], components=['all'], 
+                                force_unit='KN', len_unit='M', 
+                                activationCSstep=False, stage_step:list=[], 
+                                avg_nodal_result=False,
+                                node_flag_center=False, node_flag_nodes=True,
+                                number_format="Fixed", digit=5, 
+                                output_path_json=None, output_path_excel=None,
+                                existing_excel_input: list = None,
+                                type:str="Local"):
+            '''
+            Fetches Plate Force (Unit Length) for Local or UCS coordinates.
+            
+            Args:
+                keys (list/str): List of Element IDs or a Structure Group Name.
+                loadcase (list): List of load case names, e.g., ["DL(ST)"].
+                components (list): Table components to include. Defaults to ['all'].
+                force_unit (str): Force unit (e.g., "KN", "N").
+                len_unit (str): Length unit (e.g., "M", "MM").
+                activationCSstep (bool): Activate construction stage steps.
+                stage_step (list): List of stage steps, e.g., ["CS2:001(first)"].
+                avg_nodal_result (bool): Option to average nodal results.
+                node_flag_center (bool): Retrieve results at the center of the plate.
+                node_flag_nodes (bool): Retrieve results at the nodes of the plate.
+                number_format (str): Number format ("Fixed", "Scientific", "General").
+                digit (int): Number of decimal places (0-15).
+                output_path_json (str): Optional. File path to save the raw JSON response.
+                output_path_excel (str): Optional. File path to save the result table as a new Excel file.
+                existing_excel_input (list): Optional. List to write to an existing file: [excel_path, sheet_name, start_cell].
+                type (str): Plate Force type. "Local" or "UCS" (Global).
+            
+            Returns:
+                polars.DataFrame: A DataFrame containing the result table.
+            '''
+            
+            table_type_map = {
+                "Local": "PLATEFORCEUL",
+                "UCS": "PLATEFORCEUG",
+                "Global": "PLATEFORCEUG" # Alias for UCS
+            }
+            table_type = table_type_map.get(type.capitalize(), "PLATEFORCEUL")
+
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Table",
+                    "TABLE_TYPE": table_type,
+                    "STYLES": {
+                        "FORMAT": number_format,
+                        "PLACE": digit
+                    },
+                    "UNIT": {
+                        "FORCE": force_unit,
+                        "DIST": len_unit
+                    },
+                    "NODE_FLAG": {
+                        "CENTER": node_flag_center,
+                        "NODES": node_flag_nodes
+                    }
+                }
+            }
+            
+            if avg_nodal_result:
+                js_dat["Argument"]["AVERAGE_NODAL_RESULT"] = True
+
+            if output_path_json:
+                js_dat["Argument"]["EXPORT_PATH"] = output_path_json
+
+            if isinstance(keys, list) and keys:
+                js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": keys}
+            elif isinstance(keys, str):
+                js_dat["Argument"]['NODE_ELEMS'] = {"STRUCTURE_GROUP_NAME": keys}
+
+            if loadcase:
+                js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
+            
+            if components != ['all']:
+                js_dat["Argument"]['COMPONENTS'] = components
+
+            if activationCSstep:
+                js_dat["Argument"]['OPT_CS'] = True
+                if stage_step:
+                    js_dat["Argument"]['STAGE_STEP'] = stage_step
+
+            currUNIT = _getUNIT()
+            Model.units(force=force_unit,length=len_unit)
+            ss_json = MidasAPI("POST","/post/table",js_dat)
+            _setUNIT(currUNIT)
+            
+            res_df = _JSToDF_ResTable(ss_json)
+
+            if output_path_excel and not res_df.is_empty():
+                try:
+                    res_df.write_excel(output_path_excel,
+                                    autofit=True,
+                                    autofilter=True,
+                                    table_style="Table Style Light 8",
+                                    header_format={"bold":True})
+                    print(f"✅ Successfully saved Plate Force (Unit Length, {type}) table to: {output_path_excel}")
+                except Exception as e:
+                    print(f"⚠️ Error saving Excel file: {e}")
+            
+            if existing_excel_input and not res_df.is_empty():
+                _write_df_to_existing_excel(res_df, existing_excel_input)
+            
+            return res_df
+
+        @staticmethod
+        def PlateForce_UnitLength_VBM(keys=[], loadcase:list=[], items=['all'], 
+                                      components=['all'], force_unit='KN', len_unit='M', 
+                                      activationCSstep=False, stage_step:list=[], 
+                                      avg_nodal_result=False,
+                                      node_flag_center=False, node_flag_nodes=True,
+                                      number_format="Fixed", digit=5, 
+                                      output_path_json=None, output_path_excel=None,
+                                      existing_excel_input: list = None,
+                                      type:str="Local"):
+            '''
+            Fetches Plate Force (Unit Length, View by Max Value) for Local or UCS coordinates.
+            
+            Args:
+                keys (list/str): List of Element IDs or a Structure Group Name.
+                loadcase (list): List of load case names, e.g., ["STLENV_STR(CB:max)"].
+                items (list): Items to display: ["Fxx", "Fyy", "Mxx", etc.].
+                components (list): Table components to include. Defaults to ['all'].
+                force_unit (str): Force unit (e.g., "KN", "N").
+                len_unit (str): Length unit (e.g., "M", "MM").
+                activationCSstep (bool): Activate construction stage steps.
+                stage_step (list): List of stage steps.
+                avg_nodal_result (bool): Option to average nodal results.
+                node_flag_center (bool): Retrieve results at the center of the plate.
+                node_flag_nodes (bool): Retrieve results at the nodes of the plate.
+                number_format (str): Number format ("Fixed", "Scientific", "General").
+                digit (int): Number of decimal places (0-15).
+                output_path_json (str): Optional. File path to save the raw JSON response.
+                output_path_excel (str): Optional. File path to save the result table as a new Excel file.
+                existing_excel_input (list): Optional. List to write to an existing file: [excel_path, sheet_name, start_cell].
+                type (str): Plate Force type. "Local" or "UCS" (Global).
+            
+            Returns:
+                polars.DataFrame: A DataFrame containing the result table.
+            '''
+            
+            table_type_map = {
+                "Local": "PLATEFORCEULVBM",
+                "UCS": "PLATEFORCEUGVBM",
+                "Global": "PLATEFORCEUGVBM" # Alias for UCS
+            }
+            table_type = table_type_map.get(type.capitalize(), "PLATEFORCEULVBM")
+
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Table",
+                    "TABLE_TYPE": table_type,
+                    "STYLES": {
+                        "FORMAT": number_format,
+                        "PLACE": digit
+                    },
+                    "UNIT": {
+                        "FORCE": force_unit,
+                        "DIST": len_unit
+                    },
+                    "NODE_FLAG": {
+                        "CENTER": node_flag_center,
+                        "NODES": node_flag_nodes
+                    }
+                }
+            }
+            
+            if items != ['all']:
+                js_dat["Argument"]['ITEM_TO_DISPLAY'] = items
+            
+            if avg_nodal_result:
+                js_dat["Argument"]["AVERAGE_NODAL_RESULT"] = True
+
+            if output_path_json:
+                js_dat["Argument"]["EXPORT_PATH"] = output_path_json
+
+            if isinstance(keys, list) and keys:
+                js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": keys}
+            elif isinstance(keys, str):
+                js_dat["Argument"]['NODE_ELEMS'] = {"STRUCTURE_GROUP_NAME": keys}
+
+            if loadcase:
+                js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
+            
+            if components != ['all']:
+                js_dat["Argument"]['COMPONENTS'] = components
+
+            if activationCSstep:
+                js_dat["Argument"]['OPT_CS'] = True
+                if stage_step:
+                    js_dat["Argument"]['STAGE_STEP'] = stage_step
+
+            currUNIT = _getUNIT()
+            Model.units(force=force_unit,length=len_unit)
+            ss_json = MidasAPI("POST","/post/table",js_dat)
+            _setUNIT(currUNIT)
+            
+            res_df = _JSToDF_ResTable(ss_json)
+
+            if output_path_excel and not res_df.is_empty():
+                try:
+                    res_df.write_excel(output_path_excel,
+                                    autofit=True,
+                                    autofilter=True,
+                                    table_style="Table Style Light 8",
+                                    header_format={"bold":True})
+                    print(f"✅ Successfully saved Plate Force (Unit Length, VBM, {type}) table to: {output_path_excel}")
+                except Exception as e:
+                    print(f"⚠️ Error saving Excel file: {e}")
+            
+            if existing_excel_input and not res_df.is_empty():
+                _write_df_to_existing_excel(res_df, existing_excel_input)
+            
+            return res_df
+
+        @staticmethod
+        def PlateForce_UnitLength_WA(keys=[], loadcase:list=[], components=['all'], 
+                                   force_unit='KN', len_unit='M', 
+                                   activationCSstep=False, stage_step:list=[], 
+                                   avg_nodal_result=False,
+                                   node_flag_center=False, node_flag_nodes=True,
+                                   number_format="Fixed", digit=5, 
+                                   output_path_json=None, output_path_excel=None,
+                                   existing_excel_input: list = None):
+            '''
+            Fetches Plate Force (Unit Length, W-A Moment) result tables.
+            
+            Args:
+                keys (list/str): List of Element IDs or a Structure Group Name.
+                loadcase (list): List of load case names, e.g., ["DL(ST)"].
+                components (list): Table components to include. Defaults to ['all'].
+                force_unit (str): Force unit (e.g., "KN", "N").
+                len_unit (str): Length unit (e.g., "M", "MM").
+                activationCSstep (bool): Activate construction stage steps.
+                stage_step (list): List of stage steps, e.g., ["CS2:001(first)"].
+                avg_nodal_result (bool): Option to average nodal results.
+                node_flag_center (bool): Retrieve results at the center of the plate.
+                node_flag_nodes (bool): Retrieve results at the nodes of the plate.
+                number_format (str): Number format ("Fixed", "Scientific", "General").
+                digit (int): Number of decimal places (0-15).
+                output_path_json (str): Optional. File path to save the raw JSON response.
+                output_path_excel (str): Optional. File path to save the result table as a new Excel file.
+                existing_excel_input (list): Optional. List to write to an existing file: [excel_path, sheet_name, start_cell].
+            
+            Returns:
+                polars.DataFrame: A DataFrame containing the result table.
+            '''
+            
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Table",
+                    "TABLE_TYPE": "PLATEFORCEWA",
+                    "STYLES": {
+                        "FORMAT": number_format,
+                        "PLACE": digit
+                    },
+                    "UNIT": {
+                        "FORCE": force_unit,
+                        "DIST": len_unit
+                    },
+                    "NODE_FLAG": {
+                        "CENTER": node_flag_center,
+                        "NODES": node_flag_nodes
+                    }
+                }
+            }
+            
+            if avg_nodal_result:
+                js_dat["Argument"]["AVERAGE_NODAL_RESULT"] = True
+
+            if output_path_json:
+                js_dat["Argument"]["EXPORT_PATH"] = output_path_json
+
+            if isinstance(keys, list) and keys:
+                js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": keys}
+            elif isinstance(keys, str):
+                js_dat["Argument"]['NODE_ELEMS'] = {"STRUCTURE_GROUP_NAME": keys}
+
+            if loadcase:
+                js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
+            
+            if components != ['all']:
+                js_dat["Argument"]['COMPONENTS'] = components
+
+            if activationCSstep:
+                js_dat["Argument"]['OPT_CS'] = True
+                if stage_step:
+                    js_dat["Argument"]['STAGE_STEP'] = stage_step
+
+            currUNIT = _getUNIT()
+            Model.units(force=force_unit,length=len_unit)
+            ss_json = MidasAPI("POST","/post/table",js_dat)
+            _setUNIT(currUNIT)
+            
+            res_df = _JSToDF_ResTable(ss_json)
+
+            if output_path_excel and not res_df.is_empty():
+                try:
+                    res_df.write_excel(output_path_excel,
+                                    autofit=True,
+                                    autofilter=True,
+                                    table_style="Table Style Light 8",
+                                    header_format={"bold":True})
+                    print(f"✅ Successfully saved Plate Force (Unit Length, W-A Moment) table to: {output_path_excel}")
+                except Exception as e:
+                    print(f"⚠️ Error saving Excel file: {e}")
+            
+            if existing_excel_input and not res_df.is_empty():
+                _write_df_to_existing_excel(res_df, existing_excel_input)
+            
+            return res_df
+
+        @staticmethod
+        def CableForce(keys=[], loadcase:list=[], components=['all'], 
+                       force_unit='KN', len_unit='M', 
+                       activationCSstep=False, stage_step:list=[], 
+                       number_format="Fixed", digit=5, 
+                       output_path_json=None, output_path_excel=None,
+                       existing_excel_input: list = None):
+            '''
+            Fetches Cable Force result tables.
+            
+            Args:
+                keys (list/str): List of Element IDs or a Structure Group Name.
+                loadcase (list): List of load case names, e.g., ["SelfWeight(ST)"].
+                components (list): Table components to include. Defaults to ['all'].
+                force_unit (str): Force unit (e.g., "KN", "N").
+                len_unit (str): Length unit (e.g., "M", "MM").
+                activationCSstep (bool): Activate construction stage steps.
+                stage_step (list): List of stage steps, e.g., ["CS2:001(last)"].
+                number_format (str): Number format ("Fixed", "Scientific", "General").
+                digit (int): Number of decimal places (0-15).
+                output_path_json (str): Optional. File path to save the raw JSON response.
+                output_path_excel (str): Optional. File path to save the result table as a new Excel file.
+                existing_excel_input (list): Optional. List to write to an existing file: [excel_path, sheet_name, start_cell].
+            
+            Returns:
+                polars.DataFrame: A DataFrame containing the result table.
+            '''
+            
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Table",
+                    "TABLE_TYPE": "CABLEFORCE",
+                    "STYLES": {
+                        "FORMAT": number_format,
+                        "PLACE": digit
+                    },
+                    "UNIT": {
+                        "FORCE": force_unit,
+                        "DIST": len_unit
+                    }
+                }
+            }
+
+            if output_path_json:
+                js_dat["Argument"]["EXPORT_PATH"] = output_path_json
+
+            if isinstance(keys, list) and keys:
+                js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": keys}
+            elif isinstance(keys, str):
+                js_dat["Argument"]['NODE_ELEMS'] = {"STRUCTURE_GROUP_NAME": keys}
+
+            if loadcase:
+                js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
+            
+            if components != ['all']:
+                js_dat["Argument"]['COMPONENTS'] = components
+
+            if activationCSstep:
+                js_dat["Argument"]['OPT_CS'] = True
+                if stage_step:
+                    js_dat["Argument"]['STAGE_STEP'] = stage_step
+
+            currUNIT = _getUNIT()
+            Model.units(force=force_unit,length=len_unit)
+            ss_json = MidasAPI("POST","/post/table",js_dat)
+            _setUNIT(currUNIT)
+            
+            res_df = _JSToDF_ResTable(ss_json)
+
+            if output_path_excel and not res_df.is_empty():
+                try:
+                    res_df.write_excel(output_path_excel,
+                                    autofit=True,
+                                    autofilter=True,
+                                    table_style="Table Style Light 8",
+                                    header_format={"bold":True})
+                    print(f"✅ Successfully saved Cable Force table to: {output_path_excel}")
+                except Exception as e:
+                    print(f"⚠️ Error saving Excel file: {e}")
+            
+            if existing_excel_input and not res_df.is_empty():
+                _write_df_to_existing_excel(res_df, existing_excel_input)
+            
+            return res_df
+
+        @staticmethod
+        def CableConfiguration(keys=[], loadcase:list=[], components=['all'], 
+                               force_unit='KN', len_unit='M', 
+                               activationCSstep=False, stage_step:list=[], 
+                               number_format="Fixed", digit=5, 
+                               output_path_json=None, output_path_excel=None,
+                               existing_excel_input: list = None):
+            '''
+            Fetches Cable Configuration result tables.
+            
+            Args:
+                keys (list/str): List of Element IDs or a Structure Group Name.
+                loadcase (list): List of load case names, e.g., ["SelfWeight(ST)"].
+                components (list): Table components to include. Defaults to ['all'].
+                force_unit (str): Force unit (e.g., "KN", "N").
+                len_unit (str): Length unit (e.g., "M", "MM").
+                activationCSstep (bool): Activate construction stage steps.
+                stage_step (list): List of stage steps, e.g., ["CS2:001(last)"].
+                number_format (str): Number format ("Fixed", "Scientific", "General").
+                digit (int): Number of decimal places (0-15).
+                output_path_json (str): Optional. File path to save the raw JSON response.
+                output_path_excel (str): Optional. File path to save the result table as a new Excel file.
+                existing_excel_input (list): Optional. List to write to an existing file: [excel_path, sheet_name, start_cell].
+            
+            Returns:
+                polars.DataFrame: A DataFrame containing the result table.
+            '''
+            
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Table",
+                    "TABLE_TYPE": "CABLECONFIG",
+                    "STYLES": {
+                        "FORMAT": number_format,
+                        "PLACE": digit
+                    },
+                    "UNIT": {
+                        "FORCE": force_unit,
+                        "DIST": len_unit
+                    }
+                }
+            }
+
+            if output_path_json:
+                js_dat["Argument"]["EXPORT_PATH"] = output_path_json
+
+            if isinstance(keys, list) and keys:
+                js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": keys}
+            elif isinstance(keys, str):
+                js_dat["Argument"]['NODE_ELEMS'] = {"STRUCTURE_GROUP_NAME": keys}
+
+            if loadcase:
+                js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
+            
+            if components != ['all']:
+                js_dat["Argument"]['COMPONENTS'] = components
+
+            if activationCSstep:
+                js_dat["Argument"]['OPT_CS'] = True
+                if stage_step:
+                    js_dat["Argument"]['STAGE_STEP'] = stage_step
+
+            currUNIT = _getUNIT()
+            Model.units(force=force_unit,length=len_unit)
+            ss_json = MidasAPI("POST","/post/table",js_dat)
+            _setUNIT(currUNIT)
+            
+            res_df = _JSToDF_ResTable(ss_json)
+
+            if output_path_excel and not res_df.is_empty():
+                try:
+                    res_df.write_excel(output_path_excel,
+                                    autofit=True,
+                                    autofilter=True,
+                                    table_style="Table Style Light 8",
+                                    header_format={"bold":True})
+                    print(f"✅ Successfully saved Cable Configuration table to: {output_path_excel}")
+                except Exception as e:
+                    print(f"⚠️ Error saving Excel file: {e}")
+            
+            if existing_excel_input and not res_df.is_empty():
+                _write_df_to_existing_excel(res_df, existing_excel_input)
+            
+            return res_df
+
+        @staticmethod
+        def CableEfficiency(keys=[], loadcase:list=[], components=['all'], 
+                            force_unit='KN', len_unit='M', 
+                            activationCSstep=False, stage_step:list=[], 
+                            number_format="Fixed", digit=5, 
+                            output_path_json=None, output_path_excel=None,
+                            existing_excel_input: list = None):
+            '''
+            Fetches Cable Efficiency result tables.
+            
+            Args:
+                keys (list/str): List of Element IDs or a Structure Group Name.
+                loadcase (list): List of load case names, e.g., ["SelfWeight(ST)"].
+                components (list): Table components to include. Defaults to ['all'].
+                force_unit (str): Force unit (e.g., "KN", "N").
+                len_unit (str): Length unit (e.g., "M", "MM").
+                activationCSstep (bool): Activate construction stage steps.
+                stage_step (list): List of stage steps, e.g., ["CS2:001(last)"].
+                number_format (str): Number format ("Fixed", "Scientific", "General").
+                digit (int): Number of decimal places (0-15).
+                output_path_json (str): Optional. File path to save the raw JSON response.
+                output_path_excel (str): Optional. File path to save the result table as a new Excel file.
+                existing_excel_input (list): Optional. List to write to an existing file: [excel_path, sheet_name, start_cell].
+            
+            Returns:
+                polars.DataFrame: A DataFrame containing the result table.
+            '''
+            
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Table",
+                    "TABLE_TYPE": "CABLEEFFIENCY",
+                    "STYLES": {
+                        "FORMAT": number_format,
+                        "PLACE": digit
+                    },
+                    "UNIT": {
+                        "FORCE": force_unit,
+                        "DIST": len_unit
+                    }
+                }
+            }
+
+            if output_path_json:
+                js_dat["Argument"]["EXPORT_PATH"] = output_path_json
+
+            if isinstance(keys, list) and keys:
+                js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": keys}
+            elif isinstance(keys, str):
+                js_dat["Argument"]['NODE_ELEMS'] = {"STRUCTURE_GROUP_NAME": keys}
+
+            if loadcase:
+                js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
+            
+            if components != ['all']:
+                js_dat["Argument"]['COMPONENTS'] = components
+
+            if activationCSstep:
+                js_dat["Argument"]['OPT_CS'] = True
+                if stage_step:
+                    js_dat["Argument"]['STAGE_STEP'] = stage_step
+
+            currUNIT = _getUNIT()
+            Model.units(force=force_unit,length=len_unit)
+            ss_json = MidasAPI("POST","/post/table",js_dat)
+            _setUNIT(currUNIT)
+            
+            res_df = _JSToDF_ResTable(ss_json)
+
+            if output_path_excel and not res_df.is_empty():
+                try:
+                    res_df.write_excel(output_path_excel,
+                                    autofit=True,
+                                    autofilter=True,
+                                    table_style="Table Style Light 8",
+                                    header_format={"bold":True})
+                    print(f"✅ Successfully saved Cable Efficiency table to: {output_path_excel}")
+                except Exception as e:
+                    print(f"⚠️ Error saving Excel file: {e}")
+            
+            if existing_excel_input and not res_df.is_empty():
+                _write_df_to_existing_excel(res_df, existing_excel_input)
+            
+            return res_df
+
+        @staticmethod
+        def PlateStress(keys=[], loadcase:list=[], components=['all'], 
+                        force_unit='KN', len_unit='M', 
+                        activationCSstep=False, stage_step:list=[], 
+                        avg_nodal_result=False,
+                        node_flag_center=False, node_flag_nodes=True,
+                        number_format="Fixed", digit=5, 
+                        output_path_json=None, output_path_excel=None,
+                        existing_excel_input: list = None,
+                        type:str="Local"):
+            '''
+            Fetches Plate Stress (Local or Global) result tables.
+            
+            Args:
+                keys (list/str): List of Element IDs or a Structure Group Name.
+                loadcase (list): List of load case names, e.g., ["DL(ST)"].
+                components (list): Table components to include. Defaults to ['all'].
+                force_unit (str): Force unit (e.g., "N", "KN").
+                len_unit (str): Length unit (e.g., "mm", "M").
+                activationCSstep (bool): Activate construction stage steps.
+                stage_step (list): List of stage steps, e.g., ["CS2:001(first)"].
+                avg_nodal_result (bool): Option to average nodal results.
+                node_flag_center (bool): Retrieve results at the center of the plate.
+                node_flag_nodes (bool): Retrieve results at the nodes of the plate.
+                number_format (str): Number format ("Fixed", "Scientific", "General").
+                digit (int): Number of decimal places (0-15).
+                output_path_json (str): Optional. File path to save the raw JSON response.
+                output_path_excel (str): Optional. File path to save the result table as a new Excel file.
+                existing_excel_input (list): Optional. List to write to an existing file: [excel_path, sheet_name, start_cell].
+                type (str): Plate Stress type. "Local" or "Global".
+            
+            Returns:
+                polars.DataFrame: A DataFrame containing the result table.
+            '''
+            
+            table_type_map = {
+                "Local": "PLATESTRESSL",
+                "Global": "PLATESTRESSG"
+            }
+            table_type = table_type_map.get(type.capitalize(), "PLATESTRESSL")
+
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Table",
+                    "TABLE_TYPE": table_type,
+                    "STYLES": {
+                        "FORMAT": number_format,
+                        "PLACE": digit
+                    },
+                    "UNIT": {
+                        "FORCE": force_unit,
+                        "DIST": len_unit
+                    },
+                    "NODE_FLAG": {
+                        "CENTER": node_flag_center,
+                        "NODES": node_flag_nodes
+                    }
+                }
+            }
+            
+            if avg_nodal_result:
+                js_dat["Argument"]["AVERAGE_NODAL_RESULT"] = True
+
+            if output_path_json:
+                js_dat["Argument"]["EXPORT_PATH"] = output_path_json
+
+            if isinstance(keys, list) and keys:
+                js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": keys}
+            elif isinstance(keys, str):
+                js_dat["Argument"]['NODE_ELEMS'] = {"STRUCTURE_GROUP_NAME": keys}
+
+            if loadcase:
+                js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
+            
+            if components != ['all']:
+                js_dat["Argument"]['COMPONENTS'] = components
+
+            if activationCSstep:
+                js_dat["Argument"]['OPT_CS'] = True
+                if stage_step:
+                    js_dat["Argument"]['STAGE_STEP'] = stage_step
+
+            currUNIT = _getUNIT()
+            Model.units(force=force_unit,length=len_unit)
+            ss_json = MidasAPI("POST","/post/table",js_dat)
+            _setUNIT(currUNIT)
+            
+            res_df = _JSToDF_ResTable(ss_json)
+
+            if output_path_excel and not res_df.is_empty():
+                try:
+                    res_df.write_excel(output_path_excel,
+                                    autofit=True,
+                                    autofilter=True,
+                                    table_style="Table Style Light 8",
+                                    header_format={"bold":True})
+                    print(f"✅ Successfully saved Plate Stress ({type}) table to: {output_path_excel}")
+                except Exception as e:
+                    print(f"⚠️ Error saving Excel file: {e}")
+            
+            if existing_excel_input and not res_df.is_empty():
+                _write_df_to_existing_excel(res_df, existing_excel_input)
+            
+            return res_df
+
+        @staticmethod
+        def PlateStrain(keys=[], loadcase:list=[], components=['all'], 
+                        force_unit='KN', len_unit='M', 
+                        activationCSstep=False, stage_step:list=[],
+                        node_flag_center=False, node_flag_nodes=True,
+                        number_format="Scientific", digit=12, 
+                        output_path_json=None, output_path_excel=None,
+                        existing_excel_input: list = None,
+                        type:str="Local", strain_type:str="Total"):
+            '''
+            Fetches Plate Strain (Local or Global, Total or Plastic) result tables.
+            
+            Args:
+                keys (list/str): List of Element IDs or a Structure Group Name.
+                loadcase (list): List of load case names, e.g., ["Comp(ST)"].
+                components (list): Table components to include. Defaults to ['all'].
+                force_unit (str): Force unit (e.g., "KN", "N").
+                len_unit (str): Length unit (e.g., "M", "MM").
+                activationCSstep (bool): Activate construction stage steps.
+                stage_step (list): List of stage steps, e.g., ["CS1:001(first-10)"].
+                node_flag_center (bool): Retrieve results at the center of the plate.
+                node_flag_nodes (bool): Retrieve results at the nodes of the plate.
+                number_format (str): Number format ("Fixed", "Scientific", "General").
+                digit (int): Number of decimal places (0-15).
+                output_path_json (str): Optional. File path to save the raw JSON response.
+                output_path_excel (str): Optional. File path to save the result table as a new Excel file.
+                existing_excel_input (list): Optional. List to write to an existing file: [excel_path, sheet_name, start_cell].
+                type (str): Plate Strain type. "Local" or "Global".
+                strain_type (str): Strain type. "Total" or "Plastic".
+            
+            Returns:
+                polars.DataFrame: A DataFrame containing the result table.
+            '''
+            
+            table_type = "PLATESTRAINTL" # Default: Total Local
+            if type.capitalize() == "Local" and strain_type.capitalize() == "Total":
+                table_type = "PLATESTRAINTL"
+            elif type.capitalize() == "Local" and strain_type.capitalize() == "Plastic":
+                table_type = "PLATESTRAINPL"
+            elif type.capitalize() == "Global" and strain_type.capitalize() == "Total":
+                table_type = "PLATESTRAINTG"
+            elif type.capitalize() == "Global" and strain_type.capitalize() == "Plastic":
+                table_type = "PLATESTRAINPG"
+
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Table",
+                    "TABLE_TYPE": table_type,
+                    "STYLES": {
+                        "FORMAT": number_format,
+                        "PLACE": digit
+                    },
+                    "UNIT": {
+                        "FORCE": force_unit,
+                        "DIST": len_unit
+                    },
+                    "NODE_FLAG": {
+                        "CENTER": node_flag_center,
+                        "NODES": node_flag_nodes
+                    }
+                }
+            }
+
+            if output_path_json:
+                js_dat["Argument"]["EXPORT_PATH"] = output_path_json
+
+            if isinstance(keys, list) and keys:
+                js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": keys}
+            elif isinstance(keys, str):
+                js_dat["Argument"]['NODE_ELEMS'] = {"STRUCTURE_GROUP_NAME": keys}
+
+            if loadcase:
+                js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
+            
+            if components != ['all']:
+                js_dat["Argument"]['COMPONENTS'] = components
+
+            if activationCSstep:
+                js_dat["Argument"]['OPT_CS'] = True
+                if stage_step:
+                    js_dat["Argument"]['STAGE_STEP'] = stage_step
+
+            currUNIT = _getUNIT()
+            Model.units(force=force_unit,length=len_unit)
+            ss_json = MidasAPI("POST","/post/table",js_dat)
+            _setUNIT(currUNIT)
+            
+            res_df = _JSToDF_ResTable(ss_json)
+
+            if output_path_excel and not res_df.is_empty():
+                try:
+                    res_df.write_excel(output_path_excel,
+                                    autofit=True,
+                                    autofilter=True,
+                                    table_style="Table Style Light 8",
+                                    header_format={"bold":True})
+                    print(f"✅ Successfully saved Plate Strain ({type}, {strain_type}) table to: {output_path_excel}")
+                except Exception as e:
+                    print(f"⚠️ Error saving Excel file: {e}")
+            
+            if existing_excel_input and not res_df.is_empty():
+                _write_df_to_existing_excel(res_df, existing_excel_input)
+            
+            return res_df
+        @staticmethod
+        def ElasticLink(keys=[], loadcase:list=[], components=['all'], 
+                        force_unit='KN', len_unit='M', 
+                        activationCSstep=False, stage_step:list=[], 
+                        number_format="Fixed", digit=5, 
+                        output_path_json=None, output_path_excel=None,
+                        existing_excel_input: list = None):
+            '''
+            Fetches Elastic Link Forces result tables.
+            
+            Args:
+                keys (list/str): List of Element IDs or a Structure Group Name.
+                loadcase (list): List of load case names, e.g., ["SWofGirders(ST)"].
+                components (list): Table components to include. Defaults to ['all'].
+                force_unit (str): Force unit (e.g., "KN", "N").
+                len_unit (str): Length unit (e.g., "M", "MM").
+                activationCSstep (bool): Activate construction stage steps.
+                stage_step (list): List of stage steps, e.g., ["CS1:001(first)"].
+                number_format (str): Number format ("Fixed", "Scientific", "General").
+                digit (int): Number of decimal places (0-15).
+                output_path_json (str): Optional. File path to save the raw JSON response.
+                output_path_excel (str): Optional. File path to save the result table as a new Excel file.
+                existing_excel_input (list): Optional. List to write to an existing file: [excel_path, sheet_name, start_cell].
+            
+            Returns:
+                polars.DataFrame: A DataFrame containing the result table.
+            '''
+            
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Table",
+                    "TABLE_TYPE": "ELASTICLINK",
+                    "STYLES": {
+                        "FORMAT": number_format,
+                        "PLACE": digit
+                    },
+                    "UNIT": {
+                        "FORCE": force_unit,
+                        "DIST": len_unit
+                    }
+                }
+            }
+
+            if output_path_json:
+                js_dat["Argument"]["EXPORT_PATH"] = output_path_json
+
+            if isinstance(keys, list) and keys:
+                js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": keys}
+            elif isinstance(keys, str):
+                js_dat["Argument"]['NODE_ELEMS'] = {"STRUCTURE_GROUP_NAME": keys}
+
+            if loadcase:
+                js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
+            
+            if components != ['all']:
+                js_dat["Argument"]['COMPONENTS'] = components
+
+            if activationCSstep:
+                js_dat["Argument"]['OPT_CS'] = True
+                if stage_step:
+                    js_dat["Argument"]['STAGE_STEP'] = stage_step
+
+            currUNIT = _getUNIT()
+            Model.units(force=force_unit,length=len_unit)
+            ss_json = MidasAPI("POST","/post/table",js_dat)
+            _setUNIT(currUNIT)
+            
+            res_df = _JSToDF_ResTable(ss_json)
+
+            if output_path_excel and not res_df.is_empty():
+                try:
+                    res_df.write_excel(output_path_excel,
+                                    autofit=True,
+                                    autofilter=True,
+                                    table_style="Table Style Light 8",
+                                    header_format={"bold":True})
+                    print(f"✅ Successfully saved Elastic Link table to: {output_path_excel}")
+                except Exception as e:
+                    print(f"⚠️ Error saving Excel file: {e}")
+            
+            if existing_excel_input and not res_df.is_empty():
+                _write_df_to_existing_excel(res_df, existing_excel_input)
+            
+            return res_df
+
+        @staticmethod
+        def ElasticLink_VBM(keys=[], loadcase:list=[], items=['all'], 
+                            components=['all'], force_unit='KN', len_unit='M', 
+                            number_format="Fixed", digit=5, 
+                            output_path_json=None, output_path_excel=None,
+                            existing_excel_input: list = None):
+            '''
+            Fetches Elastic Link Forces (View by Max Value) result tables.
+            
+            Args:
+                keys (list/str): List of Element IDs or a Structure Group Name.
+                loadcase (list): List of load case names, e.g., ["STLENV_STR(CB:max)"].
+                items (list): Items to display: ["Axial", "Shear-y", "Moment-z", etc.].
+                components (list): Table components to include. Defaults to ['all'].
+                force_unit (str): Force unit (e.g., "KN", "N").
+                len_unit (str): Length unit (e.g., "M", "MM").
+                number_format (str): Number format ("Fixed", "Scientific", "General").
+                digit (int): Number of decimal places (0-15).
+                output_path_json (str): Optional. File path to save the raw JSON response.
+                output_path_excel (str): Optional. File path to save the result table as a new Excel file.
+                existing_excel_input (list): Optional. List to write to an existing file: [excel_path, sheet_name, start_cell].
+            
+            Returns:
+                polars.DataFrame: A DataFrame containing the result table.
+            '''
+            
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Table",
+                    "TABLE_TYPE": "ELASTICLINKVBM",
+                    "STYLES": {
+                        "FORMAT": number_format,
+                        "PLACE": digit
+                    },
+                    "UNIT": {
+                        "FORCE": force_unit,
+                        "DIST": len_unit
+                    }
+                }
+            }
+            
+            if items != ['all']:
+                js_dat["Argument"]['ITEM_TO_DISPLAY'] = items
+
+            if output_path_json:
+                js_dat["Argument"]["EXPORT_PATH"] = output_path_json
+
+            if isinstance(keys, list) and keys:
+                js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": keys}
+            elif isinstance(keys, str):
+                js_dat["Argument"]['NODE_ELEMS'] = {"STRUCTURE_GROUP_NAME": keys}
+
+            if loadcase:
+                js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
+            
+            if components != ['all']:
+                js_dat["Argument"]['COMPONENTS'] = components
+
+            currUNIT = _getUNIT()
+            Model.units(force=force_unit,length=len_unit)
+            ss_json = MidasAPI("POST","/post/table",js_dat)
+            _setUNIT(currUNIT)
+            
+            res_df = _JSToDF_ResTable(ss_json)
+
+            if output_path_excel and not res_df.is_empty():
+                try:
+                    res_df.write_excel(output_path_excel,
+                                    autofit=True,
+                                    autofilter=True,
+                                    table_style="Table Style Light 8",
+                                    header_format={"bold":True})
+                    print(f"✅ Successfully saved Elastic Link (VBM) table to: {output_path_excel}")
+                except Exception as e:
+                    print(f"⚠️ Error saving Excel file: {e}")
+            
+            if existing_excel_input and not res_df.is_empty():
+                _write_df_to_existing_excel(res_df, existing_excel_input)
+            
+            return res_df
+
+        @staticmethod
+        def GeneralLink(keys=[], loadcase:list=[], components=['all'], 
+                        force_unit='KN', len_unit='M', 
+                        activationCSstep=False, stage_step:list=[], 
+                        number_format="Fixed", digit=5, 
+                        output_path_json=None, output_path_excel=None,
+                        existing_excel_input: list = None,
+                        type:str="Force"):
+            '''
+            Fetches General Link (Force or Deformation) result tables.
+            
+            Args:
+                keys (list/str): List of Element IDs or a Structure Group Name.
+                loadcase (list): List of load case names, e.g., ["SWofGirders(ST)"].
+                components (list): Table components to include. Defaults to ['all'].
+                force_unit (str): Force unit (e.g., "KN", "N").
+                len_unit (str): Length unit (e.g., "M", "MM").
+                activationCSstep (bool): Activate construction stage steps.
+                stage_step (list): List of stage steps, e.g., ["CS1:001(first)"].
+                number_format (str): Number format ("Fixed", "Scientific", "General").
+                digit (int): Number of decimal places (0-15).
+                output_path_json (str): Optional. File path to save the raw JSON response.
+                output_path_excel (str): Optional. File path to save the result table as a new Excel file.
+                existing_excel_input (list): Optional. List to write to an existing file: [excel_path, sheet_name, start_cell].
+                type (str): Result type. "Force" or "Deformation".
+            
+            Returns:
+                polars.DataFrame: A DataFrame containing the result table.
+            '''
+            
+            table_type_map = {
+                "Force": "GENERAL_LINK_FORCE",
+                "Deformation": "GENERAL_LINK_DEFORM"
+            }
+            table_type = table_type_map.get(type.capitalize(), "GENERAL_LINK_FORCE")
+
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Table",
+                    "TABLE_TYPE": table_type,
+                    "STYLES": {
+                        "FORMAT": number_format,
+                        "PLACE": digit
+                    },
+                    "UNIT": {
+                        "FORCE": force_unit,
+                        "DIST": len_unit
+                    }
+                }
+            }
+
+            if output_path_json:
+                js_dat["Argument"]["EXPORT_PATH"] = output_path_json
+
+            if isinstance(keys, list) and keys:
+                js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": keys}
+            elif isinstance(keys, str):
+                js_dat["Argument"]['NODE_ELEMS'] = {"STRUCTURE_GROUP_NAME": keys}
+
+            if loadcase:
+                js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
+            
+            if components != ['all']:
+                js_dat["Argument"]['COMPONENTS'] = components
+
+            if activationCSstep:
+                js_dat["Argument"]['OPT_CS'] = True
+                if stage_step:
+                    js_dat["Argument"]['STAGE_STEP'] = stage_step
+
+            currUNIT = _getUNIT()
+            Model.units(force=force_unit,length=len_unit)
+            ss_json = MidasAPI("POST","/post/table",js_dat)
+            _setUNIT(currUNIT)
+            
+            res_df = _JSToDF_ResTable(ss_json)
+
+            if output_path_excel and not res_df.is_empty():
+                try:
+                    res_df.write_excel(output_path_excel,
+                                    autofit=True,
+                                    autofilter=True,
+                                    table_style="Table Style Light 8",
+                                    header_format={"bold":True})
+                    print(f"✅ Successfully saved General Link ({type}) table to: {output_path_excel}")
+                except Exception as e:
+                    print(f"⚠️ Error saving Excel file: {e}")
+            
+            if existing_excel_input and not res_df.is_empty():
+                _write_df_to_existing_excel(res_df, existing_excel_input)
+            
+            return res_df
+
+        @staticmethod
+        def GeneralLink_Force_VBM(keys=[], loadcase:list=[], items=['all'], 
+                                  components=['all'], force_unit='KN', len_unit='M', 
+                                  number_format="Fixed", digit=5, 
+                                  output_path_json=None, output_path_excel=None,
+                                  existing_excel_input: list = None):
+            '''
+            Fetches General Link Force (View by Max Value) result tables.
+            
+            Args:
+                keys (list/str): List of Element IDs or a Structure Group Name.
+                loadcase (list): List of load case names, e.g., ["STLENV_STR(CB:max)"].
+                items (list): Items to display: ["Axial", "Shear-y", "Moment-z", etc.].
+                components (list): Table components to include. Defaults to ['all'].
+                force_unit (str): Force unit (e.g., "KN", "N").
+                len_unit (str): Length unit (e.g., "M", "MM").
+                number_format (str): Number format ("Fixed", "Scientific", "General").
+                digit (int): Number of decimal places (0-15).
+                output_path_json (str): Optional. File path to save the raw JSON response.
+                output_path_excel (str): Optional. File path to save the result table as a new Excel file.
+                existing_excel_input (list): Optional. List to write to an existing file: [excel_path, sheet_name, start_cell].
+            
+            Returns:
+                polars.DataFrame: A DataFrame containing the result table.
+            '''
+            
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Table",
+                    "TABLE_TYPE": "GENERAL_LINK_FORCEVBM",
+                    "STYLES": {
+                        "FORMAT": number_format,
+                        "PLACE": digit
+                    },
+                    "UNIT": {
+                        "FORCE": force_unit,
+                        "DIST": len_unit
+                    }
+                }
+            }
+            
+            if items != ['all']:
+                js_dat["Argument"]['ITEM_TO_DISPLAY'] = items
+
+            if output_path_json:
+                js_dat["Argument"]["EXPORT_PATH"] = output_path_json
+
+            if isinstance(keys, list) and keys:
+                js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": keys}
+            elif isinstance(keys, str):
+                js_dat["Argument"]['NODE_ELEMS'] = {"STRUCTURE_GROUP_NAME": keys}
+
+            if loadcase:
+                js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
+            
+            if components != ['all']:
+                js_dat["Argument"]['COMPONENTS'] = components
+
+            currUNIT = _getUNIT()
+            Model.units(force=force_unit,length=len_unit)
+            ss_json = MidasAPI("POST","/post/table",js_dat)
+            _setUNIT(currUNIT)
+            
+            res_df = _JSToDF_ResTable(ss_json)
+
+            if output_path_excel and not res_df.is_empty():
+                try:
+                    res_df.write_excel(output_path_excel,
+                                    autofit=True,
+                                    autofilter=True,
+                                    table_style="Table Style Light 8",
+                                    header_format={"bold":True})
+                    print(f"✅ Successfully saved General Link Force (VBM) table to: {output_path_excel}")
+                except Exception as e:
+                    print(f"⚠️ Error saving Excel file: {e}")
+            
+            if existing_excel_input and not res_df.is_empty():
+                _write_df_to_existing_excel(res_df, existing_excel_input)
+            
+            return res_df
+
+        @staticmethod
+        def ResultantForces(keys=[], loadcase:list=[], parts=["PartI", "PartJ"], 
+                            components=['all'], force_unit='KN', len_unit='M', 
+                            activationCSstep=False, stage_step:list=[], 
+                            number_format="Fixed", digit=5, 
+                            output_path_json=None, output_path_excel=None,
+                            existing_excel_input: list = None):
+            '''
+            Fetches Resultant Forces (Virtual Beam) result tables.
+            
+            Args:
+                keys (list/str): List of Element IDs or a Structure Group Name.
+                loadcase (list): List of load case names, e.g., ["SWofGirders(ST)"].
+                parts (list): Element parts: ["PartI", "PartJ", etc.].
+                components (list): Table components to include. Defaults to ['all'].
+                force_unit (str): Force unit (e.g., "KN", "N").
+                len_unit (str): Length unit (e.g., "M", "MM").
+                activationCSstep (bool): Activate construction stage steps.
+                stage_step (list): List of stage steps, e.g., ["CS1:001(first)"].
+                number_format (str): Number format ("Fixed", "Scientific", "General").
+                digit (int): Number of decimal places (0-15).
+                output_path_json (str): Optional. File path to save the raw JSON response.
+                output_path_excel (str): Optional. File path to save the result table as a new Excel file.
+                existing_excel_input (list): Optional. List to write to an existing file: [excel_path, sheet_name, start_cell].
+            
+            Returns:
+                polars.DataFrame: A DataFrame containing the result table.
+            '''
+            
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Table",
+                    "TABLE_TYPE": "RESULTANT_FORCES",
+                    "STYLES": {
+                        "FORMAT": number_format,
+                        "PLACE": digit
+                    },
+                    "UNIT": {
+                        "FORCE": force_unit,
+                        "DIST": len_unit
+                    },
+                    "PARTS" : parts
+                }
+            }
+
+            if output_path_json:
+                js_dat["Argument"]["EXPORT_PATH"] = output_path_json
+
+            if isinstance(keys, list) and keys:
+                js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": keys}
+            elif isinstance(keys, str):
+                js_dat["Argument"]['NODE_ELEMS'] = {"STRUCTURE_GROUP_NAME": keys}
+
+            if loadcase:
+                js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
+            
+            if components != ['all']:
+                js_dat["Argument"]['COMPONENTS'] = components
+
+            if activationCSstep:
+                js_dat["Argument"]['OPT_CS'] = True
+                if stage_step:
+                    js_dat["Argument"]['STAGE_STEP'] = stage_step
+
+            currUNIT = _getUNIT()
+            Model.units(force=force_unit,length=len_unit)
+            ss_json = MidasAPI("POST","/post/table",js_dat)
+            _setUNIT(currUNIT)
+            
+            res_df = _JSToDF_ResTable(ss_json)
+
+            if output_path_excel and not res_df.is_empty():
+                try:
+                    res_df.write_excel(output_path_excel,
+                                    autofit=True,
+                                    autofilter=True,
+                                    table_style="Table Style Light 8",
+                                    header_format={"bold":True})
+                    print(f"✅ Successfully saved Resultant Forces table to: {output_path_excel}")
+                except Exception as e:
+                    print(f"⚠️ Error saving Excel file: {e}")
+            
+            if existing_excel_input and not res_df.is_empty():
+                _write_df_to_existing_excel(res_df, existing_excel_input)
+            
+            return res_df
+
+        @staticmethod
+        def ResultantForces_VBM(keys=[], loadcase:list=[], items=['all'], parts=["PartI", "PartJ"], 
+                                components=['all'], force_unit='KN', len_unit='M', 
+                                number_format="Fixed", digit=5, 
+                                output_path_json=None, output_path_excel=None,
+                                existing_excel_input: list = None):
+            '''
+            Fetches Resultant Forces (Virtual Beam, View by Max Value) result tables.
+            
+            Args:
+                keys (list/str): List of Element IDs or a Structure Group Name.
+                loadcase (list): List of load case names, e.g., ["STLENV_STR(CB:max)"].
+                items (list): Items to display: ["Axial", "Shear-y", "Moment-z", etc.].
+                parts (list): Element parts: ["PartI", "PartJ", etc.].
+                components (list): Table components to include. Defaults to ['all'].
+                force_unit (str): Force unit (e.g., "KN", "N").
+                len_unit (str): Length unit (e.g., "M", "MM").
+                number_format (str): Number format ("Fixed", "Scientific", "General").
+                digit (int): Number of decimal places (0-15).
+                output_path_json (str): Optional. File path to save the raw JSON response.
+                output_path_excel (str): Optional. File path to save the result table as a new Excel file.
+                existing_excel_input (list): Optional. List to write to an existing file: [excel_path, sheet_name, start_cell].
+            
+            Returns:
+                polars.DataFrame: A DataFrame containing the result table.
+            '''
+            
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Table",
+                    "TABLE_TYPE": "RESULTANT_FORCESVBM",
+                    "STYLES": {
+                        "FORMAT": number_format,
+                        "PLACE": digit
+                    },
+                    "UNIT": {
+                        "FORCE": force_unit,
+                        "DIST": len_unit
+                    },
+                    "PARTS" : parts
+                }
+            }
+
+            if items != ['all']:
+                js_dat["Argument"]['ITEM_TO_DISPLAY'] = items
+                
+            if output_path_json:
+                js_dat["Argument"]["EXPORT_PATH"] = output_path_json
+
+            if isinstance(keys, list) and keys:
+                js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": keys}
+            elif isinstance(keys, str):
+                js_dat["Argument"]['NODE_ELEMS'] = {"STRUCTURE_GROUP_NAME": keys}
+
+            if loadcase:
+                js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
+            
+            if components != ['all']:
+                js_dat["Argument"]['COMPONENTS'] = components
+
+            currUNIT = _getUNIT()
+            Model.units(force=force_unit,length=len_unit)
+            ss_json = MidasAPI("POST","/post/table",js_dat)
+            _setUNIT(currUNIT)
+            
+            res_df = _JSToDF_ResTable(ss_json)
+
+            if output_path_excel and not res_df.is_empty():
+                try:
+                    res_df.write_excel(output_path_excel,
+                                    autofit=True,
+                                    autofilter=True,
+                                    table_style="Table Style Light 8",
+                                    header_format={"bold":True})
+                    print(f"✅ Successfully saved Resultant Forces (VBM) table to: {output_path_excel}")
+                except Exception as e:
+                    print(f"⚠️ Error saving Excel file: {e}")
+            
+            if existing_excel_input and not res_df.is_empty():
+                _write_df_to_existing_excel(res_df, existing_excel_input)
+            
+            return res_df
+
+        @staticmethod
+        def VibrationModeShape(keys=[], modes:list=["Mode1"], components=['all'], 
+                               force_unit='KN', len_unit='M', 
+                               number_format="Scientific", digit=12, 
+                               output_path_json=None, output_path_excel=None,
+                               existing_excel_input: list = None,
+                               type:str="Eigenvalue"):
+            '''
+            Fetches modal analysis result tables (Eigenvalue or Participation Vector).
+            Note: Load Cases and CS steps are not applicable.
+            
+            Args:
+                keys (list/str): List of Node IDs or a Structure Group Name.
+                modes (list): List of modes, e.g., ["Mode1", "Mode2"].
+                components (list): Table components to include. Defaults to ['all'].
+                force_unit (str): Force unit (e.g., "KN", "N").
+                len_unit (str): Length unit (e.g., "M", "MM").
+                number_format (str): Number format ("Fixed", "Scientific", "General").
+                digit (int): Number of decimal places (0-15).
+                output_path_json (str): Optional. File path to save the raw JSON response.
+                output_path_excel (str): Optional. File path to save the result table as a new Excel file.
+                existing_excel_input (list): Optional. List to write to an existing file: [excel_path, sheet_name, start_cell].
+                type (str): Mode shape type: "Eigenvalue" or "ParticipationVector".
+            
+            Returns:
+                polars.DataFrame: A DataFrame containing the result table.
+            '''
+            
+            table_type_map = {
+                "Eigenvalue": "EIGENVALUEMODE",
+                "ParticipationVector": "PARTICIPATIONVECTORMODE"
+            }
+            table_type = table_type_map.get(type.capitalize(), "EIGENVALUEMODE")
+
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Table",
+                    "TABLE_TYPE": table_type,
+                    "STYLES": {
+                        "FORMAT": number_format,
+                        "PLACE": digit
+                    },
+                    "UNIT": {
+                        "FORCE": force_unit,
+                        "DIST": len_unit
+                    },
+                    "MODES": modes
+                }
+            }
+
+            if output_path_json:
+                js_dat["Argument"]["EXPORT_PATH"] = output_path_json
+
+            if isinstance(keys, list) and keys:
+                js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": keys}
+            elif isinstance(keys, str):
+                js_dat["Argument"]['NODE_ELEMS'] = {"STRUCTURE_GROUP_NAME": keys}
+            
+            if components != ['all']:
+                js_dat["Argument"]['COMPONENTS'] = components
+
+            currUNIT = _getUNIT()
+            Model.units(force=force_unit,length=len_unit)
+            ss_json = MidasAPI("POST","/post/table",js_dat)
+            _setUNIT(currUNIT)
+            
+            res_df = _JSToDF_ResTable(ss_json)
+
+            if output_path_excel and not res_df.is_empty():
+                try:
+                    res_df.write_excel(output_path_excel,
+                                    autofit=True,
+                                    autofilter=True,
+                                    table_style="Table Style Light 8",
+                                    header_format={"bold":True})
+                    print(f"✅ Successfully saved Vibration Mode Shape ({type}) table to: {output_path_excel}")
+                except Exception as e:
+                    print(f"⚠️ Error saving Excel file: {e}")
+            
+            if existing_excel_input and not res_df.is_empty():
+                _write_df_to_existing_excel(res_df, existing_excel_input)
+            
+            return res_df
+
+        @staticmethod
+        def BucklingModeShape(keys=[], modes:list=["Mode1"], components=['all'], 
+                              force_unit='KN', len_unit='M', 
+                              number_format="Scientific", digit=12, 
+                              output_path_json=None, output_path_excel=None,
+                              existing_excel_input: list = None):
+            '''
+            Fetches Buckling Mode Shape result tables.
+            Note: Load Cases and CS steps are not applicable.
+            
+            Args:
+                keys (list/str): List of Node IDs or a Structure Group Name.
+                modes (list): List of modes, e.g., ["Mode1", "Mode2"].
+                components (list): Table components to include. Defaults to ['all'].
+                force_unit (str): Force unit (e.g., "KN", "N").
+                len_unit (str): Length unit (e.g., "M", "MM").
+                number_format (str): Number format ("Fixed", "Scientific", "General").
+                digit (int): Number of decimal places (0-15).
+                output_path_json (str): Optional. File path to save the raw JSON response.
+                output_path_excel (str): Optional. File path to save the result table as a new Excel file.
+                existing_excel_input (list): Optional. List to write to an existing file: [excel_path, sheet_name, start_cell].
+            
+            Returns:
+                polars.DataFrame: A DataFrame containing the result table.
+            '''
+            
+            table_type = "BUCKLINGMODE"
+
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Table",
+                    "TABLE_TYPE": table_type,
+                    "STYLES": {
+                        "FORMAT": number_format,
+                        "PLACE": digit
+                    },
+                    "UNIT": {
+                        "FORCE": force_unit,
+                        "DIST": len_unit
+                    },
+                    "MODES": modes
+                }
+            }
+
+            if output_path_json:
+                js_dat["Argument"]["EXPORT_PATH"] = output_path_json
+
+            if isinstance(keys, list) and keys:
+                js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": keys}
+            elif isinstance(keys, str):
+                js_dat["Argument"]['NODE_ELEMS'] = {"STRUCTURE_GROUP_NAME": keys}
+            
+            if components != ['all']:
+                js_dat["Argument"]['COMPONENTS'] = components
+
+            currUNIT = _getUNIT()
+            Model.units(force=force_unit,length=len_unit)
+            ss_json = MidasAPI("POST","/post/table",js_dat)
+            _setUNIT(currUNIT)
+            
+            res_df = _JSToDF_ResTable(ss_json)
+
+            if output_path_excel and not res_df.is_empty():
+                try:
+                    res_df.write_excel(output_path_excel,
+                                    autofit=True,
+                                    autofilter=True,
+                                    table_style="Table Style Light 8",
+                                    header_format={"bold":True})
+                    print(f"✅ Successfully saved Buckling Mode Shape table to: {output_path_excel}")
+                except Exception as e:
+                    print(f"⚠️ Error saving Excel file: {e}")
+            
+            if existing_excel_input and not res_df.is_empty():
+                _write_df_to_existing_excel(res_df, existing_excel_input)
+            
+            return res_df 
+        
+        @staticmethod
+        def EffectiveSpanLength(components:list,
+                                type:str="Beam",
+                                force_unit='KN', len_unit='M', 
+                                number_format="Fixed", digit=12, 
+                                output_path_json=None, output_path_excel=None,
+                                existing_excel_input: list = None):
+            '''
+            Fetches Effective Span Length Analysis Result tables (Truss, Beam, or Plate).
+            
+            Args:
+                components (list): List of components to include, e.g., ["Element", "Lane", "Max", "Min"] for Truss.
+                type (str): Element type: "Truss", "Beam", or "Plate".
+                force_unit (str): Force unit (e.g., "KN", "N").
+                len_unit (str): Length unit (e.g., "M", "MM").
+                number_format (str): Number format ("Fixed", "Scientific", "General").
+                digit (int): Number of decimal places (0-15).
+                output_path_json (str): Optional. File path to save the raw JSON response.
+                output_path_excel (str): Optional. File path to save the result table as a new Excel file.
+                existing_excel_input (list): Optional. List to write to an existing file: [excel_path, sheet_name, start_cell].
+            
+            Returns:
+                polars.DataFrame: A DataFrame containing the result table.
+            '''
+            
+            table_type_map = {
+                "Truss": "EFFECTIVE_LENGTH_TRUSS",
+                "Beam": "EFFECTIVE_LENGTH_BEAM",
+                "Plate": "EFFECTIVE_LENGTH_PLATE"
+            }
+            table_name_map = {
+                "Truss": "EffectiveSpanLength-Truss",
+                "Beam": "EffectiveSpanLength-Beam",
+                "Plate": "EffectiveSpanLength-Plate"
+            }
+            
+            table_type = table_type_map.get(type.capitalize(), "EFFECTIVE_LENGTH_BEAM")
+            table_name = table_name_map.get(type.capitalize(), "EffectiveSpanLength-Beam")
+
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": table_name,
+                    "TABLE_TYPE": table_type,
+                    "STYLES": {
+                        "FORMAT": number_format,
+                        "PLACE": digit
+                    },
+                    "UNIT": {
+                        "FORCE": force_unit,
+                        "DIST": len_unit
+                    },
+                    "COMPONENTS": components
+                }
+            }
+
+            if output_path_json:
+                js_dat["Argument"]["EXPORT_PATH"] = output_path_json
+            
+            # Note: Based on the provided JSON, keys, loadcases, and CS steps are not used for this table type.
+
+            currUNIT = _getUNIT()
+            Model.units(force=force_unit,length=len_unit)
+            ss_json = MidasAPI("POST","/post/table",js_dat)
+            _setUNIT(currUNIT)
+            
+            # Use _JSToDF_UserDefined because the response key matches TABLE_NAME
+            res_df = _JSToDF_UserDefined(table_name, ss_json, summary=0)
+
+            if isinstance(res_df, str): # Handle error string from _JSToDF_UserDefined
+                print(f"⚠️ Error processing table '{table_name}': {res_df}")
+                return pl.DataFrame() # Return empty DataFrame on error
+
+            if output_path_excel and not res_df.is_empty():
+                try:
+                    res_df.write_excel(output_path_excel,
+                                    autofit=True,
+                                    autofilter=True,
+                                    table_style="Table Style Light 8",
+                                    header_format={"bold":True})
+                    print(f"✅ Successfully saved {table_name} table to: {output_path_excel}")
+                except Exception as e:
+                    print(f"⚠️ Error saving Excel file: {e}")
+            
+            if existing_excel_input and not res_df.is_empty():
+                _write_df_to_existing_excel(res_df, existing_excel_input)
+            
+            return res_df
+
+        @staticmethod
+        def NodalResponseSpectrum(keys=[], loadcase:list=[], modes:list=["Mode1"],
+                                  components:list=['all'],
+                                  type:str="InertiaForce",
+                                  force_unit='KN', len_unit='M', 
+                                  number_format="Fixed", digit=12, 
+                                  output_path_json=None, output_path_excel=None,
+                                  existing_excel_input: list = None):
+            '''
+            Fetches Nodal Results of Response Spectrum Analysis (Inertia Force or Acceleration).
+            
+            Args:
+                keys (list/str): List of Node IDs or a Structure Group Name.
+                loadcase (list): List of load case names, e.g., ["X-dir(RS)"].
+                modes (list): List of modes, e.g., ["Mode1", "Mode2"].
+                components (list): Table components to include. Defaults to ['all'].
+                type (str): Result type: "InertiaForce" or "Acceleration".
+                force_unit (str): Force unit (e.g., "KN", "N").
+                len_unit (str): Length unit (e.g., "M", "MM").
+                number_format (str): Number format ("Fixed", "Scientific", "General").
+                digit (int): Number of decimal places (0-15).
+                output_path_json (str): Optional. File path to save the raw JSON response.
+                output_path_excel (str): Optional. File path to save the result table as a new Excel file.
+                existing_excel_input (list): Optional. List to write to an existing file: [excel_path, sheet_name, start_cell].
+            
+            Returns:
+                polars.DataFrame: A DataFrame containing the result table.
+            '''
+            
+            table_type_map = {
+                "InertiaForce": "RS_NODAL_INERTIA",
+                "Acceleration": "RS_NODAL_ACCEL"
+            }
+            table_name_map = {
+                "InertiaForce": "NodalInertiaforce",
+                "Acceleration": "NodalAcceleration"
+            }
+            
+            table_type = table_type_map.get(type.capitalize(), "RS_NODAL_INERTIA")
+            table_name = table_name_map.get(type.capitalize(), "NodalInertiaforce")
+
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": table_name,
+                    "TABLE_TYPE": table_type,
+                    "STYLES": {
+                        "FORMAT": number_format,
+                        "PLACE": digit
+                    },
+                    "UNIT": {
+                        "FORCE": force_unit,
+                        "DIST": len_unit
+                    },
+                    "MODES": modes
+                }
+            }
+
+            if output_path_json:
+                js_dat["Argument"]["EXPORT_PATH"] = output_path_json
+            
+            if isinstance(keys, list) and keys:
+                js_dat["Argument"]['NODE_ELEMS'] = {"KEYS": keys}
+            elif isinstance(keys, str):
+                js_dat["Argument"]['NODE_ELEMS'] = {"STRUCTURE_GROUP_NAME": keys}
+
+            if loadcase:
+                js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
+
+            if components != ['all']:
+                js_dat["Argument"]['COMPONENTS'] = components
+            
+            # Note: Based on the provided JSON, CS steps are not used for this table type.
+
+            currUNIT = _getUNIT()
+            Model.units(force=force_unit,length=len_unit)
+            ss_json = MidasAPI("POST","/post/table",js_dat)
+            _setUNIT(currUNIT)
+            
+            # Use _JSToDF_UserDefined because the response key matches TABLE_NAME
+            res_df = _JSToDF_UserDefined(table_name, ss_json, summary=0)
+
+            if isinstance(res_df, str): # Handle error string from _JSToDF_UserDefined
+                print(f"⚠️ Error processing table '{table_name}': {res_df}")
+                return pl.DataFrame() # Return empty DataFrame on error
+
+            if output_path_excel and not res_df.is_empty():
+                try:
+                    res_df.write_excel(output_path_excel,
+                                    autofit=True,
+                                    autofilter=True,
+                                    table_style="Table Style Light 8",
+                                    header_format={"bold":True})
+                    print(f"✅ Successfully saved {table_name} table to: {output_path_excel}")
+                except Exception as e:
+                    print(f"⚠️ Error saving Excel file: {e}")
+            
+            if existing_excel_input and not res_df.is_empty():
+                _write_df_to_existing_excel(res_df, existing_excel_input)
+            
+            return res_df
+
+        @staticmethod
+        def TendonCoordinates(components:list=['all'],
+                              force_unit='KN', len_unit='M', 
+                              number_format="Fixed", digit=12, 
+                              output_path_json=None, output_path_excel=None,
+                              existing_excel_input: list = None):
+            '''
+            Fetches Tendon Coordinates tables.
+            
+            Args:
+                components (list): List of components to include, e.g., ["TendonName", "No", "x", "y", "z"].
+                force_unit (str): Force unit (e.g., "KN", "N").
+                len_unit (str): Length unit (e.g., "M", "MM").
+                number_format (str): Number format ("Fixed", "Scientific", "General").
+                digit (int): Number of decimal places (0-15).
+                output_path_json (str): Optional. File path to save the raw JSON response.
+                output_path_excel (str): Optional. File path to save the result table as a new Excel file.
+                existing_excel_input (list): Optional. List to write to an existing file: [excel_path, sheet_name, start_cell].
+            
+            Returns:
+                polars.DataFrame: A DataFrame containing the result table.
+            '''
+            
+            table_name = "TendonCoordinates"
+            table_type = "TNDN_COORDINATES"
+
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": table_name,
+                    "TABLE_TYPE": table_type,
+                    "STYLES": {
+                        "FORMAT": number_format,
+                        "PLACE": digit
+                    },
+                    "UNIT": {
+                        "FORCE": force_unit,
+                        "DIST": len_unit
+                    }
+                }
+            }
+            
+            if components != ['all']:
+                js_dat["Argument"]["COMPONENTS"] = components
+
+            if output_path_json:
+                js_dat["Argument"]["EXPORT_PATH"] = output_path_json
+            
+            # Note: Based on the provided JSON, keys, loadcases, and CS steps are not used for this table type.
+
+            currUNIT = _getUNIT()
+            Model.units(force=force_unit,length=len_unit)
+            ss_json = MidasAPI("POST","/post/table",js_dat)
+            _setUNIT(currUNIT)
+            
+            res_df = _JSToDF_UserDefined(table_name, ss_json, summary=0)
+
+            if isinstance(res_df, str): # Handle error string
+                print(f"⚠️ Error processing table '{table_name}': {res_df}")
+                return pl.DataFrame() # Return empty DataFrame on error
+
+            if output_path_excel and not res_df.is_empty():
+                try:
+                    res_df.write_excel(output_path_excel,
+                                    autofit=True,
+                                    autofilter=True,
+                                    table_style="Table Style Light 8",
+                                    header_format={"bold":True})
+                    print(f"✅ Successfully saved {table_name} table to: {output_path_excel}")
+                except Exception as e:
+                    print(f"⚠️ Error saving Excel file: {e}")
+            
+            if existing_excel_input and not res_df.is_empty():
+                _write_df_to_existing_excel(res_df, existing_excel_input)
+            
+            return res_df
 
         @staticmethod
         def TendonElongation(components:list=['all'],

@@ -207,11 +207,11 @@ class utils:
     
     
     @staticmethod
-    def LineToPlate(nDiv:int , mSizeDiv:float , bRigdLnk:bool , meshSize:float, elemList:list=None):
+    def LineToPlate(nDiv:int = 10 , mSizeDiv:float = 0, bRigdLnk:bool=True , meshSize:float=0.5, elemList:list=None):
         '''
         Converts selected/entered line element to Shell elements   
         **nDiv** - No. of Division along the length of span    
-        **mSizeDiv** - Division based on mesh size along the length of span   
+        **mSizeDiv** - Division based on mesh size(in meter) along the length of span   
                 division based on number -> **mSizeDiv  = 0**  
                 division based on meshSize(in meter) -> **nDiv = 0**   
         **bRigdLnk** - Whether to create Rigid links at the span ends  
@@ -220,4 +220,4 @@ class utils:
 
         '''
         from ._utilsFunc._line2plate import SS_create
-        SS_create(nDiv , mSizeDiv , bRigdLnk , meshSize,elemList)
+        SS_create(nDiv , mSizeDiv , bRigdLnk , meshSize ,elemList)

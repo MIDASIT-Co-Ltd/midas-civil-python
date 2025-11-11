@@ -16,6 +16,7 @@ class L2P:
     nDivMESH =[]
     CG_data = {}
     thick_js = {}
+    sorted_nodes = []
 
 # 1. -------------     Getting selected elements, sorting the nodes, deleting the middle node    -------------------
 # Takes in [[1,2] , [3,4] ,[2,3]] returns [1,2,3,4] 
@@ -255,11 +256,14 @@ def createTapPlateAlign(align_points,t_param,beta_angle,Section4Plate,rigid_LNK 
 
         if rigid_LNK:
             if i == 0 :
-                beamnode = Node(align_points[0][0],align_points[0][1],align_points[0][2]).ID
-                Boundary.RigidLink(beamnode,list(set(snode)),id=5)
+                # beamnode = Node(align_points[0][0],align_points[0][1],align_points[0][2]).ID
+                # Boundary.RigidLink(beamnode,list(set(snode)),id=5)
+                Boundary.RigidLink(L2P.sorted_nodes[0],list(set(snode)),id=5)
             elif i == align_num_points-2:
-                beamnode = Node(align_points[-1][0],align_points[-1][1],align_points[-1][2]).ID
-                Boundary.RigidLink(beamnode,list(set(enode)),id=5)
+                # beamnode = Node(align_points[-1][0],align_points[-1][1],align_points[-1][2]).ID
+                # Boundary.RigidLink(beamnode,list(set(enode)),id=5)
+                Boundary.RigidLink(L2P.sorted_nodes[-1],list(set(enode)),id=5)
+
 
 
 # 3 . ------------------  Smooth Alignment creation ------------------
@@ -512,9 +516,9 @@ def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList):
     # ORIGINAL ALIGNMENT
     Model.units()
     
-    node_list , align_points, align_beta_angle , elm_list, matID , align_sectID_list_sorted,k = delSelectElements(elemList) # Select elements
+    sorted_node_list , align_points, align_beta_angle , elm_list, matID , align_sectID_list_sorted,k = delSelectElements(elemList) # Select elements
 
-
+    L2P.sorted_nodes = sorted_node_list
     # NEW SMOOTH ALIGNMENT
     fine_align_points = align_points
     fine_beta_angle = align_beta_angle
@@ -560,8 +564,8 @@ def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList):
  
 
     Node.clear()
-    Node.sync()
-    # Node.ids=[utils.maxID('NODE')]
+    # Node.sync()
+    Node.ids=[Model.maxID('NODE')]
     
 
     Element.clear()

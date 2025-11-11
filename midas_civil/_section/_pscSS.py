@@ -434,9 +434,7 @@ class _SS_PSC_12CELL(_common):
 
             n_points = len(final_points)
 
-            if shape.SHAPE == '2CEL':
-                final_line.append([1,n_cp17])
-                final_thk.append([2*BI4,2*BI4])
+            
 
             sect_shape = final_points
             for i in range(n_points):
@@ -451,6 +449,11 @@ class _SS_PSC_12CELL(_common):
                 sect_thk.append([final_thk[q][1],final_thk[q][0]])
                 sect_lin_con.append([final_line[q][1]+n_points,final_line[q][0]+n_points])
 
+
+            if shape.SHAPE == '2CEL':
+                sect_lin_con.append([1,n_cp17])
+                sect_thk.append([2*BI4,2*BI4])
+                
             sect_thk_off = [0 for _ in sect_thk]
             
         

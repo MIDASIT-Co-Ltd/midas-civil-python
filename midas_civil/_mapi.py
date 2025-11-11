@@ -60,10 +60,10 @@ class MAPI_COUNTRY:
         ```
         MAPI_COUNTRY('US') # For english version
         MAPI_COUNTRY('KR') # For Korean version
-        MAPI_COUNTRY('CN') # For Chinese version
+        MAPI_COUNTRY('CH') # For Chinese version
         ```
         '''
-        if country.lower() in ['us','cn','kr','jp']:
+        if country.lower() in ['us','ch','kr','jp']:
             MAPI_COUNTRY.country = country.upper()
         else:
             MAPI_COUNTRY.country = 'US'

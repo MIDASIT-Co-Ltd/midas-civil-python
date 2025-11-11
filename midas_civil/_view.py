@@ -272,9 +272,61 @@ class ResultGraphic:
         
         return json_body
 
+    @staticmethod
+    def Reaction(lcase_type,lcase_name,lcase_minmax="max",component='FXYZ') -> dict:
+
+        json_body = {
+                "CURRENT_MODE":"ReactionForces/Moments",
+                "LOAD_CASE_COMB":{
+                    "TYPE":lcase_type,
+                    "NAME":lcase_name,
+                    "MINMAX" : lcase_minmax
+                },
+                "COMPONENTS":{
+                    "COMP":component,
+                    "OPT_LOCAL_CHECK" : False
+                },
+                "TYPE_OF_DISPLAY":{
+                    "CONTOUR": ResultGraphic.Contour._json(),
+                    "DEFORM":ResultGraphic.Deform._json(),
+                    "LEGEND":ResultGraphic.Legend._json(),
+                    "VALUES":{
+                        "OPT_CHECK":False
+                    }
+                }
+            }
+        
+        return json_body
+
+    @staticmethod
+    def DeformedShap(lcase_type,lcase_name,lcase_minmax="max",component='FXYZ') -> dict:
+
+        json_body = {
+                "CURRENT_MODE":"DeformedShap",
+                "LOAD_CASE_COMB":{
+                    "TYPE":lcase_type,
+                    "NAME":lcase_name,
+                    "MINMAX" : lcase_minmax
+                },
+                "COMPONENTS":{
+                    "COMP":component,
+                    "OPT_LOCAL_CHECK" : False
+                },
+                "TYPE_OF_DISPLAY":{
+                    "CONTOUR": ResultGraphic.Contour._json(),
+                    "DEFORM":ResultGraphic.Deform._json(),
+                    "LEGEND":ResultGraphic.Legend._json(),
+                    "VALUES":{
+                        "OPT_CHECK":False
+                    }
+                }
+            }
+        
+        return json_body
+
 class Image:
     @staticmethod
-    def Capture(location="D:\\API_temp\\img3.jpg",img_w = 1280 , img_h = 720,view='pre',stage:str=''):
+    def Capture(location="",img_w = 1280 , img_h = 720,view='pre',CS_StageName:str=''):
         ''' 
         Capture the image in the viewport
             Location - image location
@@ -300,13 +352,13 @@ class Image:
         elif view=='pre':
             json_body['Argument']['SET_MODE'] = 'pre'
 
-        if stage != '':
-            json_body['Argument']['STAGE_NAME'] = stage
+        if CS_StageName != '':
+            json_body['Argument']['STAGE_NAME'] = CS_StageName
 
         MidasAPI('POST','/view/CAPTURE',json_body)
 
     @staticmethod
-    def CaptureResults(ResultGraphic:dict,location:str="D:\\API_temp\\img3.jpg",img_w:int = 1280 , img_h:int = 720,CS_StageName:str=''):
+    def CaptureResults(ResultGraphic:dict,location:str="",img_w:int = 1280 , img_h:int = 720,CS_StageName:str=''):
         ''' 
         Capture Result Graphic in CIVIL NX   
             Result Graphic - ResultGraphic JSON (ResultGraphic.BeamDiagram())
