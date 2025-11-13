@@ -22,6 +22,7 @@ class NX:
     debug_request = False
     debug_requestJSON = False
     debug_response = False
+    dummy_elems = False
 
     _symbol_responseCode_ = {
         "1" : "⌛",

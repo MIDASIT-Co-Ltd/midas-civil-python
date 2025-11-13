@@ -1,7 +1,7 @@
 from ._mapi import *
 from ._model import *
 from ._group import *
-
+import numpy as np
 
 
 # -----  Extend for list of nodes/elems -----
@@ -28,6 +28,7 @@ def _ADD_BeamLoad(self):
 class Load_Case:
     """Type symbol (Refer Static Load Case section in the Onine API Manual, Load Case names.  
     \nSample: Load_Case("USER", "Case 1", "Case 2", ..., "Case n")"""
+    maxID = 0
     cases = []
     types = ["USER", "D", "DC", "DW", "DD", "EP", "EANN", "EANC", "EAMN", "EAMC", "EPNN", "EPNC", "EPMN", "EPMC", "EH", "EV", "ES", "EL", "LS", "LSC", 
             "L", "LC", "LP", "IL", "ILP", "CF", "BRK", "BK", "CRL", "PS", "B", "WP", "FP", "SF", "WPR", "W", "WL", "STL", "CR", "SH", "T", "TPG", "CO",
@@ -38,8 +39,9 @@ class Load_Case:
         self.ID = []
         for i in range(len(self.NAME)):
             if Load_Case.cases == []: self.ID.append(i+1)
-            if Load_Case.cases != []: self.ID.append(max(Load_Case.cases[-1].ID) + i + 1)
+            if Load_Case.cases != []: self.ID.append(Load_Case.maxID + i + 1)
         Load_Case.cases.append(self)
+        Load_Case.maxID = max(max(self.ID),Load_Case.maxID)
     
     @classmethod
     def json(cls):
@@ -49,6 +51,7 @@ class Load_Case:
             if i.TYPE in cls.types:
                 for j in i.ID:
                     json['Assign'][j] = {
+                        "NO": j,
                         "NAME": i.NAME[i.ID.index(j)],
                         "TYPE": i.TYPE}
             else:
@@ -71,7 +74,8 @@ class Load_Case:
             if list(a['STLD'].keys()) != []:
                 Load_Case.cases = []
                 for j in a['STLD'].keys():
-                    Load_Case(a['STLD'][j]['TYPE'], a['STLD'][j]['NAME'])
+                    lc = Load_Case(a['STLD'][j]['TYPE'], a['STLD'][j]['NAME'])
+                    lc.ID = [int(a['STLD'][j]['NO'])]
     
     @classmethod
     def delete(cls):

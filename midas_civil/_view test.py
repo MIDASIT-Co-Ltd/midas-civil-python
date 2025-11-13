@@ -1,5 +1,6 @@
 from ._mapi import *
 from ._model import *
+import base64
 
 class View:
     '''
@@ -400,7 +401,6 @@ class ResultGraphic:
             lcase_minmax (str): Load Type ("Max", "Min", "All"). Defaults to "Max".
             part (str): Component Part ("total", ...). Defaults to "total".
             component (str): Component Name ("Fx", "Fy", "Fz", "Mx", "My", "Mz"). Defaults to "Fx".
-            opt_show_truss_forces (bool): Show Truss Forces. Defaults to True.
 
         '''
         json_body = {
@@ -807,7 +807,7 @@ class ResultGraphic:
 
 class Image:
     @staticmethod
-    def Capture(location="",img_w = 1280 , img_h = 720,view='pre',CS_StageName:str=''):
+    def Capture(location,img_w = 1280 , img_h = 720,view='pre',CS_StageName:str=''):
         ''' 
         Capture the image in the viewport
             Location - image location
@@ -819,12 +819,14 @@ class Image:
                 "Argument": {
                     "SET_MODE":"pre",
                     "SET_HIDDEN":View.Hidden,
-                    "EXPORT_PATH": location,
                     "HEIGHT": img_h,
-                    "WIDTH": img_w,
-                    "ANGLE":View.Angle._json()
+                    "WIDTH": img_w
                 }
             }
+        
+        if View.Angle.__newH__ == True or View.Angle.__newV__ == True:
+            json_body['Argument']['ANGLE'] = View.Angle._json()
+
         if View.Active.__default__ ==False:
             json_body['Argument']['ACTIVE'] = View.Active._json()
         
@@ -836,10 +838,15 @@ class Image:
         if CS_StageName != '':
             json_body['Argument']['STAGE_NAME'] = CS_StageName
 
-        MidasAPI('POST','/view/CAPTURE',json_body)
+        resp = MidasAPI('POST','/view/CAPTURE',json_body)
+
+        bs64_img = resp["base64String"]
+        decode = open(location, 'wb')  # Open image file to save.
+        decode.write(base64.b64decode(bs64_img))  # Decode and write data.
+        decode.close()
 
     @staticmethod
-    def CaptureResults(ResultGraphic:dict,location:str="",img_w:int = 1280 , img_h:int = 720,CS_StageName:str=''):
+    def CaptureResults(ResultGraphic:dict,location:str,img_w:int = 1280 , img_h:int = 720,CS_StageName:str=''):
         ''' 
         Capture Result Graphic in CIVIL NX   
             Result Graphic - ResultGraphic JSON (ResultGraphic.BeamDiagram())
@@ -854,13 +861,21 @@ class Image:
                     "EXPORT_PATH":location,
                     "HEIGHT":img_h,
                     "WIDTH":img_w,
-                    "ANGLE":View.Angle._json(),
                     "RESULT_GRAPHIC": ResultGraphic
                 }
                 }
+        if View.Angle.__newH__ == True or View.Angle.__newV__ == True:
+            json_body['Argument']['ANGLE'] = View.Angle._json()
+
         if View.Active.__default__ ==False:
             json_body['Argument']['ACTIVE'] = View.Active._json()
 
         if CS_StageName != '':
             json_body['Argument']['STAGE_NAME'] = CS_StageName
-        MidasAPI('POST','/view/CAPTURE',json_body)
+        
+        resp = MidasAPI('POST','/view/CAPTURE',json_body)
+
+        bs64_img = resp["base64String"]
+        decode = open(location, 'wb')  # Open image file to save.
+        decode.write(base64.b64decode(bs64_img))  # Decode and write data.
+        decode.close()

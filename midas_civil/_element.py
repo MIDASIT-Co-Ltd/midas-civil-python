@@ -209,39 +209,50 @@ def _ADD(self):
     """
 
     # ------------  ID assignment -----------------------
-    id = int(self.ID)
-    if not Element.ids:
-        count = 1
-    else:
-        count = max(Element.ids) + 1
+    if NX.dummy_elems == False :
+        id = int(self.ID)
+        if not Element.ids:
+            count = 1
+        else:
+            count = max(Element.ids) + 1
 
-    if id == 0:
-        self.ID = count
-        Element.elements.append(self)
-        Element.ids.append(int(self.ID))
-    elif id in Element.ids:
-        self.ID = int(id)
-        print(f'⚠️  Element with ID {id} already exists! It will be replaced.')
-        index = Element.ids.index(id)
-        Element.elements[index] = self
-    else:
-        self.ID = id
-        Element.elements.append(self)
-        Element.ids.append(int(self.ID))
-    Element.__elemDIC__[str(self.ID)] = self
-    
-    # ------------  Group assignment -----------------------
-    if self._GROUP == "" :
-        pass
-    elif isinstance(self._GROUP, list):
-        for gpName in self._GROUP:
-            _add_elem_2_stGroup(self.ID,gpName)
+        if id == 0:
+            self.ID = count
+            Element.elements.append(self)
+            Element.ids.append(int(self.ID))
+        elif id in Element.ids:
+            self.ID = int(id)
+            print(f'⚠️  Element with ID {id} already exists! It will be replaced.')
+            index = Element.ids.index(id)
+            Element.elements[index] = self
+        else:
+            self.ID = id
+            Element.elements.append(self)
+            Element.ids.append(int(self.ID))
+        Element.__elemDIC__[str(self.ID)] = self
+        
+        # ------------  Group assignment -----------------------
+        if self._GROUP == "" :
+            pass
+        elif isinstance(self._GROUP, list):
+            for gpName in self._GROUP:
+                _add_elem_2_stGroup(self.ID,gpName)
+                for nd in self.NODE:
+                    _add_node_2_stGroup(nd,gpName)
+        elif isinstance(self._GROUP, str):
+            _add_elem_2_stGroup(self.ID,self._GROUP)
             for nd in self.NODE:
-                _add_node_2_stGroup(nd,gpName)
-    elif isinstance(self._GROUP, str):
-        _add_elem_2_stGroup(self.ID,self._GROUP)
-        for nd in self.NODE:
-            _add_node_2_stGroup(nd,self._GROUP)
+                _add_node_2_stGroup(nd,self._GROUP)
+    else:
+        if self._GROUP == "" :
+            pass
+        elif isinstance(self._GROUP, list):
+            for gpName in self._GROUP:
+                for nd in self.NODE:
+                    _add_node_2_stGroup(nd,gpName)
+        elif isinstance(self._GROUP, str):
+            for nd in self.NODE:
+                _add_node_2_stGroup(nd,self._GROUP)
             
 
 
