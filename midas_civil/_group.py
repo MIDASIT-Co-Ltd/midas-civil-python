@@ -7,16 +7,29 @@ from ._utils import sFlatten
 # ----------- HELPER FUNCTION -----------
     # --------   RETRIEVE NODE / ELEMENT FROM STRUCTURE GROUP -------
 
-def nodesInGroup(groupName:str,unique:bool=True) -> list:
-    ''' Returns Node ID list in a Structure Group or list of Structure groups'''
+def nodesInGroup(groupName:str,unique:bool=True,reverse:bool=False) -> list:
+    ''' Returns Node ID list in a Structure Group or list of Structure groups
+    eg. nodesInGroup('SG_A')   
+        nodesInGroup(['SG_1','SG_2','SG_3'])
+        groupName : 'SG_A' or ['SG_1' , 'SG_2' , 'SG_2']
+        unique : True -> Only unique ID is returned.
+        In case of multiple groups, we may require only uniques ids
+        reverse : True -> Reverses the returned list
+    '''
     groupNames = _convItem2List(groupName)
     nlist = []
     for gName in groupNames:
         chk=1
+        rev = reverse
+        if gName[0] == '!':
+            gName = gName[1:]
+            rev = not rev
         for i in Group.Structure.Groups:
                 if i.NAME == gName:
                     chk=0
-                    nlist.append(i.NLIST)
+                    nIDlist = i.NLIST
+                    if rev: nIDlist = list(reversed(nIDlist))
+                    nlist.append(nIDlist)
         if chk:
             print(f'⚠️   "{gName}" - Structure group not found !')
     if unique:
@@ -24,16 +37,22 @@ def nodesInGroup(groupName:str,unique:bool=True) -> list:
     return sFlatten(nlist)
 
 
-def elemsInGroup(groupName:str,unique:bool=True) -> list:
+def elemsInGroup(groupName:str,unique:bool=True,reverse:bool=False) -> list:
     ''' Returns Element ID list in a Structure Group '''
     groupNames = _convItem2List(groupName)
     elist = []
     for gName in groupNames:
         chk=1
+        rev = reverse
+        if gName[0] == '!':
+            gName = gName[1:]
+            rev = not rev
         for i in Group.Structure.Groups:
                 if i.NAME == gName:
                     chk=0
-                    elist.append(i.ELIST)
+                    eIDlist = i.ELIST
+                    if rev: eIDlist = list(reversed(eIDlist))
+                    elist.append(eIDlist)
         if chk:
             print(f'⚠️   "{gName}" - Structure group not found !')
     if unique:
@@ -103,7 +122,7 @@ class Group:
         _names = []
         url= "/db/GRUP"
 
-        def __init__(self, name, nlist=[],elist=[]):
+        def __init__(self, name:str, nlist:list=[],elist:list=[]):
             """"""
             self.NAME = name
             if Group.Structure.Groups == []: self.ID=1
@@ -185,7 +204,7 @@ class Group:
         ids=[]
         url= "/db/BNGR"
 
-        def __init__(self, name):
+        def __init__(self, name:str):
             """"""
             self.NAME = name
             if Group.Boundary.Groups == []: self.ID=1
@@ -238,7 +257,7 @@ class Group:
         ids=[]
         url= "/db/LDGR"
 
-        def __init__(self, name):
+        def __init__(self, name:str):
             """"""
             self.NAME = name
             if Group.Load.Groups == []: self.ID=1
@@ -289,7 +308,7 @@ class Group:
         ids=[]
         url= "/db/TDGR"
 
-        def __init__(self, name):
+        def __init__(self, name:str):
             """"""
             self.NAME = name
             if Group.Tendon.Groups == []: self.ID=1

@@ -42,12 +42,12 @@ class View:
         ident_type = "Group"
         ident_list = []
 
-        def __init__(self,mode='All',node_list=[],elem_list=[],ident_type='Group',ident_list=[]):
+        def __init__(self,mode:str='All',node_list:list=[],elem_list:list=[],ident_type='Group',ident_list:list=[]):
             '''Sets Elements to be Active for View.Capture() or View.CaptureResults()
 
             **Mode** - "All" , "Active" , "Identity"   
-            **Node_List** - Node to be active when Mode is "Active"   
-            **Elem_List** - Element to be active when Mode is "Active"   
+            **Node_List** - Nodes to be active when Mode is "Active"   
+            **Elem_List** - Elements to be active when Mode is "Active"   
             **Identity_Type** - "Group" , "Boundary Group" , "Load Group" , "Named Plane"   
             **Identity_List** - String list of all the idenity items  
             '''
@@ -218,7 +218,7 @@ class ResultGraphic:
             return json_body
     
     @staticmethod
-    def BeamDiagram(lcase_type,lcase_name,lcase_minmax="max",part='total',component='My') -> dict:
+    def BeamDiagram(lcase_type:str,lcase_name:str,lcase_minmax:str="max",part:str='total',component:str='My') -> dict:
 
         json_body = {
                 "CURRENT_MODE":"BeamDiagrams",
@@ -248,7 +248,7 @@ class ResultGraphic:
         return json_body
     
     @staticmethod
-    def DisplacementContour(lcase_type,lcase_name,lcase_minmax="max",component='DXYZ') -> dict:
+    def DisplacementContour(lcase_type:str,lcase_name:str,lcase_minmax:str="max",component:str='DXYZ') -> dict:
 
         json_body = {
                 "CURRENT_MODE":"DisplacementContour",
@@ -274,7 +274,7 @@ class ResultGraphic:
         return json_body
 
     @staticmethod
-    def Reaction(lcase_type,lcase_name,lcase_minmax="max",component='FXYZ') -> dict:
+    def Reaction(lcase_type:str,lcase_name:str,lcase_minmax:str="max",component:str='FXYZ') -> dict:
 
         json_body = {
                 "CURRENT_MODE":"ReactionForces/Moments",
@@ -300,7 +300,7 @@ class ResultGraphic:
         return json_body
 
     @staticmethod
-    def DeformedShap(lcase_type,lcase_name,lcase_minmax="max",component='FXYZ') -> dict:
+    def DeformedShap(lcase_type:str,lcase_name:str,lcase_minmax:str="max",component:str='FXYZ') -> dict:
 
         json_body = {
                 "CURRENT_MODE":"DeformedShap",
@@ -327,9 +327,9 @@ class ResultGraphic:
 
 class Image:
     @staticmethod
-    def Capture(location,img_w = 1280 , img_h = 720,view='pre',CS_StageName:str=''):
+    def Capture(location:str,img_w:int = 1280 , img_h:int = 720,view:str='pre',CS_StageName:str='') -> None:
         ''' 
-        Capture the image in the viewport
+        Capture the image in the viewport and saves at shown location
             Location - image location
             Image height and width
             View - 'pre' or 'post'
@@ -366,7 +366,7 @@ class Image:
         decode.close()
 
     @staticmethod
-    def CaptureResults(ResultGraphic:dict,location:str,img_w:int = 1280 , img_h:int = 720,CS_StageName:str=''):
+    def CaptureResults(ResultGraphic:ResultGraphic,location:str,img_w:int = 1280 , img_h:int = 720,CS_StageName:str=''):
         ''' 
         Capture Result Graphic in CIVIL NX   
             Result Graphic - ResultGraphic JSON (ResultGraphic.BeamDiagram())

@@ -105,6 +105,20 @@ def _matchArray(A,B):
         return B[:n]
     return B + [B[-1]] * (n - len(B))
 
+def _longestList(A,B):
+    """ Matches A , B list and returns the list with longest length with last element repeated """
+    A = _convItem2List(A)
+    B = _convItem2List(B)
+    nA = len(A)
+    nB = len(B)
+
+    if nA >= nB:
+        return (A , B + [B[-1]] * (nA - nB))
+    return (A + [A[-1]] * (nB - nA),B)
+
+
+
+
 class utils:
     ''' Contains helper function and utilities'''
     class Alignment:

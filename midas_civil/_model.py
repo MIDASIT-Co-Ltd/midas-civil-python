@@ -14,6 +14,9 @@ from ._tendon import *
 from ._result import *
 from ._movingload import *
 
+from ._temperature import *
+
+from collections import defaultdict
 class Model:
 
     #4 Function to check analysis status & perform analysis if not analyzed
@@ -262,6 +265,7 @@ class Model:
         Group.create()
         Boundary.create()
         Load.create()
+        Temperature.create()
         Tendon.create()
         if Section.TaperedGroup.data !=[] : Section.TaperedGroup.create()
         MovingLoad.create()
@@ -408,6 +412,41 @@ class Model:
         else:
             print('⚠️  Location data in importMCT is missing file extension')
 
+    @staticmethod
+    def get_element_connectivity():
+        element_connectivity = {}
+        for element in Element.elements:
+            element_id = element.ID
+            connected_nodes = element.NODE
+            element_connectivity.update({element_id: connected_nodes})
+        return element_connectivity
+
+    @staticmethod
+    def get_node_connectivity():
+        element_connectivity = Model.get_element_connectivity()
+        node_connectivity = defaultdict(list)
+
+        for element_id, nodes in element_connectivity.items():
+            for node in nodes:
+                node_connectivity[node].append(element_id)
+        node_connectivity = dict(node_connectivity)
+        return node_connectivity
+
+    # @staticmethod
+    # def visualise():
+    #     try:
+    #         from ._visualise import displayWindow
+    #         displayWindow()
+    #     except:
+    #         pass
+
+    # @staticmethod
+    # def snap():
+    #     try:
+    #         from ._visualise import take_snapshot
+    #         take_snapshot()
+    #     except:
+    #         pass
 
 
 

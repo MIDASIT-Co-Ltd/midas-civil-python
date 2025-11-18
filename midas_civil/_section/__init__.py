@@ -181,7 +181,7 @@ class Section:
                             Offset:Offset=Offset.CC(),useShear=True,use7Dof=False,id:int=0):
              
             args = locals()
-            sect_Obj = _SS_COMP_PSC_I(**args)
+            sect_Obj = _SS_PSC_I(**args)
             
             _SectionADD(sect_Obj)
             return sect_Obj

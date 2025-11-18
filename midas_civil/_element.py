@@ -6,7 +6,7 @@ import numpy as np
 from scipy.interpolate import splev, splprep , interp1d , Akima1DInterpolator
 from math import hypot
 import math
-from ._utils import _convItem2List
+from ._utils import _convItem2List , _longestList
 
 def _SInterp(angle,num_points):
     ''' Angle -> Input list | Num Points -> Output length'''
@@ -690,18 +690,22 @@ class Element:
             self.TYPE = 'PLATE'
             self.MATL = mat
             self.SECT = sect
-            self.NODE = nodes
+            
             self.ANGLE = angle
             self.STYPE = stype
             self._GROUP = group
 
-            if len(nodes)==3:
-                self.AREA,self.NORMAL = _triangleAREA(nodeByID(nodes[0]),nodeByID(nodes[1]),nodeByID(nodes[2]))
-            elif len(nodes)==4:
+            uniq_nodes = list(dict.fromkeys(nodes))
+            self._NPOINT=len(uniq_nodes)
+            if len(uniq_nodes)==3:
+                self.NODE = uniq_nodes
+                self.AREA,self.NORMAL = _triangleAREA(nodeByID(uniq_nodes[0]),nodeByID(uniq_nodes[1]),nodeByID(uniq_nodes[2]))
+            elif len(uniq_nodes)==4:
+                self.NODE = nodes
                 a1 , n1 = _triangleAREA(nodeByID(nodes[0]),nodeByID(nodes[1]),nodeByID(nodes[2]))
                 a2 , n2 = _triangleAREA(nodeByID(nodes[2]),nodeByID(nodes[3]),nodeByID(nodes[0]))
                 self.AREA = a1+a2
-                self.NORMAL = (n1+n2)/np.linalg.norm((n1+n2))
+                self.NORMAL = (n1+n2)/np.linalg.norm((n1+n2+0.000001))
                 
 
 
@@ -725,15 +729,16 @@ class Element:
                 return False
             plate_obj = []
             for ng in range(n_groups-1):
-                nID_A = nodesInGroup(strGroups[ng])
+                nID_A = nodesInGroup(strGroups[ng])   
                 nID_B = nodesInGroup(strGroups[ng+1])
 
-                min_len = min(len(nID_A),len(nID_B))
-                if min_len < 2 :
+                max_len = max(len(nID_A),len(nID_B))
+                if max_len < 2 :
                     print("⚠️ No. of nodes in Plate.loftGroups in less than 2")
                     return False
 
-                for i in range(min_len-1):
+                nID_A , nID_B = _longestList(nID_A , nID_B)
+                for i in range(max_len-1):
                     pt_array = [nID_A[i],nID_B[i],nID_B[i+1],nID_A[i+1]]
                     plate_obj.append(Element.Plate(pt_array,stype,mat,sect,angle,group,id))
 

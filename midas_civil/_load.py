@@ -29,6 +29,7 @@ class Load_Case:
     """Type symbol (Refer Static Load Case section in the Onine API Manual, Load Case names.  
     \nSample: Load_Case("USER", "Case 1", "Case 2", ..., "Case n")"""
     maxID = 0
+    maxNO = 0
     cases = []
     types = ["USER", "D", "DC", "DW", "DD", "EP", "EANN", "EANC", "EAMN", "EAMC", "EPNN", "EPNC", "EPMN", "EPMC", "EH", "EV", "ES", "EL", "LS", "LSC", 
             "L", "LC", "LP", "IL", "ILP", "CF", "BRK", "BK", "CRL", "PS", "B", "WP", "FP", "SF", "WPR", "W", "WL", "STL", "CR", "SH", "T", "TPG", "CO",
@@ -37,11 +38,17 @@ class Load_Case:
         self.TYPE = type
         self.NAME = name
         self.ID = []
+        self.NO = []
         for i in range(len(self.NAME)):
-            if Load_Case.cases == []: self.ID.append(i+1)
-            if Load_Case.cases != []: self.ID.append(Load_Case.maxID + i + 1)
+            if Load_Case.cases == []: 
+                self.ID.append(i+1)
+                self.NO.append(i+1)
+            if Load_Case.cases != []: 
+                self.ID.append(Load_Case.maxID + i + 1)
+                self.NO.append(Load_Case.maxNO + i + 1)
         Load_Case.cases.append(self)
         Load_Case.maxID = max(max(self.ID),Load_Case.maxID)
+        Load_Case.maxNO = max(max(self.NO),Load_Case.maxNO)
     
     @classmethod
     def json(cls):
@@ -51,7 +58,7 @@ class Load_Case:
             if i.TYPE in cls.types:
                 for j in i.ID:
                     json['Assign'][j] = {
-                        "NO": j,
+                        "NO": i.NO[i.ID.index(j)],
                         "NAME": i.NAME[i.ID.index(j)],
                         "TYPE": i.TYPE}
             else:
@@ -69,13 +76,21 @@ class Load_Case:
     
     @staticmethod
     def sync():
+        Load_Case.maxID = 0
+        Load_Case.maxNO = 0
         a = Load_Case.get()
         if a != {'message': ''}:
             if list(a['STLD'].keys()) != []:
                 Load_Case.cases = []
                 for j in a['STLD'].keys():
                     lc = Load_Case(a['STLD'][j]['TYPE'], a['STLD'][j]['NAME'])
-                    lc.ID = [int(a['STLD'][j]['NO'])]
+                    lcID = int(j)
+                    lCNO = int(a['STLD'][j]['NO'])
+                    lc.ID = [lcID]
+                    lc.NO = [lCNO]
+
+                    Load_Case.maxID = max(Load_Case.maxID ,lcID )
+                    Load_Case.maxNO = max(Load_Case.maxNO ,lCNO )
     
     @classmethod
     def delete(cls):
