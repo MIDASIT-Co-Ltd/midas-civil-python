@@ -108,6 +108,13 @@ class Group:
         cls.Boundary.delete()
         cls.Load.delete()
         cls.Tendon.delete()
+
+    @classmethod
+    def clear(cls):
+        cls.Structure.clear()
+        cls.Boundary.clear()
+        cls.Load.clear()
+        cls.Tendon.clear()
         
     
 
@@ -190,9 +197,13 @@ class Group:
 
         @classmethod
         def delete(cls):
+            cls.clear()
+            MidasAPI("DELETE",cls.url)
+
+        @classmethod
+        def clear(cls):
             cls.Groups=[]
             cls.ids=[]
-            MidasAPI("DELETE",cls.url)
         
 
 
@@ -244,9 +255,13 @@ class Group:
 
         @classmethod
         def delete(cls):
+            cls.clear()
+            MidasAPI("DELETE",cls.url)
+
+        @classmethod
+        def clear(cls):
             cls.Groups=[]
             cls.ids=[]
-            MidasAPI("DELETE",cls.url)
 
 
 # --------------------------------    LOAD   -------------------------------
@@ -296,9 +311,13 @@ class Group:
 
         @classmethod
         def delete(cls):
+            cls.clear()
+            MidasAPI("DELETE",cls.url)
+
+        @classmethod
+        def clear(cls):
             cls.Groups=[]
             cls.ids=[]
-            MidasAPI("DELETE",cls.url)
 
 # ------------------------  TENDON  ----------
 
@@ -347,6 +366,10 @@ class Group:
 
         @classmethod
         def delete(cls):
+            cls.clear()
+            MidasAPI("DELETE",cls.url)
+
+        @classmethod
+        def clear(cls):
             cls.Groups=[]
             cls.ids=[]
-            MidasAPI("DELETE",cls.url)

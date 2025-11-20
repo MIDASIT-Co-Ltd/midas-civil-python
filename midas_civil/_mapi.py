@@ -22,15 +22,8 @@ class NX:
     debug_request = False
     debug_requestJSON = False
     debug_response = False
-    dummy_elems = False
-
-    _symbol_responseCode_ = {
-        "1" : "⌛",
-        "2" : "✅",
-        "3" : "⚠️",
-        "4" : "💀",
-        "5" : "💀"
-    }
+    onlyNode = False
+    visualiser = False
 
 
     @staticmethod
@@ -179,8 +172,6 @@ def MidasAPI(method:str, command:str, body:dict={})->dict:
     elapsed_time = end_time - start_time
 
     if NX.debug_request:
-        # sym = NX._symbol_responseCode_[str(response.status_code)[0]]
-        # print(Fore.RED+f">>   METHOD : {method} |  URL : {command} | STATUS : "+Fore.YELLOW+f" {response.status_code} "+Fore.RED+f"| TIME : {elapsed_time:.4f} sec "+Style.RESET_ALL)
         print(Fore.RED+f">>   METHOD : {method} |  URL : {command} | STATUS :  {response.status_code} | TIME : {elapsed_time:.4f} sec "+Style.RESET_ALL)
     if NX.debug_requestJSON:
         print(Fore.CYAN+">>  "+str(body)+Style.RESET_ALL)

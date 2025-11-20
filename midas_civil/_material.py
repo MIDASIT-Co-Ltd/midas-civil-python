@@ -38,6 +38,10 @@ class Material:
     @staticmethod
     def delete():
         MidasAPI("DELETE","/db/MATL")
+        Material.clear()
+
+    @staticmethod
+    def clear():
         Material.mats=[]
         Material.ids=[]
 
@@ -66,6 +70,12 @@ class Material:
         Material.delete()
         CreepShrinkage.delete()
         CompStrength.delete()
+
+    @staticmethod
+    def clearAll():
+        Material.clear()
+        CreepShrinkage.clear()
+        CompStrength.clear()
         
 
 
@@ -233,6 +243,10 @@ class CreepShrinkage:
     @staticmethod
     def delete():
         MidasAPI("DELETE","/db/TDMT")
+        CreepShrinkage.clear()
+
+    @staticmethod
+    def clear():
         CreepShrinkage.mats=[]
         CreepShrinkage.ids=[]
 
@@ -948,6 +962,10 @@ class CompStrength:
     @staticmethod
     def delete():
         MidasAPI("DELETE","/db/TDME")
+        CompStrength.clear()
+
+    @staticmethod
+    def clear():
         CompStrength.mats=[]
         CompStrength.ids=[]
 
@@ -1618,7 +1636,7 @@ class TDMatLink:
     @staticmethod
     def delete():
         MidasAPI("DELETE","/db/TMAT")
-        TDMatLink.mats={}
+        TDMatLink.clear()
 
     @staticmethod
     def clear():

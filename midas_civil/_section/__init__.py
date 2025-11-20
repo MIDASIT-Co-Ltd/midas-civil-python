@@ -133,6 +133,10 @@ class Section:
     @staticmethod
     def delete():
         MidasAPI("DELETE","/db/SECT")
+        Section.clear()
+
+    @staticmethod
+    def clear():
         Section.sect=[]
         Section.ids=[]
 
@@ -358,8 +362,12 @@ class Section:
         
         @classmethod
         def delete(cls):
-            cls.data = []
+            cls.clear()
             return MidasAPI("DELETE", "/db/tsgr")
+        
+        @classmethod
+        def clear(cls):
+            cls.data = []
         
         @classmethod
         def sync(cls):

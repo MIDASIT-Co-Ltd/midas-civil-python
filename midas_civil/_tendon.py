@@ -205,6 +205,13 @@ class Tendon:
         if Tendon.Prestress.loads !=[]:
             Tendon.Prestress.create()
 
+    @staticmethod
+    def clear():
+        Tendon.Property.clear()
+        Tendon.Profile.clear()
+        Tendon.Prestress.clear()
+
+
     class Relaxation:
 
         class CEBFIP_2010:
@@ -533,6 +540,10 @@ class Tendon:
         @classmethod
         def delete(cls):
             MidasAPI("DELETE","/db/TDNT")
+            cls.clear()
+        
+        @classmethod
+        def clear(cls):
             cls.properties = []
             cls.ids = []
 
@@ -865,9 +876,13 @@ class Tendon:
         
         @classmethod
         def delete(cls):
+            cls.clear()
+            return MidasAPI('DELETE','/db/TDNA')
+        
+        @classmethod
+        def clear(cls):
             cls.profiles=[]
             cls.ids=[]
-            return MidasAPI('DELETE','/db/TDNA')
         
         @classmethod
         def sync(cls):
@@ -975,8 +990,12 @@ class Tendon:
         
         @classmethod
         def delete(cls):
-            cls.loads=[]
+            cls.clear()
             return MidasAPI("DELETE", "/db/TDPL")
+        
+        @classmethod
+        def clear(cls):
+            cls.loads=[]
         
         @classmethod
         def sync(cls):

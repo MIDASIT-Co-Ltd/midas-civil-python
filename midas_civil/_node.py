@@ -147,11 +147,8 @@ class Node:
     @staticmethod
     def delete():
         MidasAPI("DELETE","/db/NODE/")
-        Node.nodes=[]
-        Node.ids=[]
-        Node.Grid={}
-        Node.__nodeDic__ = {}
-
+        Node.clear()
+        
     @staticmethod
     def clear():
         Node.nodes=[]
@@ -279,6 +276,10 @@ class NodeLocalAxis:
     @staticmethod
     def delete():
         MidasAPI("DELETE","/db/SKEW/")
+        NodeLocalAxis.clear()
+
+    @staticmethod
+    def clear():
         NodeLocalAxis.skew=[]
         NodeLocalAxis.ids=[]
 

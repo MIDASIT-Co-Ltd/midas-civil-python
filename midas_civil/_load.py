@@ -94,8 +94,12 @@ class Load_Case:
     
     @classmethod
     def delete(cls):
-        cls.cases=[]
+        cls.clear()
         return MidasAPI("DELETE","/db/stld")
+    
+    @classmethod
+    def clear(cls):
+        cls.cases=[]
 #---------------------------------------------------------------------------------------------------------------
 
 
@@ -108,7 +112,13 @@ class Load:
         if cls.SW.data!=[]: cls.SW.create()
         if cls.Nodal.data!=[]: cls.Nodal.create()
         if cls.Beam.data!=[]: cls.Beam.create()
-        
+    
+    @classmethod
+    def clear(cls):
+        Load_Case.clear()
+        cls.SW.clear()
+        cls.Nodal.clear()
+        cls.Beam.clear()
 
     class SW:
         """Load Case Name, direction, Value, Load Group.\n
@@ -167,8 +177,12 @@ class Load:
         
         @classmethod
         def delete(cls):
-            cls.data=[]
+            cls.clear()
             return MidasAPI("DELETE","/db/BODF")
+
+        @classmethod
+        def clear(cls):
+            cls.data=[]
         
         @staticmethod
         def sync():
@@ -254,8 +268,12 @@ class Load:
         
         @classmethod
         def delete(cls):
-            cls.data=[]
+            cls.clear()
             return MidasAPI("DELETE", "/db/CNLD")
+        
+        @classmethod
+        def clear(cls):
+            cls.data=[]
         
         @classmethod
         def sync(cls):
@@ -403,8 +421,12 @@ class Load:
         
         @classmethod
         def delete(cls):
-            cls.data=[]
+            cls.clear()
             return MidasAPI("DELETE", "/db/bmld")
+        
+        @classmethod
+        def clear(cls):
+            cls.data=[]
         
         @classmethod
         def sync(cls):

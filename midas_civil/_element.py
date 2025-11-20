@@ -209,7 +209,7 @@ def _ADD(self):
     """
 
     # ------------  ID assignment -----------------------
-    if NX.dummy_elems == False :
+    if NX.onlyNode == False :
         id = int(self.ID)
         if not Element.ids:
             count = 1
@@ -396,9 +396,7 @@ class Element:
     @staticmethod
     def delete():
         MidasAPI("DELETE", "/db/ELEM")
-        Element.elements = []
-        Element.ids = []
-        Element.__elemDIC__={}
+        Element.clear()
     
     @staticmethod
     def clear():

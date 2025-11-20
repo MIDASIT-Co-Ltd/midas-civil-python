@@ -29,6 +29,14 @@ class Temperature:
         cls.Nodal.delete()
         cls.BeamSection.delete()
         
+    @classmethod
+    def clear(cls):
+        """Deletes Temperature elements from MIDAS Civil NX and Python"""
+        cls.System.clear()
+        cls.Element.clear()
+        cls.Gradient.clear()
+        cls.Nodal.clear()
+        cls.BeamSection.clear()
 
     @classmethod
     def sync(cls):
@@ -126,8 +134,13 @@ class Temperature:
         @staticmethod
         def delete():
             """Delete System Temperatures from MIDAS Civil NX and Python"""
-            Temperature.System.temps = []
+            Temperature.System.clear()
             return MidasAPI("DELETE", "/db/stmp")
+
+        @staticmethod
+        def clear():
+            """Delete System Temperatures from Python"""
+            Temperature.System.temps = []
 
     # --------------------------------------------------------------------------------------------------
     # Element Temperature
@@ -235,8 +248,13 @@ class Temperature:
         @staticmethod
         def delete():
             """Delete Element Temperatures from MIDAS Civil NX and Python"""
-            Temperature.Element.temps = []
+            Temperature.Element.clear()
             return MidasAPI("DELETE", "/db/etmp")
+        
+        @staticmethod
+        def clear():
+            """Delete Element Temperatures from MIDAS Civil NX and Python"""
+            Temperature.Element.temps = []
 
     # --------------------------------------------------------------------------------------------------
     # Temperature Gradient
@@ -371,8 +389,13 @@ class Temperature:
         @staticmethod
         def delete():
             """Delete Temperature Gradients from MIDAS Civil NX and Python"""
-            Temperature.Gradient.temps = []
+            Temperature.Gradient.clear()
             return MidasAPI("DELETE", "/db/gtmp")
+        
+        @staticmethod
+        def clear():
+            """Delete Temperature Gradients from MIDAS Civil NX and Python"""
+            Temperature.Gradient.temps = []
 
     # --------------------------------------------------------------------------------------------------
     # Nodal Temperature
@@ -480,8 +503,13 @@ class Temperature:
         @staticmethod
         def delete():
             """Delete Nodal Temperatures from MIDAS Civil NX and Python"""
-            Temperature.Nodal.temps = []
+            Temperature.Nodal.clear()
             return MidasAPI("DELETE", "/db/ntmp")
+        
+        @staticmethod
+        def clear():
+            """Delete Nodal Temperatures from MIDAS Civil NX and Python"""
+            Temperature.Nodal.temps = []
 
 
     # --------------------------------------------------------------------------------------------------
@@ -640,5 +668,10 @@ class Temperature:
         @staticmethod
         def delete():
             """Delete Beam Section Temperatures from MIDAS Civil NX and Python"""
-            Temperature.BeamSection.temps = []
+            Temperature.BeamSection.clear()
             return MidasAPI("DELETE", "/db/btmp")
+        
+        @staticmethod
+        def clear():
+            """Delete Beam Section Temperatures from MIDAS Civil NX and Python"""
+            Temperature.BeamSection.temps = []

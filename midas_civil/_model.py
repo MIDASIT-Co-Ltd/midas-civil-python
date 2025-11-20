@@ -278,13 +278,21 @@ class Model:
 
     @staticmethod
     def clear():
-        Node.delete()
-        Element.delete()
-        Load_Case.delete()
-        Group.delete()
-        Material.deleteAll()
-        Section.delete()
-        Boundary.delete()
+        Material.clearAll()
+        Section.clear()
+        Thickness.clear()
+        Node.clear()
+        Element.clear()
+        NodeLocalAxis.clear()
+        Group.clear()
+        Boundary.clear()
+        Load.clear()
+        Temperature.clear()
+        Tendon.clear()
+        Section.TaperedGroup.clear()
+        LoadCombination.clear()
+
+
 
     @staticmethod
     def type(strc_type=0,mass_type=1,gravity:float=0,mass_dir=1):
@@ -336,17 +344,29 @@ class Model:
         if location=="":
             MidasAPI("POST","/doc/SAVE",{"Argument":{}})
         else:
-            MidasAPI("POST","/doc/SAVEAS",{"Argument":str(location)})#Dumy location
+            if location.endswith('.mcb') or location.endswith('.mcbz'):
+                MidasAPI("POST","/doc/SAVEAS",{"Argument":str(location)})#Dumy location
+            else:
+                print('⚠️  File extension is missing')
+                
 
     @staticmethod
     def saveAs(location=""):
-        """Saves the model at location provided"""
-        MidasAPI("POST","/doc/SAVEAS",{"Argument":str(location)})
+        """Saves the model at location provided   
+         Model.saveAs("D:\\model2.mcb")"""
+        if location.endswith('.mcb') or location.endswith('.mcbz'):
+            MidasAPI("POST","/doc/SAVEAS",{"Argument":str(location)})
+        else:
+            print('⚠️  File extension is missing')
     
     @staticmethod
     def open(location=""):
         """Open Civil NX model file \n Model.open("D:\\model.mcb")"""
-        MidasAPI("POST","/doc/OPEN",{"Argument":str(location)})
+        if location.endswith('.mcb') or location.endswith('.mcbz'):
+            MidasAPI("POST","/doc/OPEN",{"Argument":str(location)})
+        else:
+            print('⚠️  File extension is missing')
+        
 
     @staticmethod
     def new():
@@ -432,21 +452,23 @@ class Model:
         node_connectivity = dict(node_connectivity)
         return node_connectivity
 
-    # @staticmethod
-    # def visualise():
-    #     try:
-    #         from ._visualise import displayWindow
-    #         displayWindow()
-    #     except:
-    #         pass
+    @staticmethod
+    def visualise():
+        if NX.visualiser:
+            try:
+                from ._visualise import displayWindow
+                displayWindow()
+            except:
+                pass
 
-    # @staticmethod
-    # def snap():
-    #     try:
-    #         from ._visualise import take_snapshot
-    #         take_snapshot()
-    #     except:
-    #         pass
+    @staticmethod
+    def snap():
+        if NX.visualiser:
+            try:
+                from ._visualise import take_snapshot
+                take_snapshot()
+            except:
+                pass
 
 
 

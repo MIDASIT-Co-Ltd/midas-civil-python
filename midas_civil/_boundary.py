@@ -42,6 +42,15 @@ class Boundary:
         cls.PointSpring.delete()
 
     @classmethod
+    def clear(cls):
+        """Clear Boundary elements from Python"""
+        cls.Support.clear()
+        cls.ElasticLink.clear()
+        cls.RigidLink.clear()
+        cls.MLFC.clear()
+        cls.PointSpring.clear()
+
+    @classmethod
     def sync(cls):
         """Sync Boundary elements from MIDAS Civil NX to Python"""
         cls.Support.sync()
@@ -118,8 +127,13 @@ class Boundary:
         @staticmethod
         def delete():
             """Delete Supports from MIDAS Civil NX and Python"""
-            Boundary.Support.sups=[]
+            Boundary.Support.clear()
             return MidasAPI("DELETE","/db/cons")
+
+        @staticmethod
+        def clear():
+            """Delete Supports from Python"""
+            Boundary.Support.sups=[]
 
 
 
@@ -398,8 +412,16 @@ class Boundary:
             Example:sss
                 ElasticLink.delete()
             """
+            cls.clear()
+
+        @classmethod
+        def clear(cls):
+            """
+            Deletes all elastic links from the database and resets the class.
+            Example:sss
+                ElasticLink.delete()
+            """
             cls.links = []
-            return MidasAPI("DELETE", "/db/elnk")
     #---------------------------------------------------------------------------------------------------------------
 
 
@@ -520,8 +542,17 @@ class Boundary:
             Example:
                 ElasticLink.delete()
             """
-            cls.links = []
+            cls.clear()
             return MidasAPI("DELETE", "/db/RIGD")
+        
+        @classmethod
+        def clear(cls):
+            """
+            Deletes all rigid links from the database and resets the class.
+            Example:
+                ElasticLink.delete()
+            """
+            cls.links = []
     #---------------------------------------------------------------------------------------------------------------
 
     class MLFC:
@@ -624,8 +655,15 @@ class Boundary:
             """
             Deletes all func from the database and resets the class.
             """
-            cls.links = []
+            cls.clear()
             return MidasAPI("DELETE", "/db/MLFC")
+        
+        @classmethod
+        def clear(cls):
+            """
+            Deletes all func from the database and resets the class.
+            """
+            cls.links = []
 
 #--------------------------------------------------------------------------------------------------------------------------------------
 
@@ -837,5 +875,12 @@ class Boundary:
             """
             Deletes all point springs from the database and resets the class.
             """
-            cls.springs = []
+            cls.clear()
             return MidasAPI("DELETE", "/db/nspr")
+        
+        @classmethod
+        def clear(cls):
+            """
+            Deletes all point springs from the database and resets the class.
+            """
+            cls.springs = []

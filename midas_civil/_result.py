@@ -151,4 +151,8 @@ class LoadCombination:
             print("No load combinations are defined to delete.")
         for i in list(json.keys()):
             MidasAPI("DELETE",LoadCombination.com_map.get(i) + a)
+
+    @classmethod
+    def clear(cls):
+        cls.data = []
 #---------------------------------------------------------------------------------------------------------------
