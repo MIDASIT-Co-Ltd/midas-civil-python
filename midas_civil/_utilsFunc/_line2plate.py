@@ -1,9 +1,11 @@
 import numpy as np
-from midas_civil import *
+# from midas_civil import *
+from midas_civil import MidasAPI,Node,Element,Boundary,Thickness,Section,Model
+from colorama import Fore,Style
 import math
 from scipy.interpolate import splev, splprep
 from math import hypot
-
+from tqdm import tqdm
 
 # NX.version_check = False
 # NX.user_print = False
@@ -514,8 +516,14 @@ def getCGdata():
 
 def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList):
     # ORIGINAL ALIGNMENT
+    pbar = tqdm(total=14,desc="Converting Line to Plate ")
+
+    pbar.update(1)
+    pbar.set_description_str("Updating Units...")
     Model.units()
     
+    pbar.update(1)
+    pbar.set_description_str("Deleting Elements and Nodes...")
     sorted_node_list , align_points, align_beta_angle , elm_list, matID , align_sectID_list_sorted,k = delSelectElements(elemList) # Select elements
 
     L2P.sorted_nodes = sorted_node_list
@@ -526,8 +534,14 @@ def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList):
     fine_align_points, fine_beta_angle, fine_t_param, align_t_param = interpolateAlignment(align_points,align_beta_angle,nSeg,2,mSize)
 
 
-
+    pbar.update(1)
+    pbar.set_description_str("Getting Section Data...")
     Section.sync()
+
+
+    pbar.update(1)
+    pbar.set_description_str("Processing Sections...")
+
     getCGdata()
 
     sect_shape_arr = []
@@ -547,6 +561,8 @@ def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList):
             if sect.ID == Sid:
                 sect_shape_arr.append(sect)
 
+    pbar.update(1)
+    pbar.set_description_str("Generating Shell definition...")
     for shape in sect_shape_arr:
         sect_shape, sect_thk , sect_thk_off, sect_cg , sect_lin_con = Mesh_SHAPE(shape,meshSize)
         sect_points_arr.append(sect_shape)
@@ -562,37 +578,53 @@ def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList):
     # print('- . '*20)
                 
  
-
+    pbar.update(1)
+    pbar.set_description_str("Getting existing Node data...")
     Node.clear()
     # Node.sync()
     Node.ids=[Model.maxID('NODE')]
     
-
+    pbar.update(1)
+    pbar.set_description_str("Getting existing Element data...")
     Element.clear()
     Element.ids = [Model.maxID('ELEM')]
 
+    pbar.update(1)
+    pbar.set_description_str("Getting existing Thickness data...")
     Thickness.clear()
     Thickness.ids = [Model.maxID('THIK')]
 
     # Boundary.RigidLink
     # Boundary.RigidLink.sync()
-
+    pbar.update(1)
+    pbar.set_description_str("Creating Shell data...")
     myTapShape = plateTapSection(sect_points_arr,cg_arr,align_t_param,lin,thk_arr,thk_off_arr)
  
 
     createTapPlateAlign(fine_align_points,fine_t_param,fine_beta_angle,myTapShape,bRigdLnk,matID)
 
-
+    pbar.update(1)
+    pbar.set_description_str("Creating Nodes...")
     Node.create()
+    pbar.update(1)
+    pbar.set_description_str("Creating Elements...")
     Element.create()
+    pbar.update(1)
+    pbar.set_description_str("Creating Thickness...")
     Thickness.create()
+    pbar.update(1)
+    pbar.set_description_str("Creating Rigid Links...")
     Boundary.RigidLink.create()
     # print(Boundary.RigidLink.json())
 
     # RESET the function
-    L2P.first=0
-    L2P.nDivMESH=[]
+    L2P.first = 0
+    L2P.nDivMESH =[]
     L2P.CG_data = {}
+    L2P.thick_js = {}
+    L2P.sorted_nodes = []
 
+    pbar.update(1)
+    pbar.set_description_str(Fore.GREEN+"Line to Plate conversion done"+Style.RESET_ALL)
 
 # SS_create(0,1,True,0.5)

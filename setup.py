@@ -1,11 +1,12 @@
 from setuptools import setup,find_packages
+from midas_civil import _version_
 
 with open('README.md','r') as f:
     description = f.read()
 
 
 setup(name='midas_civil',
-    version='1.1.8',
+    version=_version_,
     description='Python library for MIDAS Civil NX',
     author='Sumit Shekhar',
     author_email='sumit.midasit@gmail.com',

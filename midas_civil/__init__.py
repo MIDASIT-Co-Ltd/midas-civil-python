@@ -25,7 +25,7 @@ from ._node import *
 from ._element import *
 from ._load import *
 from ._group import *
-from ._result import *
+from ._loadcomb import *
 
 #--- TESTING IMPORTS ---
 from ._material import *

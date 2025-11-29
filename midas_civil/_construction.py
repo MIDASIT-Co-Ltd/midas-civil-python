@@ -1,4 +1,4 @@
-from ._mapi import *
+from ._mapi import MidasAPI
 
 class CS:
 

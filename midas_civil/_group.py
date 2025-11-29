@@ -1,8 +1,7 @@
 
-from ._mapi import *
+from ._mapi import MidasAPI
 
-from ._utils import _convItem2List
-from ._utils import sFlatten
+from ._utils import _convItem2List , sFlatten
 
 # ----------- HELPER FUNCTION -----------
     # --------   RETRIEVE NODE / ELEMENT FROM STRUCTURE GROUP -------

@@ -1,6 +1,6 @@
-from ._mapi import *
-from ._model import *
-from ._group import *
+from ._mapi import MidasAPI
+from ._group import Group
+from ._element import elemByID
 import numpy as np
 
 

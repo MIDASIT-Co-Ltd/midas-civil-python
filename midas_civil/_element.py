@@ -1,12 +1,12 @@
-from ._mapi import *
-from ._node import *
-from ._group import _add_elem_2_stGroup
-from ._group import _add_node_2_stGroup,Group,nodesInGroup
+from ._mapi import MidasAPI,NX
+from ._node import Node,nodeByID
+from ._group import _add_node_2_stGroup,Group,nodesInGroup , _add_elem_2_stGroup
 import numpy as np
 from scipy.interpolate import splev, splprep , interp1d , Akima1DInterpolator
 from math import hypot
-import math
+# import math
 from ._utils import _convItem2List , _longestList
+from colorama import Fore,Style
 
 def _SInterp(angle,num_points):
     ''' Angle -> Input list | Num Points -> Output length'''

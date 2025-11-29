@@ -1,5 +1,5 @@
-from ._mapi import *
-from ._load import *
+from ._mapi import MidasAPI
+from ._load import Load_Case
 
 
 class BoundaryChangeAssignment:

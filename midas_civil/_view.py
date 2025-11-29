@@ -1,6 +1,7 @@
-from ._mapi import *
-from ._model import *
-import base64
+from ._mapi import MidasAPI
+# from ._model import *
+# import base64
+from base64 import b64decode
 
 class View:
     '''
@@ -362,7 +363,7 @@ class Image:
 
         bs64_img = resp["base64String"]
         decode = open(location, 'wb')  # Open image file to save.
-        decode.write(base64.b64decode(bs64_img))  # Decode and write data.
+        decode.write(b64decode(bs64_img))  # Decode and write data.
         decode.close()
 
     @staticmethod
@@ -396,5 +397,5 @@ class Image:
 
         bs64_img = resp["base64String"]
         decode = open(location, 'wb')  # Open image file to save.
-        decode.write(base64.b64decode(bs64_img))  # Decode and write data.
+        decode.write(b64decode(bs64_img))  # Decode and write data.
         decode.close()

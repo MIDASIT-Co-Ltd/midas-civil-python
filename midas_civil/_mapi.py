@@ -4,7 +4,8 @@ from colorama import Fore, Style
 try:import winreg
 except: pass
 import time
-import polars as pl
+from tqdm import tqdm
+# import polars as pl
 
 
 
@@ -17,7 +18,7 @@ def Midas_help():
 
 
 class NX:
-    version_check = True
+    version_check = True    # CHANGE IT TO FALSE TO SKIP VERSION CHECK OF LIBRARY
     user_print = True
     debug_request = False
     debug_requestJSON = False
@@ -26,23 +27,23 @@ class NX:
     visualiser = False
 
 
-    @staticmethod
-    def JSToDF_Results(js_json):
-        res_json = {}
+    # @staticmethod
+    # def JSToDF_Results(js_json):
+    #     res_json = {}
 
-        c=0
-        for heading in js_json["SS_Table"]["HEAD"]:
-            for dat in js_json["SS_Table"]["DATA"]:
-                try:
-                    res_json[heading].append(dat[c])
-                except:
-                    res_json[heading]=[]
-                    res_json[heading].append(dat[c])
+    #     c=0
+    #     for heading in js_json["SS_Table"]["HEAD"]:
+    #         for dat in js_json["SS_Table"]["DATA"]:
+    #             try:
+    #                 res_json[heading].append(dat[c])
+    #             except:
+    #                 res_json[heading]=[]
+    #                 res_json[heading].append(dat[c])
 
-            c+=1
+    #         c+=1
 
-        res_df = pl.DataFrame(res_json)
-        return(res_df)
+    #     res_df = pl.DataFrame(res_json)
+    #     return(res_df)
     
 
 class MAPI_COUNTRY:
@@ -172,11 +173,11 @@ def MidasAPI(method:str, command:str, body:dict={})->dict:
     elapsed_time = end_time - start_time
 
     if NX.debug_request:
-        print(Fore.RED+f">>   METHOD : {method} |  URL : {command} | STATUS :  {response.status_code} | TIME : {elapsed_time:.4f} sec "+Style.RESET_ALL)
+        tqdm.write(Fore.RED+f">>   METHOD : {method} |  URL : {command} | STATUS :  {response.status_code} | TIME : {elapsed_time:.4f} sec "+Style.RESET_ALL)
     if NX.debug_requestJSON:
-        print(Fore.CYAN+">>  "+str(body)+Style.RESET_ALL)
+        tqdm.write(Fore.CYAN+">>  "+str(body)+Style.RESET_ALL)
     if NX.debug_response:
-        print(Fore.GREEN+">>  "+str(response.json())+Style.RESET_ALL)
+        tqdm.write(Fore.GREEN+">>  "+str(response.json())+Style.RESET_ALL)
 
     if MAPI_KEY.count == 0:
         MAPI_KEY.count = -1
@@ -221,10 +222,10 @@ def _checkUSER():
 
         line1 = f"│{' '*15} {ln1} {' '*lg_ln1} 🟢 │"
         line2 = f"│{' '*15} {ln2} {' '*lg_ln2}│"
-        print(Fore.GREEN+'\n╭─ 🔔  ──────────────────────────────────────────────────────────────────────────────╮')
-        print(line1)
-        print(line2)
-        print('╰────────────────────────────────────────────────────────────────────────────────────╯\n'+Style.RESET_ALL)
+        tqdm.write(Fore.GREEN+'\n╭─ 🔔  ──────────────────────────────────────────────────────────────────────────────╮')
+        tqdm.write(line1)
+        tqdm.write(line2)
+        tqdm.write('╰────────────────────────────────────────────────────────────────────────────────────╯\n'+Style.RESET_ALL)
 
 
         # print('─'*86)

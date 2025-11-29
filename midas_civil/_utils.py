@@ -1,10 +1,9 @@
 # from ._model import *
 # from ._mapi import *
 from __future__ import annotations
-from scipy.interpolate import splev, splrep ,CubicSpline , Akima1DInterpolator , PchipInterpolator
+from scipy.interpolate import CubicSpline , Akima1DInterpolator , PchipInterpolator
 from math import hypot,sqrt
 import numpy as np
-from ._mapi  import MidasAPI
 
 
 #Function to remove duplicate set of values from 2 lists

@@ -7,10 +7,12 @@ from ._group import _add_node_2_stGroup
 def dist_tol(a,b):
     return hypot((a.X-b.X),(a.Y-b.Y),(a.Z-b.Z)) < 0.00001  #TOLERANCE BUILT IN (UNIT INDEP)
 
-def cell(point,size=1): #SIZE OF GRID
-    return str(f"{int(point.X//size)},{int(point.Y//size)},{int(point.Z//size)}")
+def cell(point,size=1): #SIZE OF GRID - string format
+    # return str(f"{int(point.X//size)},{int(point.Y//size)},{int(point.Z//size)}")
+    return str(f"{int(point.X)},{int(point.Y)},{int(point.Z)}")
 
-
+# def _cellGrid():
+#     [float(x.strip()) for x in list(Node.Grid.keys())split(",")]
 # -------- FUNCTIONS ARE DEFINED BELOW TO RECOGNISE NODE CLASS ----------------
 
 
@@ -21,7 +23,7 @@ class Node:
     nodes = [] # Node object stores in a list
     ids = []    # Node IDs used for auto increment of ID and replacement of nodes
     Grid ={}    # Node object in cube grid
-    __nodeDic__ = {} # Stores
+    __nodeDic__ = {} # Stores node object corresponding to ID (faster get with nodebyID)
     def __init__(self,x,y,z,id=0,group='',merge=1):
         ''' Create Node object
 
@@ -114,7 +116,7 @@ class Node:
 
         
     def __str__(self):
-        return f"NODE ID : {self.ID} | X:{self.X} , Y:{self.Y} , Z:{self.Z} \n {self.__dict__}"
+        return f"NODE ID : {self.ID} | X:{self.X} , Y:{self.Y} , Z:{self.Z} \n{self.__dict__}"
 
     @classmethod
     def json(cls):
@@ -184,7 +186,101 @@ def nodeByID(nodeID:int) -> Node:
         print(f'There is no node with ID {nodeID}')
         return None
 
+def closestNode(point_location:list) -> Node:
+    ''' Enter location to find nearest node
+        list [x,y,z] => point location => Nearest node
+        node object => nearest remaining node
+        int => node with ID provided => nearest remaining node  
+    '''
+    gridStr = list(Node.Grid.keys())
+    gridInt = []
+    for key in gridStr:
+        gridInt.append([int(x) for x in key.split(",")])
 
+    bNode = False
+    if isinstance(point_location,int):
+        bNode = True
+        nodeP = nodeByID(point_location)
+        point_location = (nodeP.X,nodeP.Y,nodeP.Z)
+    elif isinstance(point_location,Node):
+        bNode = True
+        point_location = (point_location.X,point_location.Y,point_location.Z)
+
+    pGridInt = [int(point_location[0]),int(point_location[1]),int(point_location[2])]
+    pGridStr = f"{int(point_location[0])},{int(point_location[1])},{int(point_location[2])}"
+
+    min_edge_dist = round(min(point_location[0]-pGridInt[0],point_location[1]-pGridInt[1],point_location[2]-pGridInt[2]),3)
+    max_edge_dist = round(max(point_location[0]-pGridInt[0],point_location[1]-pGridInt[1],point_location[2]-pGridInt[2]),3)
+
+    if min_edge_dist > 0.5 : min_edge_dist = round(1-min_edge_dist,3)
+    if max_edge_dist > 0.5 : max_edge_dist = round(1-max_edge_dist,3)
+
+    min_edge_dist = min(min_edge_dist,max_edge_dist)
+
+    min_dist = 10000000000  #Large value for initial value
+    min_node = 0
+    checked_GridInt = []
+
+    if bNode and len(Node.Grid[pGridStr]) == 1:
+        gridDist = []
+        for gInt in gridInt:
+            gridDist.append(abs(gInt[0]-pGridInt[0])+abs(gInt[1]-pGridInt[1])+abs(gInt[2]-pGridInt[2]))
+        gridDistSort = sorted(gridDist)
+
+        nearestGridIdx = gridDist.index(gridDistSort[1])
+        nearestGridInt = gridInt[nearestGridIdx]
+        nearestGridStr = gridStr[nearestGridIdx]
+    else:
+        if pGridInt in gridInt :
+            nearestGridInt = pGridInt
+            nearestGridStr = pGridStr
+        else :
+            gridDist = []
+            for gInt in gridInt:
+                gridDist.append(abs(gInt[0]-pGridInt[0])+abs(gInt[1]-pGridInt[1])+abs(gInt[2]-pGridInt[2]))
+
+            nearestGridIdx = gridDist.index(min(gridDist))
+            nearestGridInt = gridInt[nearestGridIdx]
+            nearestGridStr = gridStr[nearestGridIdx]
+
+    for nd in Node.Grid[nearestGridStr]:
+        dist = hypot(nd.X-point_location[0],nd.Y-point_location[1],nd.Z-point_location[2])
+        if dist < min_dist :
+            min_dist = dist
+            min_node = nd
+    checked_GridInt.append(nearestGridInt)
+
+    if min_dist < min_edge_dist :
+        return min_node
+    else:
+        # COMBINATION POSSIBLE FOR CELLS
+        minX = int(point_location[0]-min_dist)
+        maxX = int(point_location[0]+min_dist)
+        minY = int(point_location[1]-min_dist)
+        maxY = int(point_location[1]+min_dist)
+        minZ = int(point_location[2]-min_dist)
+        maxZ = int(point_location[2]+min_dist)
+        possible = maxX+maxY+maxZ-minX-minY-minZ
+        if possible == 0:
+            return min_node
+
+        for i in np.arange(minX,maxX+1,1):
+            for j in np.arange(minY,maxY+1,1):
+                for k in np.arange(minZ,maxZ+1,1):
+                    cgridStr = f"{i},{j},{k}"
+                    cgridInt = [i,j,k]
+
+                    if cgridInt in checked_GridInt:
+                        continue
+                    else:
+                        if cgridInt in gridInt:
+                            for nd in Node.Grid[cgridStr]:
+                                dist = hypot(nd.X-point_location[0],nd.Y-point_location[1],nd.Z-point_location[2])
+                                if dist < min_dist :
+                                    min_dist = dist
+                                    min_node = nd
+                        checked_GridInt.append(pGridInt)
+        return min_node
 
 
 

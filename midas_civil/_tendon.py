@@ -1,8 +1,8 @@
 
-from ._mapi import *
-from ._utils import *
-from ._load import *
-from ._group import *
+from ._mapi import MidasAPI
+# from ._utils import *
+from ._load import Load_Case
+from ._group import Group
 
 
 def _JStoObj_Relax(js):

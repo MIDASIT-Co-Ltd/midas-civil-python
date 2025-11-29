@@ -1,20 +1,20 @@
-from ._mapi import *
+from ._mapi import MidasAPI,NX
 
-from ._node import *
-from ._element import *
-from ._group import *
-from ._load import *
-from ._boundary import *
+from ._node import Node , NodeLocalAxis
+from ._element import Element
+from ._group import Group
+from ._load import Load
+from ._boundary import Boundary
 
-from ._section import *
-from ._material import *
-from ._thickness import *
+from ._section import Section
+from ._material import Material
+from ._thickness import Thickness
 
-from ._tendon import *
-from ._result import *
-from ._movingload import *
+from ._tendon import Tendon
+from ._loadcomb import LoadCombination
+from ._movingload import MovingLoad
 
-from ._temperature import *
+from ._temperature import Temperature
 
 from collections import defaultdict
 class Model:
@@ -256,20 +256,51 @@ class Model:
     @staticmethod
     def create():
         """Create Material, Section, Node, Elements, Groups and Boundary."""
+        from tqdm import tqdm
+        pbar = tqdm(total=14,desc="Creating Model...")
+
         if Material.mats!=[]: Material.create()
+        pbar.update(1)
+        pbar.set_description_str("Creating Section...")
         if Section.sect!=[]: Section.create()
+        pbar.update(1)
+        pbar.set_description_str("Creating Thickness...")
         if Thickness.thick!=[]: Thickness.create()
+        pbar.update(1)
+        pbar.set_description_str("Creating Node...")
         if Node.nodes!=[]: Node.create()
+        pbar.update(1)
+        pbar.set_description_str("Creating Element...")
         if Element.elements!=[] : Element.create()
+        pbar.update(1)
+        pbar.set_description_str("Creating Node Local Axis...")
         if NodeLocalAxis.skew!=[] : NodeLocalAxis.create()
+        pbar.update(1)
+        pbar.set_description_str("Creating Group...")
         Group.create()
+        pbar.update(1)
+        pbar.set_description_str("Creating Boundary...")
         Boundary.create()
+        pbar.update(1)
+        pbar.set_description_str("Creating Load...")
         Load.create()
+        pbar.update(1)
+        pbar.set_description_str("Creating Temperature...")
         Temperature.create()
+        pbar.update(1)
+        pbar.set_description_str("Creating Tendon...")
         Tendon.create()
+        pbar.update(1)
+        pbar.set_description_str("Creating Tapered Group...")
         if Section.TaperedGroup.data !=[] : Section.TaperedGroup.create()
+        pbar.update(1)
+        pbar.set_description_str("Creating Moving Load...")
         MovingLoad.create()
+        pbar.update(1)
+        pbar.set_description_str("Creating Load Combination...")
         LoadCombination.create()
+        pbar.update(1)
+        pbar.set_description_str("Model creation complete")
         
 
 

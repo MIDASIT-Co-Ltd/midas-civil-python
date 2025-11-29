@@ -1,5 +1,5 @@
-from ._mapi import *
-from ._model import *
+from ._mapi import MidasAPI
+# from ._model import *
 
 
 #28 Class to generate load combinations

@@ -1,7 +1,7 @@
-from ._mapi import *
-from ._node import *
-from ._group import *
-from ._load import *
+from ._mapi import MidasAPI
+# from ._node import *
+from ._group import Group
+from ._load import Load_Case
 
 def convList(item):
     if type(item) != list:
