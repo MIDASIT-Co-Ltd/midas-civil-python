@@ -133,8 +133,8 @@ class Group:
             self.NAME = name
             if Group.Structure.Groups == []: self.ID=1
             else: self.ID= max(Group.Structure.ids)+1
-            self.ELIST = list(set(elist))
-            self.NLIST = list(set(nlist))
+            self.ELIST = elist
+            self.NLIST = nlist
             Group.Structure.ids.append(self.ID)
             Group.Structure.Groups.append(self)
             Group.Structure._names.append(self.NAME)
@@ -148,11 +148,11 @@ class Group:
                 if name == i.NAME:
                     up = 1
                     if operation == "r":
-                        i.ELIST = list(set(elist))
-                        i.NLIST = list(set(nlist))
+                        i.ELIST = elist
+                        i.NLIST = nlist
                     if operation == "a":
-                        i.ELIST = list(set(i.ELIST + elist))
-                        i.NLIST = list(set(i.NLIST + nlist))
+                        i.ELIST = i.ELIST + elist
+                        i.NLIST = i.NLIST + nlist
             if up == 0: print(f"⚠️  Structure group {name} is not defined!")
         
         @classmethod
@@ -180,6 +180,7 @@ class Group:
         @classmethod
         def sync(cls):
             a = cls.get()
+            print(a)
             if a != {'message': ''}:
                 if list(a['GRUP'].keys()) != []:
                     cls.Groups = []
@@ -189,8 +190,10 @@ class Group:
                         elist=[]
                         try: nlist = a['GRUP'][j]["N_LIST"]
                         except: pass
-                        try: elist = a['GRUP'][j]["E_LIST"]
-                        except: pass
+                        try: 
+                            elist = a['GRUP'][j]["E_LIST"]
+                        except: 
+                            pass
 
                         Group.Structure(a['GRUP'][j]["NAME"],nlist,elist)
 

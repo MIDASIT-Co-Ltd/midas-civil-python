@@ -1,6 +1,6 @@
 
-from ._mapi import *
-from ._utils import *
+from ._mapi import MidasAPI
+from ._utils import zz_add_to_dict
 from math import hypot
 from ._group import _add_node_2_stGroup
 
@@ -187,6 +187,7 @@ def nodeByID(nodeID:int) -> Node:
         return None
 
 def closestNode(point_location:list) -> Node:
+    import numpy as np
     ''' Enter location to find nearest node
         list [x,y,z] => point location => Nearest node
         node object => nearest remaining node

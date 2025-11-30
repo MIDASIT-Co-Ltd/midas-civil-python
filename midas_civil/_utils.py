@@ -1,7 +1,6 @@
 # from ._model import *
 # from ._mapi import *
 from __future__ import annotations
-from scipy.interpolate import CubicSpline , Akima1DInterpolator , PchipInterpolator
 from math import hypot,sqrt
 import numpy as np
 
@@ -122,13 +121,14 @@ class utils:
     ''' Contains helper function and utilities'''
     class Alignment:
         '''Defines alignment object passing through the points'''
+        
         def __init__(self,points,type: str = 'cubic'):
             ''' 
             **POINTS** -> Points on the alignment [[x,y] , [x,y] , [x,y] ....]   
             **TYPE** -> Type of interpolating curve
                     cubic , akima , makima , pchip
             '''
-
+            from scipy.interpolate import CubicSpline , Akima1DInterpolator , PchipInterpolator
 
             _pt_x = [pt[0] for pt in points]
             _pt_y = [pt[1] for pt in points]
