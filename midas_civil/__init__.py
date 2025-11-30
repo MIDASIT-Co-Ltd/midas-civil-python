@@ -1,6 +1,6 @@
 import requests
 from colorama import Fore,Style
-from ._mapi import *
+from ._mapi import NX,MidasAPI,MAPI_KEY,MAPI_BASEURL,MAPI_COUNTRY,Midas_help
 _version_ = "1.1.8"
 
 
@@ -18,33 +18,31 @@ if NX.version_check:
         print('╰────────────────────────────────────────────────────────────────────────────────────╯\n'+Style.RESET_ALL)
 
 
-from ._model import *
-from ._boundary import *
-from ._utils import *
-from ._node import *
-from ._element import *
-from ._load import *
-from ._group import *
-from ._loadcomb import *
+from ._model import Model
+from ._boundary import Boundary
+from ._utils import getID,getNodeID,utils
+from ._node import Node,nodeByID,closestNode,NodeLocalAxis
+from ._element import Element,elemByID
+from ._load import Load,Load_Case
+from ._group import nodesInGroup,elemsInGroup,Group
+from ._loadcomb import LoadCombination
 
-#--- TESTING IMPORTS ---
-from ._material import *
 
-# from ._section import *
-from ._section import *
+from ._material import Material,CompStrength,CreepShrinkage,TDMatLink
 
-# from ._result_extract import *
-from ._construction import *
-from ._thickness import *
-from ._temperature import *
+from ._section import Section
 
-from ._tendon import *
-from ._view import *
+from ._construction import CS
+from ._thickness import Thickness
+from ._temperature import Temperature
 
-from ._movingload import *
-from ._settlement import *
-from ._analysiscontrol import *
-from ._BoundaryChangeAssignment import*
+from ._tendon import Tendon
+from ._view import View,ResultGraphic,Image
 
-from ._result_test import *
+from ._movingload import MovingLoad
+from ._settlement import Settlement
+from ._analysiscontrol import AnalysisControl
+from ._BoundaryChangeAssignment import BoundaryChangeAssignment         # <=== NEEDS A REVIEW (UNNECESSARY CALL)
+
+from ._result_test import Result
 

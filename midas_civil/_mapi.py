@@ -177,7 +177,7 @@ def MidasAPI(method:str, command:str, body:dict={})->dict:
     if NX.debug_requestJSON:
         tqdm.write(Fore.CYAN+">>  "+str(body)+Style.RESET_ALL)
     if NX.debug_response:
-        tqdm.write(Fore.GREEN+">>  "+str(response.json())+Style.RESET_ALL)
+        tqdm.write(Fore.GREEN+"<<  "+str(response.json())+Style.RESET_ALL)
 
     if MAPI_KEY.count == 0:
         MAPI_KEY.count = -1
