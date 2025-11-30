@@ -180,7 +180,6 @@ class Group:
         @classmethod
         def sync(cls):
             a = cls.get()
-            print(a)
             if a != {'message': ''}:
                 if list(a['GRUP'].keys()) != []:
                     cls.Groups = []
