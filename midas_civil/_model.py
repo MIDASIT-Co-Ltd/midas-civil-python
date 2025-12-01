@@ -1,5 +1,5 @@
 from ._mapi import MidasAPI,NX
-
+from colorama import Fore,Style
 from ._node import Node , NodeLocalAxis
 from ._element import Element
 from ._group import Group
@@ -300,7 +300,7 @@ class Model:
         pbar.set_description_str("Creating Load Combination...")
         LoadCombination.create()
         pbar.update(1)
-        pbar.set_description_str("Model creation complete")
+        pbar.set_description_str(Fore.GREEN+"Model creation complete"+Style.RESET_ALL)
         
 
 

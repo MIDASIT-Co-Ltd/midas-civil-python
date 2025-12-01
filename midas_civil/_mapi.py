@@ -95,10 +95,10 @@ class MAPI_BASEURL:
 
             url_comb = f'https://{url_reg_key}:{port_reg_key}/civil'
 
-            print(f' 🌐   BASE URL is taken from Registry entry.  >>  {url_comb}')
+            tqdm.write(f' 🌐   BASE URL is taken from Registry entry.  >>  {url_comb}')
             MAPI_BASEURL(url_comb)
         except:
-            print(" 🌐   BASE URL is not defined. Click on Apps > API Settings to copy the BASE URL Key.\nDefine it using MAPI_BASEURL('https://moa-engineers.midasit.com:443/civil')")
+            tqdm.write(" 🌐   BASE URL is not defined. Click on Apps > API Settings to copy the BASE URL Key.\nDefine it using MAPI_BASEURL('https://moa-engineers.midasit.com:443/civil')")
             sys.exit(0)
 
 class MAPI_KEY:
@@ -118,9 +118,9 @@ class MAPI_KEY:
                 value = winreg.QueryValueEx(registry_key, "Key")
                 my_key = value[0]
                 MAPI_KEY(my_key)
-                print(f' 🔑   MAPI-KEY is taken from Registry entry.  >>  {my_key[:35]}...')
+                tqdm.write(f' 🔑   MAPI-KEY is taken from Registry entry.  >>  {my_key[:35]}...')
             except:
-                print(f"🔑   MAPI KEY is not defined. Click on Apps > API Settings to copy the MAPI Key.\n Define it using MAPI_KEY('xxxx')")
+                tqdm.write(f"🔑   MAPI KEY is not defined. Click on Apps > API Settings to copy the MAPI Key.\n Define it using MAPI_KEY('xxxx')")
                 sys.exit(0)
         else:
             my_key = MAPI_KEY.data

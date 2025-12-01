@@ -1,7 +1,7 @@
 import requests
 from colorama import Fore,Style
 from ._mapi import NX,MidasAPI,MAPI_KEY,MAPI_BASEURL,MAPI_COUNTRY,Midas_help
-_version_ = "1.2.1"
+_version_ = "1.2.2"
 
 
 print('\n╭────────────────────────────────────────────────────────────────────────────────────╮')
@@ -30,7 +30,7 @@ from ._loadcomb import LoadCombination
 
 from ._material import Material,CompStrength,CreepShrinkage,TDMatLink
 
-from ._section import Section
+from ._section import Section,Offset
 
 from ._construction import CS
 from ._thickness import Thickness

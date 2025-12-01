@@ -328,7 +328,7 @@ class ResultGraphic:
 
 class Image:
     @staticmethod
-    def Capture(location:str,img_w:int = 1280 , img_h:int = 720,view:str='pre',CS_StageName:str='') -> None:
+    def Capture(location:str="",img_w:int = 1280 , img_h:int = 720,view:str='pre',CS_StageName:str='') -> None:
         ''' 
         Capture the image in the viewport and saves at shown location
             Location - image location
@@ -360,11 +360,11 @@ class Image:
             json_body['Argument']['STAGE_NAME'] = CS_StageName
 
         resp = MidasAPI('POST','/view/CAPTURE',json_body)
-
-        bs64_img = resp["base64String"]
-        decode = open(location, 'wb')  # Open image file to save.
-        decode.write(b64decode(bs64_img))  # Decode and write data.
-        decode.close()
+        if location:
+            bs64_img = resp["base64String"]
+            decode = open(location, 'wb')  # Open image file to save.
+            decode.write(b64decode(bs64_img))  # Decode and write data.
+            decode.close()
 
     @staticmethod
     def CaptureResults(ResultGraphic:ResultGraphic,location:str,img_w:int = 1280 , img_h:int = 720,CS_StageName:str=''):
