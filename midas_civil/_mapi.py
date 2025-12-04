@@ -26,24 +26,6 @@ class NX:
     onlyNode = False
     visualiser = False
 
-
-    # @staticmethod
-    # def JSToDF_Results(js_json):
-    #     res_json = {}
-
-    #     c=0
-    #     for heading in js_json["SS_Table"]["HEAD"]:
-    #         for dat in js_json["SS_Table"]["DATA"]:
-    #             try:
-    #                 res_json[heading].append(dat[c])
-    #             except:
-    #                 res_json[heading]=[]
-    #                 res_json[heading].append(dat[c])
-
-    #         c+=1
-
-    #     res_df = pl.DataFrame(res_json)
-    #     return(res_df)
     
 
 class MAPI_COUNTRY:
@@ -63,12 +45,13 @@ class MAPI_COUNTRY:
         else:
             MAPI_COUNTRY.country = 'US'
         
-        MAPI_BASEURL.set_url()
-        MAPI_KEY.get_key()
+        MAPI_BASEURL.setURLfromRegistry()
+        MAPI_KEY.get_key()  # Intial Key from registry
 
 
 class MAPI_BASEURL:
     baseURL = "https://moa-engineers.midasit.com:443/civil"
+    server_loc = "Global"
     
     def __init__(self, baseURL:str = "https://moa-engineers.midasit.com:443/civil"):
         ''' Define the Base URL for API connection.
@@ -83,7 +66,7 @@ class MAPI_BASEURL:
         return MAPI_BASEURL.baseURL
     
     @classmethod
-    def set_url(cls):
+    def setURLfromRegistry(cls):
         try:
             key_path = f"Software\\MIDAS\\CVLwNX_{MAPI_COUNTRY.country}\\CONNECTION"  
             registry_key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_READ)
@@ -101,6 +84,34 @@ class MAPI_BASEURL:
             tqdm.write(" 🌐   BASE URL is not defined. Click on Apps > API Settings to copy the BASE URL Key.\nDefine it using MAPI_BASEURL('https://moa-engineers.midasit.com:443/civil')")
             sys.exit(0)
 
+    @staticmethod
+    def autoURL():
+        base_urls = [
+            "https://moa-engineers-in.midasit.com:443/civil",
+            "https://moa-engineers-kr.midasit.com:443/civil",
+            "https://moa-engineers-gb.midasit.com:443/civil",
+            "https://moa-engineers-us.midasit.com:443/civil",
+            "https://moa-engineers.midasit.cn:443/civil"
+            ]
+        serv_locations = ["INDIA","KOREA","EUROPE","USA","CHINA"]
+        mapi_key = MAPI_KEY.get_key()
+        chk = 0
+        for i,base_url in enumerate(base_urls):
+            url = base_url + "/config/ver"
+            headers = {
+                "Content-Type": "application/json",
+                "MAPI-Key": mapi_key
+            }
+            response = requests.get(url=url, headers=headers)
+            if response.status_code == 200:
+                MAPI_BASEURL(base_url)
+                MAPI_BASEURL.server_loc = serv_locations[i]
+                chk=1
+                break
+        if chk==0:
+            tqdm.write(f" 🌐   Kindly manually enter the BASE URL. \nRefer to moa.midasit.com/services to find the correct URL.")
+            sys.exit(0)
+            
 class MAPI_KEY:
     """MAPI key from Civil NX.\n\nEg: MAPI_Key("eadsfjaks568wqehhf.ajkgj345qfhh")"""
     data = ""
@@ -214,14 +225,14 @@ def _checkUSER():
         # print(f"{' '*15}Connected to {resp['NAME']}")
         # print(f"{' '*15}USER : {resp['USER']}          COMPANY : {resp['COMPANY']}")
 
-        ln1 = f"Connected to {resp['NAME']}"
+        ln1 = f"Connected to {resp['NAME']}            SERVER : {MAPI_BASEURL.server_loc}"
         ln2 = f"USER : {resp['USER']}          COMPANY : {resp['COMPANY']}"
 
-        lg_ln1 = 63-len(ln1)
-        lg_ln2 = 67-len(ln2)
+        lg_ln1 = 66-len(ln1)
+        lg_ln2 = 70-len(ln2)
 
-        line1 = f"│{' '*15} {ln1} {' '*lg_ln1} 🟢 │"
-        line2 = f"│{' '*15} {ln2} {' '*lg_ln2}│"
+        line1 = f"│{' '*12} {ln1} {' '*lg_ln1} 🟢 │"
+        line2 = f"│{' '*12} {ln2} {' '*lg_ln2}│"
         tqdm.write(Fore.GREEN+'\n╭─ 🔔  ──────────────────────────────────────────────────────────────────────────────╮')
         tqdm.write(line1)
         tqdm.write(line2)
