@@ -715,7 +715,7 @@ class Element:
         #         return 0
         
         @staticmethod
-        def loftGroups(strGroups: list, stype: int = 1, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = 0): #CHANGE TO TUPLE
+        def loftGroups(strGroups: list, stype: int = 1, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = 0,nDiv=1): #CHANGE TO TUPLE
                 # INPUTS 2 or more structure groups to create rectangular plates between the nodes | No. of nodes should be same in the Str Group
             """
             INPUTS 2 or more structure groups to create rectangular plates between the nodes  
@@ -736,9 +736,29 @@ class Element:
                     return False
 
                 nID_A , nID_B = _longestList(nID_A , nID_B)
-                for i in range(max_len-1):
-                    pt_array = [nID_A[i],nID_B[i],nID_B[i+1],nID_A[i+1]]
-                    plate_obj.append(Element.Plate(pt_array,stype,mat,sect,angle,group,id))
+
+                if nDiv == 1 :
+                    for i in range(max_len-1):
+                        pt_array = [nID_A[i],nID_B[i],nID_B[i+1],nID_A[i+1]]
+                        plate_obj.append(Element.Plate(pt_array,stype,mat,sect,angle,group,id))
+                if nDiv > 1 :
+                    nID_dic = {}
+                    for j in range(nDiv+1):
+                        nID_dic[j] = []
+                    nID_dic[0] = nID_A
+                    nID_dic[nDiv] = nID_B
+                    for i in range(max_len):
+                        loc0= nodeByID(nID_A[i]).LOC
+                        loc1 = nodeByID(nID_B[i]).LOC
+                        int_points = np.linspace(loc0,loc1,nDiv+1)
+
+                        for j in range(nDiv-1):
+                            nID_dic[j+1].append(Node(int_points[j+1][0],int_points[j+1][1],int_points[j+1][2]).ID)
+                    
+                    for q in range(nDiv):
+                        for i in range(max_len-1):
+                            pt_array = [nID_dic[q][i],nID_dic[q+1][i],nID_dic[q+1][i+1],nID_dic[q][i+1]]
+                            plate_obj.append(Element.Plate(pt_array,stype,mat,sect,angle,group,id))
 
             return plate_obj
             

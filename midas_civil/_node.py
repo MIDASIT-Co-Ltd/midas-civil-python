@@ -114,7 +114,11 @@ class Node:
         if group !="":
             _add_node_2_stGroup(self.ID,group)
 
-        
+    @property
+    def LOC(self):
+        ''' Return X,Y,Z as a tuple'''
+        return (self.X,self.Y,self.Z)
+
     def __str__(self):
         return f"NODE ID : {self.ID} | X:{self.X} , Y:{self.Y} , Z:{self.Z} \n{self.__dict__}"
 
