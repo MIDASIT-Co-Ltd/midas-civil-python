@@ -109,7 +109,7 @@ class MAPI_BASEURL:
                 chk=1
                 break
         if chk==0:
-            tqdm.write(f" 🌐   Kindly manually enter the BASE URL. \nRefer to moa.midasit.com/services to find the correct URL.")
+            tqdm.write(f" 🌐   Kindly manually enter the BASE URL. \nRefer to https://moa.midasit.com/services to find the correct URL.")
             sys.exit(0)
             
 class MAPI_KEY:
