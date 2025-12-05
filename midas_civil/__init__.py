@@ -1,7 +1,7 @@
 import requests
 from colorama import Fore,Style
 from ._mapi import NX,MidasAPI,MAPI_KEY,MAPI_BASEURL,MAPI_COUNTRY,Midas_help
-_version_ = "1.2.4"
+_version_ = "1.2.5"
 
 
 print('\n╭────────────────────────────────────────────────────────────────────────────────────╮')
@@ -21,7 +21,7 @@ if NX.version_check:
 from ._model import Model
 from ._boundary import Boundary
 from ._utils import getID,getNodeID,utils
-from ._node import Node,nodeByID,closestNode,NodeLocalAxis
+from ._node import Node,nodeByID,closestNode,NodeLocalAxis,nodesInRadius
 from ._element import Element,elemByID
 from ._load import Load,Load_Case
 from ._group import nodesInGroup,elemsInGroup,Group

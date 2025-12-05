@@ -219,31 +219,51 @@ class ResultGraphic:
             return json_body
     
     @staticmethod
-    def BeamDiagram(lcase_type:str,lcase_name:str,lcase_minmax:str="max",part:str='total',component:str='My') -> dict:
+    def BeamDiagram(lcase_type:str, lcase_name:str, lcase_minmax:str="Max",
+                    part:str="total", component:str="My",
+                    fidelity:str="Exact", fill:str="Solid", scale:float=1.0) -> dict:
+        '''
+        Generates JSON for Beam Diagrams Result Graphic.
+        
+        Args:
+            lcase_type (str): Load Case Type ("ST", "CS", "RS", "TH", "MV", "SM", "CB").
+            lcase_name (str): Load Case/Combination Name (e.g., "DL").
+            lcase_minmax (str): Load Type ("Max", "Min", "All"). Defaults to "Max".
+            part (str): Component Part ("total", ...). Defaults to "total".
+            component (str): Component Name ("Fx", "Fy", "Fz", "Mx", "My", "Mz"). Defaults to "My".
+            fidelity (str): Fidelity of the diagram ("Exact", "5 Points", ...). Defaults to "Exact".
+            fill (str): Fill of Diagram ("No", "Line", "Solid"). Defaults to "Solid".
+            scale (float): Scale of Diagram. Defaults to 1.0.
 
+        '''
         json_body = {
                 "CURRENT_MODE":"BeamDiagrams",
                 "LOAD_CASE_COMB":{
                     "TYPE":lcase_type,
                     "NAME":lcase_name,
-                    "MINMAX" : lcase_minmax
+                    "MINMAX" : lcase_minmax,
+                    "STEP_INDEX": 1,
+                    "OPT_MAXMIN_DIAGRAM": False
                 },
                 "COMPONENTS":{
                     "PART":part,
-                    "COMP":component
+                    "COMP":component,
+                    "OPT_SHOW_TRUSS_FORCES": True,
+                    "OPT_ONLY_TRUSS_FORCES": False
                 },
                 "DISPLAY_OPTIONS":{
-                    "FIDELITY":"5 Points",
-                    "FILL":"Line",
-                    "SCALE":1.0
+                    "FIDELITY": fidelity,
+                    "FILL": fill,
+                    "SCALE": scale
                 },
                 "TYPE_OF_DISPLAY":{
                     "CONTOUR": ResultGraphic.Contour._json(),
                     "DEFORM":ResultGraphic.Deform._json(),
                     "LEGEND":ResultGraphic.Legend._json(),
-                    "VALUES":{
-                        "OPT_CHECK":False
-                    }
+                    "VALUES": ResultGraphic.Values._json(),
+                    "UNDEFORMED": { "OPT_CHECK": False },
+                    "MIRRORED": { "OPT_CHECK": False },
+                    "OPT_CUR_STEP_FORCE": False
                 }
             }
         return json_body

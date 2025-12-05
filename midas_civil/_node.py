@@ -1,8 +1,11 @@
-
 from ._mapi import MidasAPI
 from ._utils import zz_add_to_dict
 from math import hypot
 from ._group import _add_node_2_stGroup
+from typing import Literal
+import numpy as np
+
+_ptInRad_output_ = Literal['ID','Node']
 
 def dist_tol(a,b):
     return hypot((a.X-b.X),(a.Y-b.Y),(a.Z-b.Z)) < 0.00001  #TOLERANCE BUILT IN (UNIT INDEP)
@@ -203,14 +206,16 @@ def closestNode(point_location:list) -> Node:
         gridInt.append([int(x) for x in key.split(",")])
 
     bNode = False
+    bNodeID = 0
     if isinstance(point_location,int):
         bNode = True
+        bNodeID = point_location
         nodeP = nodeByID(point_location)
         point_location = (nodeP.X,nodeP.Y,nodeP.Z)
     elif isinstance(point_location,Node):
         bNode = True
+        bNodeID = point_location.ID
         point_location = (point_location.X,point_location.Y,point_location.Z)
-
     pGridInt = [int(point_location[0]),int(point_location[1]),int(point_location[2])]
     pGridStr = f"{int(point_location[0])},{int(point_location[1])},{int(point_location[2])}"
 
@@ -250,13 +255,13 @@ def closestNode(point_location:list) -> Node:
 
     for nd in Node.Grid[nearestGridStr]:
         dist = hypot(nd.X-point_location[0],nd.Y-point_location[1],nd.Z-point_location[2])
-        if dist < min_dist :
+        if dist < min_dist and nd.ID !=bNodeID:
             min_dist = dist
             min_node = nd
     checked_GridInt.append(nearestGridInt)
-
     if min_dist < min_edge_dist :
         return min_node
+    
     else:
         # COMBINATION POSSIBLE FOR CELLS
         minX = int(point_location[0]-min_dist)
@@ -281,11 +286,77 @@ def closestNode(point_location:list) -> Node:
                         if cgridInt in gridInt:
                             for nd in Node.Grid[cgridStr]:
                                 dist = hypot(nd.X-point_location[0],nd.Y-point_location[1],nd.Z-point_location[2])
-                                if dist < min_dist :
+                                if dist < min_dist and nd.ID !=bNodeID:
                                     min_dist = dist
                                     min_node = nd
-                        checked_GridInt.append(pGridInt)
+                        checked_GridInt.append(cgridInt)
         return min_node
+
+def _ifNodeExist_(x,y,z) -> tuple:
+    cell_loc = str(f"{int(x)},{int(y)},{int(z)}")
+    if cell_loc in Node.Grid:
+        for node in Node.Grid[cell_loc]:
+            if hypot((x-node.X),(y-node.Y),(z-node.Z)) < 0.00001 :
+                return True,node.ID
+    return False,0
+
+
+def nodesInRadius(point_location:list , radius:float=0, output :_ptInRad_output_ = 'ID',includeSelf = False)-> list:
+    gridStr = list(Node.Grid.keys())
+
+    bNode = False
+    id2Remove = 0
+    if isinstance(point_location,int):
+        bNode = True
+        id2Remove = point_location
+        nodeP = nodeByID(point_location)
+        point_location = (nodeP.X,nodeP.Y,nodeP.Z)
+        
+    elif isinstance(point_location,Node):
+        bNode = True
+        id2Remove = point_location.ID
+        point_location = (point_location.X,point_location.Y,point_location.Z)
+
+    if not includeSelf and not bNode:
+        bNode,id2Remove = _ifNodeExist_(point_location[0],point_location[1],point_location[2])
+
+    ifRemove = bNode and not includeSelf
+
+    checked_GridStr = []
+    close_nodes:list[int] = []
+    close_nodesID:list[Node] = []
+
+
+    minX = int(point_location[0]-radius)
+    maxX = int(point_location[0]+radius)
+    minY = int(point_location[1]-radius)
+    maxY = int(point_location[1]+radius)
+    minZ = int(point_location[2]-radius)
+    maxZ = int(point_location[2]+radius)
+
+    for i in np.arange(minX,maxX+1,1):
+        for j in np.arange(minY,maxY+1,1):
+            for k in np.arange(minZ,maxZ+1,1):
+                cgridStr = f"{i},{j},{k}"
+                if cgridStr in checked_GridStr:
+                    # print("Grid already checked")
+                    continue
+                else:
+                    if cgridStr in gridStr:
+                        for nd in Node.Grid[cgridStr]:
+                            dist = hypot(nd.X-point_location[0],nd.Y-point_location[1],nd.Z-point_location[2])
+                            if dist <= radius+0.0001 :
+                                close_nodes.append(nd)
+                                close_nodesID.append(nd.ID)
+                    checked_GridStr.append(cgridStr)
+
+    if output == 'Node':
+        if ifRemove:
+            close_nodes.remove(nodeByID(id2Remove))
+            return close_nodes
+    if ifRemove:
+        close_nodesID.remove(id2Remove)
+    return close_nodesID
 
 
 
