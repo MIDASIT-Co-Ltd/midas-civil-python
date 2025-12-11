@@ -6,7 +6,8 @@ from ._mapi import MidasAPI
 class Material:
     mats = []
     ids = []
-    def __init__(self,data,id=0):
+    def __init__(self,data,id=None):
+        if id == None: id =0
         if Material.ids == []: 
             count = 1
         else:
@@ -86,7 +87,8 @@ class Material:
 
         # ----------------------------------  DB MATERIAL ---------------------------------------------------
 
-        def __init__(self,name='',standard='',db='',id:int=0,):  
+        def __init__(self,name='',standard='',db='',id:int=None,):
+            if id == None: id =0  
             js =  {
                 "TYPE": "CONC",
                 "NAME": name,
@@ -108,7 +110,8 @@ class Material:
         # ----------------------------------  USER MATERIAL ---------------------------------------------------
 
         class User:
-            def __init__(self,name='',E=0,pois=0,den=0,mass=0,therm=0,id:int=0,):
+            def __init__(self,name='',E=0,pois=0,den=0,mass=0,therm=0,id:int=None,):
+                if id == None: id =0
                 js =  {
                     "TYPE": "CONC",
                     "NAME": name,
@@ -136,7 +139,8 @@ class Material:
 
         # ----------------------------------  DB MATERIAL ---------------------------------------------------
 
-        def __init__(self,name='',standard='',db='',id:int=0,):
+        def __init__(self,name='',standard='',db='',id:int=None,):
+            if id == None: id =0
             js =  {
                 "TYPE": "STEEL",
                 "NAME": name,
@@ -158,7 +162,8 @@ class Material:
         # ----------------------------------  USER MATERIAL ---------------------------------------------------
 
         class User:
-            def __init__(self,name='',E=0,pois=0,den=0,mass=0,therm=0,id:int=0,):
+            def __init__(self,name='',E=0,pois=0,den=0,mass=0,therm=0,id:int=None,):
+                if id == None: id =0
                 js =  {
                     "TYPE": "STEEL",
                     "NAME": name,
@@ -185,7 +190,8 @@ class Material:
 
     class USER:
 
-        def __init__(self,name='',E=0,pois=0,den=0,mass=0,therm=0,id:int=0,):
+        def __init__(self,name='',E=0,pois=0,den=0,mass=0,therm=0,id:int=None,):
+            if id == None: id =0
             js =  {
                 "TYPE": "USER",
                 "NAME": name,
@@ -211,7 +217,8 @@ class Material:
 class CreepShrinkage:
     mats = []
     ids = []
-    def __init__(self,data,id=0):
+    def __init__(self,data,id:int=None):
+        if id == None: id =0
         if CreepShrinkage.ids == []:
             count = 1
         else:
@@ -264,7 +271,7 @@ class CreepShrinkage:
 
     class IRC:
         def __init__(self,name: str, code_year: int = 2011, fck: float = 0, notional_size: float = 1,
-                     relative_humidity: float = 70, age_shrinkage: int = 3, type_cement: str = 'NR', id: int = 0):
+                     relative_humidity: float = 70, age_shrinkage: int = 3, type_cement: str = 'NR', id: int = None):
             """
             IRC Creep and Shrinkage for Indian Road Congress standards. 
 
@@ -287,6 +294,7 @@ class CreepShrinkage:
                 CreepShrinkage.IRC("IRC_M25_2000", code_year=2000, fck=25000, notional_size=1, relative_humidity=80, age_shrinkage=3)
                 ```
             """
+            if id == None: id =0
             code_name = ""
             if code_year == 2011:
                 code_name = "INDIA_IRC_112_2011"
@@ -320,7 +328,7 @@ class CreepShrinkage:
     class CEB_FIP:
         def __init__(self, name: str, code_year: int = 2010, fck: float = 0, notional_size: float = 1,
                      relative_humidity: float = 70, age_shrinkage: int = 3, type_cement: str = 'RS',
-                     type_of_aggregate: int = 0, id: int = 0):
+                     type_of_aggregate: int = 0, id: int = None):
             """
             CEB-FIP Creep and Shrinkage for European concrete standards.
 
@@ -344,6 +352,7 @@ class CreepShrinkage:
                 CreepShrinkage.CEB_FIP("CEB_M35", code_year=1990, fck=35000, notional_size=3, relative_humidity=70, age_shrinkage=3)
                 ```
             """
+            if id == None: id =0
             code_name = ""
             if code_year == 2010:
                 code_name = "CEB_FIP_2010"
@@ -377,7 +386,7 @@ class CreepShrinkage:
                      vol_surface_ratio: float = 1.2, cfact_a: float = 4, cfact_b: float = 0.85,
                      curing_method: str = "MOIST", material_type: str = "CODE", cement_content: float = 24,
                      slump: float = 1.1, fine_agg_percent: float = 12, air_content: float = 13,
-                     creep_coeff: float = None, shrink_strain: float = None, id: int = 0):
+                     creep_coeff: float = None, shrink_strain: float = None, id: int = None):
             """
             ACI Creep and Shrinkage for American Concrete Institute standards. 
 
@@ -408,6 +417,7 @@ class CreepShrinkage:
                 CreepShrinkage.ACI("ACI_C35_User", fck=35000, relative_humidity=75, age_shrinkage=7, vol_surface_ratio=50, material_type="USER", creep_coeff=2.5, shrink_strain=600)
                 ```
             """
+            if id == None: id =0
             js = {
                 "NAME": name,
                 "CODE": "ACI",
@@ -442,7 +452,7 @@ class CreepShrinkage:
 
     class AASHTO:
         def __init__(self, name: str, fck: float = 0, relative_humidity: float = 70, age_shrinkage: int = 3,
-                     vol_surface_ratio: float = 1.2, b_expose: bool = False, id: int = 0):
+                     vol_surface_ratio: float = 1.2, b_expose: bool = False, id: int = None):
             """
             AASHTO Creep and Shrinkage model.
 
@@ -460,6 +470,7 @@ class CreepShrinkage:
                 CreepShrinkage.AASHTO("AASHTO_M30", fck=30000, relative_humidity=80, age_shrinkage=5, vol_surface_ratio=60)
                 ```
             """
+            if id == None: id =0
             js = {
                 "NAME": name,
                 "CODE": "AASHTO",
@@ -477,7 +488,7 @@ class CreepShrinkage:
 
     class European:
         def __init__(self, name: str, fck: float = 0, relative_humidity: float = 70, age_shrinkage: int = 3,
-                     notional_size: float = 1.2, type_cement: str = "Class N", t_code: int = 0, b_silica: bool = False, id: int = 0):
+                     notional_size: float = 1.2, type_cement: str = "Class N", t_code: int = 0, b_silica: bool = False, id: int = None):
             """
             European Creep and Shrinkage model (EN 1992). 
 
@@ -501,6 +512,7 @@ class CreepShrinkage:
                 CreepShrinkage.European("Euro_Bridge_C40", fck=40000, relative_humidity=70, age_shrinkage=5, notional_size=2, t_code=1, b_silica=True)
                 ```
             """
+            if id == None: id =0
             js = {
                 "NAME": name,
                 "CODE": "EUROPEAN",
@@ -523,7 +535,7 @@ class CreepShrinkage:
         def __init__(self, name: str, fck: float, relative_humidity: float, module_exposed_surface: float,
                      age_concrete: int, water_content: float, max_aggregate_size: float, air_content: float,
                      specific_cement_paste_content: float, curing_method: int = 0,cement_type=1, fast_accumulating_creep: bool = False,
-                     concrete_type: int = 0, id: int = 0):
+                     concrete_type: int = 0, id: int = None):
             """
             Russian Creep and Shrinkage model. 
 
@@ -549,6 +561,7 @@ class CreepShrinkage:
                 CreepShrinkage.Russian("RU_Heavy_C30", fck=30000, relative_humidity=70, module_exposed_surface=10, age_concrete=14, water_content=180, max_aggregate_size=0.02, air_content=30, specific_cement_paste_content=0.25,cement_type=2)
                 ```
             """
+            if id == None: id =0
             js = {
                 "NAME": name,
                 "CODE": "RUSSIAN",
@@ -574,7 +587,7 @@ class CreepShrinkage:
         def __init__(self, name: str, standard: str, fck: float, concrete_age: int,
                     hypothetical_thickness: float, drying_shrinkage_type: int = 0,
                     user_defined_shrinkage_strain: float = 0, humidity_factor: float = 0.72,
-                    exposure_environment: int = 0, id: int = 0):
+                    exposure_environment: int = 0, id: int = None):
             """
             Australian & New Zealand Standards Creep and Shrinkage model.
 
@@ -616,6 +629,7 @@ class CreepShrinkage:
                 CreepShrinkage.AS_NZ("NZ_Bridge_Custom", standard="NEWZEALAND", fck=35000, hypothetical_thickness=0.25, concrete_age=14, drying_shrinkage_type=10, user_defined_shrinkage_strain=955.5)
                 ```
             """
+            if id == None: id =0
             js = {
                 "NAME": name,
                 "CODE": standard,
@@ -661,7 +675,7 @@ class CreepShrinkage:
     class Chinese:
         def __init__(self, name: str, standard: str, fck: float, relative_humidity: float,
                      concrete_age: int, notional_size: float, humidity_type: str = "RH",
-                     cement_coeff: float = 5, fly_ash_amount: float = 20, id: int = 0):
+                     cement_coeff: float = 5, fly_ash_amount: float = 20, id: int = None):
             """
             Chinese Standards Creep and Shrinkage model.
 
@@ -686,6 +700,7 @@ class CreepShrinkage:
                 CreepShrinkage.Chinese("JTG_D62_C40", standard="JTG", fck=40000, relative_humidity=80, concrete_age=7, notional_size=250, cement_coeff=5)
                 ```
             """
+            if id == None: id =0
             js = {
                 "NAME": name,
                 "CODE": standard,
@@ -709,7 +724,7 @@ class CreepShrinkage:
     class Korean:
         def __init__(self, name: str, standard: str, fck: float, relative_humidity: float,
                      concrete_age: int, notional_size: float, cement_type: str = "NR",
-                     density: float = 240, id: int = 0):
+                     density: float = 240, id: int = None):
             """
             Korean Standards Creep and Shrinkage model.
 
@@ -733,6 +748,7 @@ class CreepShrinkage:
                 CreepShrinkage.Korean("KS_C30", standard="KS", fck=30000, relative_humidity=70, concrete_age=14, notional_size=2)
                 ```
             """
+            if id == None: id =0
             js = {
                 "NAME": name,
                 "CODE": standard,
@@ -754,7 +770,7 @@ class CreepShrinkage:
     class PCA:
         def __init__(self, name: str, fck: float, relative_humidity: float, ultimate_creep_strain: float,
                      vol_surface_ratio: float, reinforcement_ratio: float, steel_elasticity_modulus: float,
-                     ultimate_shrinkage_strain: float, id: int = 0):
+                     ultimate_shrinkage_strain: float, id: int = None):
             """
             PCA Creep and Shrinkage model.
 
@@ -774,6 +790,7 @@ class CreepShrinkage:
                 CreepShrinkage.PCA("PCA_Material", fck=50000, relative_humidity=70, ultimate_creep_strain=4, vol_surface_ratio=1.2, reinforcement_ratio=20, steel_elasticity_modulus=2e8, ultimate_shrinkage_strain=780)
                 ```
             """
+            if id == None: id =0
             js = {
                 "NAME": name,
                 "CODE": "PCA",
@@ -796,7 +813,7 @@ class CreepShrinkage:
                      vol_surface_ratio: float, cement_content: float, water_content: float, fck: float = 30000,
                      impact_factor: float = 1, age_of_solidification: int = 5, alpha_factor: int = 11,
                      autogenous_shrinkage: bool = True, gamma_factor: int = 1, a_factor: float = 0.1,
-                     b_factor: float = 0.7, general_shrinkage: bool = True, id: int = 0):
+                     b_factor: float = 0.7, general_shrinkage: bool = True, id: int = None):
             """
             Japan Creep and Shrinkage model (JSCE). 
 
@@ -827,6 +844,7 @@ class CreepShrinkage:
                 CreepShrinkage.Japan("JSCE07_mat", "JSCE_07", 70, 3, 0.2, 30, 20, fck=30000, alpha_factor=15)
                 ```
             """
+            if id == None: id =0
             js = {
                 "NAME": name,
                 "CODE": standard,
@@ -858,7 +876,7 @@ class CreepShrinkage:
     class JapaneseStandard:
         def __init__(self, name: str, fck: float, relative_humidity: float, concrete_age: int, notional_size: float,
                      calculation_method: str = "JSCE", humidity_type: str = "RH", cement_type: str = "NC",
-                     environmental_coeff: int = 1, id: int = 0):
+                     environmental_coeff: int = 1, id: int = None):
             """
             Japanese Standard Creep and Shrinkage model. 
 
@@ -879,6 +897,7 @@ class CreepShrinkage:
                 CreepShrinkage.JapaneseStandard("JapanStd_C30", fck=30000, relative_humidity=70, concrete_age=3, notional_size=1.2)
                 ```
             """
+            if id == None: id =0
             js = {
                 "NAME": name,
                 "CODE": "JAPAN",
@@ -898,7 +917,7 @@ class CreepShrinkage:
     # ---------------------------------  User Defined CnS ----------------------------------------------------
 
     class UserDefined:
-        def __init__(self, name: str, shrinkage_func_name: str, creep_func_name: str, creep_age: int, id: int = 0):
+        def __init__(self, name: str, shrinkage_func_name: str, creep_func_name: str, creep_age: int, id: int = None):
             """
             User Defined Creep and Shrinkage model.
 
@@ -909,6 +928,7 @@ class CreepShrinkage:
                 creep_age (int): Concrete age for the creep function. 
                 id (int, optional): A specific ID for the material. Auto-generated if not provided.
             """
+            if id == None: id =0
             js = {
                 "NAME": name,
                 "CODE": "USER_DEFINED",
@@ -931,7 +951,8 @@ class CreepShrinkage:
 class CompStrength:
     mats = []
     ids = []
-    def __init__(self,data,id=0):
+    def __init__(self,data,id=None):
+        if id == None: id =0
         if CompStrength.ids == []: 
             count = 1
         else:
@@ -985,7 +1006,7 @@ class CompStrength:
     class IRC:
         def __init__(self, name: str, code_year: int = 2020,
                      fck_delta: float = 0, cement_type: int = 1,
-                     aggregate_type: int = 0, id: int = 0):
+                     aggregate_type: int = 0, id: int = None):
             """
             IRC Compressive Strength for Indian Road Congress standards.
 
@@ -1016,6 +1037,7 @@ class CompStrength:
                 CompStrength.IRC("C40_IRC2011", code_year=2011, fck_delta=40000, cement_type=3, aggregate_type=1)
                 ```
             """
+            if id == None: id =0
             # Determine the code name string based on the integer year
             if code_year == 2011:
                 code_name = "INDIA(IRC:112-2011)"
@@ -1045,7 +1067,7 @@ class CompStrength:
 
     class ACI:
         def __init__(self, name: str, fck: float = 0, factor_a: float = 1, 
-                     factor_b: float = 2, id: int = 0):
+                     factor_b: float = 2, id: int = None):
             """
             ACI Compressive Strength for American Concrete Institute standards.
             
@@ -1065,6 +1087,7 @@ class CompStrength:
                 CompStrength.ACI("C25_ACI_Custom", 25000, 1.2, 1.8)
                 ```
             """
+            if id == None: id =0
             js = {
                 "NAME": name,
                 "TYPE": "CODE",
@@ -1082,7 +1105,7 @@ class CompStrength:
 
     class CEB_FIP:
         def __init__(self, name: str, code_year: int = 2010, fck: float = 0, 
-                     cement_type: int = 1, aggregate_type: int = 0, id: int = 0):
+                     cement_type: int = 1, aggregate_type: int = 0, id: int = None):
             """
             CEB-FIP Compressive Strength for European concrete standards.
             
@@ -1116,6 +1139,7 @@ class CompStrength:
                 CompStrength.CEB_FIP("C40_CEBFIP1978", 1978, 40000)
                 ```
             """
+            if id == None: id =0
             # Determine code name based on year
             if code_year == 1978:
                 code_name = "CEB-FIP(1978)"
@@ -1147,7 +1171,7 @@ class CompStrength:
     # ---------------------------------  Ohzagi Compressive Strength --------------------------------------------------------------
 
     class Ohzagi:
-        def __init__(self, name: str, fck: float = 0, cement_type: int = 2, id: int = 0):
+        def __init__(self, name: str, fck: float = 0, cement_type: int = 2, id: int = None):
             """
             Ohzagi Compressive Strength model.
             
@@ -1170,6 +1194,7 @@ class CompStrength:
                 CompStrength.Ohzagi("C25_Ohzagi_FA", 25000, 4)
                 ```
             """
+            if id == None: id =0
             js = {
                 "NAME": name,
                 "TYPE": "CODE",
@@ -1185,7 +1210,7 @@ class CompStrength:
     # ---------------------------------  European Compressive Strength --------------------------------------------------------------
 
     class European:
-        def __init__(self, name: str, fck: float = 0, cement_type: int = 2, id: int = 0):
+        def __init__(self, name: str, fck: float = 0, cement_type: int = 2, id: int = None):
             """
             European Compressive Strength model.
             
@@ -1207,6 +1232,7 @@ class CompStrength:
                 CompStrength.European("C40_Euro_R", 40000, 1)
                 ```
             """
+            if id == None: id =0
             js = {
                 "NAME": name,
                 "TYPE": "CODE",
@@ -1225,7 +1251,7 @@ class CompStrength:
         def __init__(self, name: str, fck: float = 0, cement_type: int = 1, 
                      curing_method: int = 1, concrete_type: int = 1, 
                      max_aggregate_size: float = 0.02, specific_cement_content: float = 0.25, 
-                     id: int = 0):
+                     id: int = None):
             """
             Russian Compressive Strength model.
             
@@ -1256,6 +1282,7 @@ class CompStrength:
                 CompStrength.Russian("C25_RU_FH", 25000, 2, 0, 0, 0.025, 0)
                 ```
             """
+            if id == None: id =0
             js = {
                 "NAME": name,
                 "TYPE": "CODE",
@@ -1275,7 +1302,7 @@ class CompStrength:
     # ---------------------------------  Australian Standards Compressive Strength --------------------------------------------------------------
 #add EXPOSURE
     class AS:
-        def __init__(self, name: str, standard: str = "AS5100.5-2017", fck: float = 0, id: int = 0):
+        def __init__(self, name: str, standard: str = "AS5100.5-2017", fck: float = 0, id: int = None):
             """
             Australian Standards Compressive Strength model.
             
@@ -1298,6 +1325,7 @@ class CompStrength:
                 CompStrength.AS("C25_AS3600", "AS 3600-2009", 25000)
                 ```
             """
+            if id == None: id =0
             js = {
                 "NAME": name,
                 "TYPE": "CODE",
@@ -1313,7 +1341,7 @@ class CompStrength:
 
     class GilbertRanzi:
         def __init__(self, name: str, fck: float = 0, cement_type: int = 1, 
-                     density: float = 230, id: int = 0):
+                     density: float = 230, id: int = None):
             """
             Gilbert and Ranzi Compressive Strength model.
             
@@ -1335,6 +1363,7 @@ class CompStrength:
                 CompStrength.GilbertRanzi("C40_GR_HES", 40000, 2, 2450)
                 ```
             """
+            if id == None: id =0
             js = {
                 "NAME": name,
                 "TYPE": "CODE",
@@ -1354,7 +1383,7 @@ class CompStrength:
         def __init__(self, name: str, fck: float = 0, cement_type: int = 1, 
                      use_concrete_data: bool = True, tensile_strength_factor: float = 3,
                      factor_a: float = 4.5, factor_b: float = 0.95, factor_d: float = 1.11,
-                     id: int = 0):
+                     id: int = None):
             """
             Japan Hydration Compressive Strength model.
             
@@ -1383,6 +1412,7 @@ class CompStrength:
                 CompStrength.JapanHydration("C25_JH_Custom", 25000, 0, False, 3, 4.0, 0.9, 1.0)
                 ```
             """
+            if id == None: id =0
             js = {
                 "NAME": name,
                 "TYPE": "CODE",
@@ -1409,7 +1439,7 @@ class CompStrength:
     # ---------------------------------  Japan Elastic Compressive Strength --------------------------------------------------------------
 
     class JapanElastic:
-        def __init__(self, name: str, fck: float = 0, elastic_cement_type: int = 0, id: int = 0):
+        def __init__(self, name: str, fck: float = 0, elastic_cement_type: int = 0, id: int = None):
             """
             Japan Elastic Compressive Strength model.
             
@@ -1430,6 +1460,7 @@ class CompStrength:
                 CompStrength.JapanElastic("C40_JE_Rapid", 40000, 1)
                 ```
             """
+            if id == None: id =0
             js = {
                 "NAME": name,
                 "TYPE": "CODE",
@@ -1446,7 +1477,7 @@ class CompStrength:
 
     class KDS:
         def __init__(self, name: str, fck: float = 0, cement_type: int = 1, 
-                     density: float = 230, id: int = 0):
+                     density: float = 230, id: int = None):
             """
             KDS-2016 Compressive Strength model.
             
@@ -1471,6 +1502,7 @@ class CompStrength:
                 CompStrength.KDS("C25_KDS_Steam", 25000, 2, 2350)
                 ```
             """
+            if id == None: id =0
             js = {
                 "NAME": name,
                 "TYPE": "CODE",
@@ -1487,7 +1519,7 @@ class CompStrength:
 
     class KCI:
         def __init__(self, name: str, fck: float = 0, cement_type: int = 1, 
-                     id: int = 0):
+                     id: int = None):
             """
             KDS-2016 Compressive Strength model.
             
@@ -1508,6 +1540,7 @@ class CompStrength:
                 
                 ```
             """
+            if id == None: id =0
             js = {
                 "NAME": name,
                 "TYPE": "CODE",
@@ -1523,7 +1556,7 @@ class CompStrength:
 
     class KoreanStandard:
         def __init__(self, name: str, fck: float = 0, factor_a: float = 1, 
-                     factor_b: float = 2, id: int = 0):
+                     factor_b: float = 2, id: int = None):
             """
             Korean Standard Compressive Strength model.
             
@@ -1543,6 +1576,7 @@ class CompStrength:
                 CompStrength.KoreanStandard("C25_KS_Custom", 25000, 1.1, 1.8)
                 ```
             """
+            if id == None: id =0
             js = {
                 "NAME": name,
                 "TYPE": "CODE",
@@ -1560,7 +1594,7 @@ class CompStrength:
 
     class UserDefined:
         def __init__(self, name: str, scale_factor: float = 1, 
-                     time_data: list = None, id: int = 0):
+                     time_data: list = None, id: int = None):
             """
             User Defined Compressive Strength model.
             
@@ -1590,6 +1624,7 @@ class CompStrength:
                 CompStrength.UserDefined("C25_User_Simple", 1.2)
                 ```
             """
+            if id == None: id =0
             if time_data is None:
                 time_data = [
                     {"TIME": 0, "COMP": 0, "TENS": 0, "ELAST": 0},

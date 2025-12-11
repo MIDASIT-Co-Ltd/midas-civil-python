@@ -27,7 +27,7 @@ class Node:
     ids = []    # Node IDs used for auto increment of ID and replacement of nodes
     Grid ={}    # Node object in cube grid
     __nodeDic__ = {} # Stores node object corresponding to ID (faster get with nodebyID)
-    def __init__(self,x,y,z,id=0,group='',merge=1):
+    def __init__(self,x,y,z,id:int=None,group:str='',merge:bool=True):
         ''' Create Node object
 
             Parameters:
@@ -46,7 +46,7 @@ class Node:
                 
         '''
 
-
+        if id == None: id =0
         #----------------- ORIGINAL -----------------------
     
         if Node.ids == []: 
@@ -85,7 +85,7 @@ class Node:
 
             if cell_loc in Node.Grid:
 
-                if merge == 1:
+                if merge :
                     chk=0   #OPTIONAL
                     for node in Node.Grid[cell_loc]:
                         if dist_tol(self,node):
@@ -150,7 +150,7 @@ class Node:
         if a != {'message': ''}:
             if list(a['NODE'].keys()) != []:
                 for j in a['NODE'].keys():
-                    Node(round(a['NODE'][j]['X'],6), round(a['NODE'][j]['Y'],6), round(a['NODE'][j]['Z'],6), id=int(j), group='', merge=0)
+                    Node(round(a['NODE'][j]['X'],6), round(a['NODE'][j]['Y'],6), round(a['NODE'][j]['Z'],6), id=int(j), group='', merge=False)
 
 
     @staticmethod

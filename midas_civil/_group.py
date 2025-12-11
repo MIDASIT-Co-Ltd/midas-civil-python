@@ -184,6 +184,7 @@ class Group:
                 if list(a['GRUP'].keys()) != []:
                     cls.Groups = []
                     cls.ids=[]
+                    cls._names = []
                     for j in a['GRUP'].keys():
                         nlist=[]
                         elist=[]
@@ -205,6 +206,7 @@ class Group:
         def clear(cls):
             cls.Groups=[]
             cls.ids=[]
+            cls._names = []
         
 
 

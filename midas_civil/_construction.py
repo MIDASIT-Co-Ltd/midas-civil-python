@@ -2,6 +2,13 @@ from ._mapi import MidasAPI
 
 class CS:
 
+    @staticmethod
+    def create():
+        if CS.STAGE.stages!=[]: CS.STAGE.create()
+        if CS.CompSec.compsecs!=[] : CS.CompSec.create()
+        if CS.TimeLoad.timeloads!=[] : CS.TimeLoad.create()
+        if CS.CreepCoeff.creepcoeffs!=[] : CS.CreepCoeff.create()
+        if CS.Camber.cambers!=[] : CS.Camber.create()
 
     class STAGE:
         stages = []  

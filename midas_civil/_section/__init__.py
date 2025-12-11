@@ -20,6 +20,7 @@ class _helperSECTION:
 
 def _SectionADD(self):
     # Commom HERE ---------------------------------------------
+    if id==None: id = 0
     id = int(self.ID)
     if Section.ids == []: 
         count = 1
@@ -155,7 +156,7 @@ class Section:
 
     #---------------------     D B   U S E R    --------------------
     @staticmethod
-    def DBUSER(Name='',Shape='',parameters:list=[],Offset=Offset(),useShear=True,use7Dof=False,id:int=0): 
+    def DBUSER(Name='',Shape='',parameters:list=[],Offset=Offset(),useShear=True,use7Dof=False,id:int=None): 
         args = locals()
         sect_Obj = _SS_DBUSER(**args)
         _SectionADD(sect_Obj)
@@ -169,7 +170,7 @@ class Section:
                     BO1=0,BO11=0,BO12=0,BO2=0,BO21=0,BO3=0,
                     HI1=0,HI2=0,HI21=0,HI22=0,HI3=0,HI31=0,HI4=0,HI41=0,HI42=0,HI5=0,
                     BI1=0,BI11=0,BI12=0,BI21=0,BI3=0,BI31=0,BI32=0,BI4=0,
-                    Offset:Offset=Offset.CC(),useShear=True,use7Dof=False,id:int=0):
+                    Offset:Offset=Offset.CC(),useShear=True,use7Dof=False,id:int=None):
             args = locals()
             sect_Obj = _SS_PSC_12CELL(**args)
             _SectionADD(sect_Obj)
@@ -182,7 +183,7 @@ class Section:
                             BL1=0,BL2=0,BL21=0,BL22=0,BL4=0,BL41=0,BL42=0,
                             HR1=0,HR2=0,HR21=0,HR22=0,HR3=0,HR4=0,HR41=0,HR42=0,HR5=0,
                             BR1=0,BR2=0,BR21=0,BR22=0,BR4=0,BR41=0,BR42=0,
-                            Offset:Offset=Offset.CC(),useShear=True,use7Dof=False,id:int=0):
+                            Offset:Offset=Offset.CC(),useShear=True,use7Dof=False,id:int=None):
              
             args = locals()
             sect_Obj = _SS_PSC_I(**args)
@@ -193,7 +194,7 @@ class Section:
         @staticmethod
         def Value(Name:str,
                     OuterPolygon:list,InnerPolygon:list=[],
-                    Offset:Offset=Offset.CC(),useShear=True,use7Dof=False,id:int=0):
+                    Offset:Offset=Offset.CC(),useShear=True,use7Dof=False,id:int=None):
              
             args = locals()
             sect_Obj = _SS_PSC_Value(**args)
@@ -213,7 +214,7 @@ class Section:
                     BR1=0,BR2=0,BR21=0,BR22=0,BR4=0,BR41=0,BR42=0,
                     EgdEsb =0, DgdDsb=0,Pgd=0,Psb=0,TgdTsb=0,
                     MultiModulus = False,CreepEratio=0,ShrinkEratio=0,
-                    Offset:Offset=Offset.CC(),useShear=True,use7Dof=False,id:int=0):
+                    Offset:Offset=Offset.CC(),useShear=True,use7Dof=False,id:int=None):
              
             args = locals()
             sect_Obj = _SS_COMP_PSC_I(**args)
@@ -224,7 +225,7 @@ class Section:
         @staticmethod
         def SteelI_Type1(Name='',Bc=0,tc=0,Hh=0,Hw=0,B1=0,tf1=0,tw=0,B2=0,tf2=0,EsEc =0, DsDc=0,Ps=0,Pc=0,TsTc=0,
                 MultiModulus = False,CreepEratio=0,ShrinkEratio=0,
-                Offset:Offset=Offset.CC(),useShear=True,use7Dof=False,id:int=0):
+                Offset:Offset=Offset.CC(),useShear=True,use7Dof=False,id:int=None):
              
             args = locals()
             sect_Obj = _SS_COMP_STEEL_I_TYPE1(**args)
@@ -235,7 +236,7 @@ class Section:
     class Tapered:
 
         @staticmethod
-        def DBUSER(Name='',Shape='',params_I:list=[],params_J:list=[],Offset=Offset(),useShear=True,use7Dof=False,id:int=0):
+        def DBUSER(Name='',Shape='',params_I:list=[],params_J:list=[],Offset=Offset(),useShear=True,use7Dof=False,id:int=None):
             args = locals()
             sect_Obj = _SS_TAPERED_DBUSER(**args)
             
@@ -254,7 +255,7 @@ class Section:
                     HI1_J=0,HI2_J=0,HI21_J=0,HI22_J=0,HI3_J=0,HI31_J=0,HI4_J=0,HI41_J=0,HI42_J=0,HI5_J=0,
                     BI1_J=0,BI11_J=0,BI12_J=0,BI21_J=0,BI3_J=0,BI31_J=0,BI32_J=0,BI4_J=0,
 
-                    Offset:Offset=Offset.CC(),useShear=True,use7Dof=False,id:int=0):
+                    Offset:Offset=Offset.CC(),useShear=True,use7Dof=False,id:int=None):
             args = locals()
             sect_Obj = _SS_TAP_PSC_12CELL(**args)
             

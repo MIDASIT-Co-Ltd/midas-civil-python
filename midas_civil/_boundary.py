@@ -149,7 +149,6 @@ class Boundary:
                     i_node: int, 
                     j_node: int, 
                     group: str = "", 
-                    id: int = None, 
                     link_type: str = "GEN",
                     sdx: float = 0, 
                     sdy: float = 0, 
@@ -163,14 +162,14 @@ class Boundary:
                     beta_angle: float = 0, 
                     dir: str = "Dy", 
                     func_id: int = 1, 
-                    distance_ratio: float = 0):
+                    distance_ratio: float = 0,
+                    id: int = None, ):
             """
             Elastic link. 
             Parameters:
                 i_node: The first node ID
                 j_node: The second node ID
                 group: The group name (default "")
-                id: The link ID (optional)
                 link_type: Type of link (GEN, RIGID, TENS, COMP, MULTI LINEAR, SADDLE, RAIL INTERACT) (default "GEN")
                 sdx: Spring stiffness in X direction (default 0)
                 sdy: Spring stiffness in Y direction (default 0)
@@ -185,23 +184,24 @@ class Boundary:
                 dir: Direction for MULTI LINEAR or RAIL INTERACT links (default "Dy")
                 func_id: Function ID for MULTI LINEAR or RAIL INTERACT links (default 1)
                 distance_ratio: Distance ratio for MULTI LINEAR or RAIL INTERACT links (default 0)
+                id: The link ID (optional)
             
             Examples:
                 ```python
                 # General link with all stiffness parameters
-                ElasticLink(1, 2, "Group1", 1, "GEN", 1000, 1000, 1000, 100, 100, 100)     
+                ElasticLink(1, 2, "Group1", "GEN", 1000, 1000, 1000, 100, 100, 100)     
                 # Rigid link
-                ElasticLink(3, 4, "Group2", 2, "RIGID")
+                ElasticLink(3, 4, "Group2",  "RIGID")
                 # Tension-only link
-                ElasticLink(5, 6, "Group3", 3, "TENS", 500)
+                ElasticLink(5, 6, "Group3", "TENS", 500)
                 # Compression-only link
-                ElasticLink(7, 8, "Group4", 4, "COMP", 500)
+                ElasticLink(7, 8, "Group4",  "COMP", 500)
                 # Rail Track Type link
-                ElasticLink(9, 10, "Group5", 5, "RAIL INTERACT", dir="Dy", func_id=1)
+                ElasticLink(9, 10, "Group5", "RAIL INTERACT", dir="Dy", func_id=1)
                 # Multi Linear Link
-                ElasticLink(11, 12, "Group6", 6, "MULTI LINEAR", dir="Dy", func_id=1)
+                ElasticLink(11, 12, "Group6", "MULTI LINEAR", dir="Dy", func_id=1)
                 # Saddle type link
-                ElasticLink(13, 14, "Group7", 7, "SADDLE")
+                ElasticLink(13, 14, "Group7", "SADDLE")
                 ```
             """
             # Check if group exists, create if not
@@ -332,7 +332,7 @@ class Boundary:
             """
             Sends all ElasticLink data to Midas API.
             Example:
-                ElasticLink(1, 2, "Group1", 1, "GEN", 1000, 1000, 1000, 100, 100, 100)
+                ElasticLink(1, 2, "Group1", "GEN", 1000, 1000, 1000, 100, 100, 100)
                 # Send to the API
                 ElasticLink.create()
             """
@@ -434,21 +434,21 @@ class Boundary:
                     master_node: int, 
                     slave_nodes: list, 
                     group: str = "", 
-                    id: int = None, 
-                    dof: int = 111111,):
+                    dof: int = 111111,
+                    id: int = None):
             """
             Rigid link. 
             Parameters:
                 master_node: The first node ID
                 slave_nodes: The second node ID
                 group: The group name (default "")
-                id: The link ID (optional)
                 dof: Fixity of link (default 111111)
+                id: The link ID (optional)
             
             Examples:
                 ```python
                 # General link with all stiffness parameters
-                RigidLink(1, [2,3], "Group1", 1, 111000)
+                RigidLink(1, [2,3], "Group1", 111000,1)
                 ```
             """
 
@@ -503,9 +503,6 @@ class Boundary:
         def create(cls):
             """
             Sends all RigidLink data to Midas API.
-            Example:
-                RigidLink(1, 2, "Group1", 1, "GEN", 1000, 1000, 1000, 100, 100, 100)
-                # Send to the API
                 RigidLink.create()
             """
             MidasAPI("PUT", "/db/RIGD", cls.json())
@@ -676,13 +673,13 @@ class Boundary:
                     node: int,
                     spring_type: str = "LINEAR",
                     group: str = "",
-                    id: int = None,
                     stiffness: list = None,
                     fixed_option: list = None,
                     damping: list = None,
                     direction: str = "Dx+",
                     normal_vector: list = None,
-                    function_id: int = 1):
+                    function_id: int = 1,
+                    id: int = None):
             """
             Point Spring constructor.
             
@@ -690,13 +687,13 @@ class Boundary:
                 node: Node ID where spring is applied
                 spring_type: Type of spring ("LINEAR", "COMP", "TENS", "MULTI")
                 group: Group name (default "")
-                id: Spring ID (optional, auto-assigned if None)
                 stiffness: Spring stiffness values [SDx, SDy, SDz, SRx, SRy, SRz] or single value for COMP/TENS
                 fixed_option: Fixed option array [Boolean, 6] for LINEAR type
                 damping: Damping values [Cx, Cy, Cz, CRx, CRy, CRz] (if provided, damping is enabled)
                 direction: Direction string ("Dx+", "Dx-", "Dy+", "Dy-", "Dz+", "Dz-", "Vector")
                 normal_vector: Normal vector [x, y, z] when direction is "Vector"
                 function_id: Function ID for MULTI type
+                id: Spring ID (optional, auto-assigned if None)
             
             Examples:
                 # Linear spring

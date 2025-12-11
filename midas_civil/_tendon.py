@@ -468,7 +468,7 @@ class Tendon:
         properties =[]
         ids = []
 
-        def __init__(self,name,type,matID:int,tdn_area,duct_dia,relaxation,ext_mom_mag=0,anch_slip_begin=0,anch_slip_end=0,bond_type:bool=True,id=0):
+        def __init__(self,name,type,matID:int,tdn_area,duct_dia,relaxation,ext_mom_mag=0,anch_slip_begin=0,anch_slip_end=0,bond_type:bool=True,id=None):
             
             '''
             type = ['Internal (Pre-tension)' , 'Internal (Post-tenstion)' , 'External'] =>  1,2,3
@@ -478,8 +478,8 @@ class Tendon:
             else:
                 tp_count = max(Tendon.Property.ids)+1
             
-            if id == 0 : self.ID = tp_count
-            if id != 0 : self.ID = id
+            if id == None : self.ID = tp_count
+            if id != None : self.ID = id
 
             self.NAME = name
 
@@ -571,7 +571,7 @@ class Tendon:
                      prof_ins_point_end = 'END-I', prof_ins_point_elem = 0, x_axis_dir_element = 'I-J', x_axis_rot_ang = 0 , projection = True, offset_y = 0 , offset_z = 0,
                      prof_ins_point =[0,0,0], x_axis_dir_straight = 'X' , x_axis_dir_vec = [0,0], grad_rot_axis = 'X', grad_rot_ang=0,
                      radius_cen = [0,0], offset = 0, dir = 'CW',
-                     id=0):
+                     id=None):
             '''
                 TDN GROUP = Group ID
             '''
@@ -583,7 +583,7 @@ class Tendon:
             else:
                 td_count = max(Tendon.Profile.ids)+1
             
-            if id == 0 : self.ID = td_count
+            if id == None : self.ID = td_count
             else : self.ID = id
 
             self.NAME = name
@@ -902,9 +902,9 @@ class Tendon:
         """
         loads = []
         ids = []
-        def __init__(self, profile_name, load_case, load_group = "", prestress_type = "STRESS", jack_step = "BEGIN", jack_begin = 0, jack_end=0, grouting_stage = 0, id = 0):
+        def __init__(self, profile_name, load_case, load_group = "", prestress_type = "STRESS", jack_step = "BEGIN", jack_begin = 0, jack_end=0, grouting_stage = 0, id = None):
 
-
+            if id == None: id = 0
             if id > -1 :
                 chk = 0
                 for i in Load_Case.cases:

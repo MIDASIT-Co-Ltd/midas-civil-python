@@ -78,7 +78,8 @@ class Thickness(_common):
     thick = []
     ids = []
 
-    def __init__(self,thick=0.0,thick_out=-1,offset=0,off_type='rat',name="",id=0):  
+    def __init__(self,thick=0.0,thick_out=-1,offset=0,off_type='rat',name="",id=None):
+            if id == None: id = 0  
             self.ID = id
             if name == "":
                 self.NAME = str(thick)

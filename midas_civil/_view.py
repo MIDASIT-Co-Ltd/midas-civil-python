@@ -264,7 +264,10 @@ class ResultGraphic:
                     "UNDEFORMED": { "OPT_CHECK": False },
                     "MIRRORED": { "OPT_CHECK": False },
                     "OPT_CUR_STEP_FORCE": False
-                }
+                },
+                "OUTPUT_SECT_LOCATION": {
+					"OPT_MAX_MINMAX_ALL": "absmax"
+        	    }
             }
         return json_body
     

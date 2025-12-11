@@ -408,7 +408,7 @@ class Element:
 
     class Beam(_common):
 
-        def __init__(self, i: int, j: int, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = 0,bLocalAxis=False):
+        def __init__(self, i: int, j: int, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = None,bLocalAxis=False):
             """
             Creates a BEAM element for frame analysis.
             
@@ -437,6 +437,7 @@ class Element:
                 Element.Beam(1, 2, mat=1, sect=1, angle=0.0, id=100)
                 ```
             """
+            if id == None: id =0
             self.ID = id
             self.TYPE = 'BEAM'
             self.MATL = mat
@@ -465,7 +466,7 @@ class Element:
             _ADD(self)
 
         @staticmethod
-        def SDL(s_loc:list,dir:list,l:float,n:int=1,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0,bLocalAxis=False): #CHANGE TO TUPLE
+        def SDL(s_loc:list,dir:list,l:float,n:int=1,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = None,bLocalAxis=False): #CHANGE TO TUPLE
                 if isinstance(s_loc,Node):
                     s_loc = (s_loc.X,s_loc.Y,s_loc.Z)
 
@@ -488,7 +489,7 @@ class Element:
                     
 
         @staticmethod
-        def SE(s_loc:list,e_loc:list,n:int=1,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0,bLocalAxis=False):
+        def SE(s_loc:list,e_loc:list,n:int=1,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = None,bLocalAxis=False):
                 if isinstance(s_loc,Node):
                     s_loc = (s_loc.X,s_loc.Y,s_loc.Z)
                 if isinstance(e_loc,Node):
@@ -508,7 +509,7 @@ class Element:
                 return beam_obj
         
         @staticmethod
-        def PLine(points_loc:list,n_div:int=0,deg:int=1,includePoint:bool=False,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0,bLocalAxis=False,div_axis="L"):
+        def PLine(points_loc:list,n_div:int=0,deg:int=1,includePoint:bool=False,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = None,bLocalAxis=False,div_axis="L"):
                 '''
                 angle : float of list(float)
                 '''
@@ -534,7 +535,7 @@ class Element:
                 return beam_obj
         
         @staticmethod
-        def PLine2(points_loc:list,n_div:int=0,deg:int=1,includePoint:bool=False,mat:int=1,sect:int=1,angle:list[float]=0, group = "" , id: int = 0,bLocalAxis=False,div_axis="L",yEcc:list[float]=0,zEcc:list[float]=0,bAngleInEcc:bool=True):
+        def PLine2(points_loc:list,n_div:int=0,deg:int=1,includePoint:bool=False,mat:int=1,sect:int=1,angle:list[float]=0, group = "" , id: int = None,bLocalAxis=False,div_axis="L",yEcc:list[float]=0,zEcc:list[float]=0,bAngleInEcc:bool=True):
                 '''
                 Creates a polyline with Eccentricity considering the beta angle provided   
                 angle , yEcc , zEcc : float or list(float)   
@@ -576,7 +577,7 @@ class Element:
                 return beam_obj
 
     class Truss(_common):
-        def __init__(self, i: int, j: int, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = 0):
+        def __init__(self, i: int, j: int, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = None):
             """
             Creates a TRUSS element
             
@@ -601,6 +602,7 @@ class Element:
                 Element.Truss(3, 4, mat=1, sect=1, id=50)
                 ```
             """
+            if id == None: id =0
             self.ID = id
             self.TYPE = 'TRUSS'
             self.MATL = mat
@@ -614,7 +616,7 @@ class Element:
             _ADD(self)
 
         @staticmethod
-        def SDL(s_loc:list,dir:list,l:float,n:int=1,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0):
+        def SDL(s_loc:list,dir:list,l:float,n:int=1,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = None):
             if isinstance(s_loc,Node):
                     s_loc = (s_loc.X,s_loc.Y,s_loc.Z)
 
@@ -637,7 +639,7 @@ class Element:
                 
 
         @staticmethod
-        def SE(s_loc:list,e_loc:list,n:int=1,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = 0):
+        def SE(s_loc:list,e_loc:list,n:int=1,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = None):
             
             if isinstance(s_loc,Node):
                 s_loc = (s_loc.X,s_loc.Y,s_loc.Z)
@@ -659,7 +661,7 @@ class Element:
             return beam_obj 
           
     class Plate(_common):
-        def __init__(self, nodes: list, stype: int = 1, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = 0):
+        def __init__(self, nodes: list, stype: int = 1, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = None):
             """
             Creates a PLATE element.
             
@@ -684,6 +686,7 @@ class Element:
                 Element.Plate([5, 6, 7, 8], stype=3, mat=1, sect=2, angle=45.0)
                 ```
             """
+            if id == None: id =0
             self.ID = id
             self.TYPE = 'PLATE'
             self.MATL = mat
@@ -715,12 +718,13 @@ class Element:
         #         return 0
         
         @staticmethod
-        def loftGroups(strGroups: list, stype: int = 1, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = 0,nDiv=1): #CHANGE TO TUPLE
+        def loftGroups(strGroups: list, stype: int = 1, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = None,nDiv=1): #CHANGE TO TUPLE
                 # INPUTS 2 or more structure groups to create rectangular plates between the nodes | No. of nodes should be same in the Str Group
             """
             INPUTS 2 or more structure groups to create rectangular plates between the nodes  
             No. of nodes should be same in the Str Group
             """
+            
             n_groups = len(strGroups)
             if n_groups < 2 :
                 print("⚠️ No. of structure groups in Plate.loftGroups in less than 2")
@@ -763,7 +767,7 @@ class Element:
             return plate_obj
             
     class Tension(_common):
-     def __init__(self, i: int, j: int, stype: int, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = 0, non_len: float = None, cable_type: int = None, tens: float = None, t_limit: float = None):
+     def __init__(self, i: int, j: int, stype: int, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = None, non_len: float = None, cable_type: int = None, tens: float = None, t_limit: float = None):
         """
         Creates a TENSTR (Tension-only) element.
         
@@ -796,6 +800,7 @@ class Element:
             Element.Tension(5, 6, stype=3, cable_type=3, tens=1000.0, non_len=0.1)
             ```
         """
+        if id == None: id =0
         self.ID = id
         self.TYPE = 'TENSTR'
         self.MATL = mat
@@ -828,7 +833,7 @@ class Element:
         _ADD(self)
 
     class Compression(_common):
-        def __init__(self, i: int, j: int, stype: int, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = 0, tens: float = None, t_limit: float = None, non_len: float = None):
+        def __init__(self, i: int, j: int, stype: int, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = None, tens: float = None, t_limit: float = None, non_len: float = None):
             """
             Creates a COMPTR (Compression-only) element.
             
@@ -857,6 +862,7 @@ class Element:
                 Element.Compression(3, 4, stype=2, non_len=0.25)
                 ```
             """
+            if id == None: id =0
             self.ID = id
             self.TYPE = 'COMPTR'
             self.MATL = mat
@@ -881,7 +887,7 @@ class Element:
             _ADD(self)
 
     class Solid(_common):
-        def __init__(self, nodes: list, mat: int = 1, sect: int = 0, group = "" , id: int = 0):
+        def __init__(self, nodes: list, mat: int = 1, sect: int = 0, group = "" , id: int = None):
             """
             Creates a SOLID element for 3D analysis.
             
@@ -906,6 +912,7 @@ class Element:
                 Element.Solid([1, 2, 3, 4, 5, 6, 7, 8], mat=1, id=200)
                 ```
             """
+            if id == None: id =0
             if len(nodes) not in [4, 6, 8]:
                 raise ValueError("Solid element must have 4, 6, or 8 nodes.")
             self.ID = id

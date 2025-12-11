@@ -36,7 +36,8 @@ class Settlement:
         """
         data = []
 
-        def __init__(self, name, displacement, node_list, id=""):
+        def __init__(self, name, displacement, node_list, id=None):
+            if id == None: id =""
             self.NAME = name
             self.SETTLE = displacement
             self.ITEMS = node_list
@@ -103,7 +104,8 @@ class Settlement:
         """
         data = []
 
-        def __init__(self, name, settlement_groups=[],factor=1.0, min_groups=1, max_groups=1, desc="", id=""):
+        def __init__(self, name, settlement_groups=[],factor=1.0, min_groups=1, max_groups=1, desc="", id=None):
+            if id == None: id =""
             self.NAME = name
             self.DESC = desc
             self.FACTOR = factor

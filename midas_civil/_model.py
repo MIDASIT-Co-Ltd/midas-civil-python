@@ -15,6 +15,7 @@ from ._loadcomb import LoadCombination
 from ._movingload import MovingLoad
 
 from ._temperature import Temperature
+from ._construction import CS
 
 from collections import defaultdict
 class Model:
@@ -257,7 +258,7 @@ class Model:
     def create():
         """Create Material, Section, Node, Elements, Groups and Boundary."""
         from tqdm import tqdm
-        pbar = tqdm(total=14,desc="Creating Model...")
+        pbar = tqdm(total=15,desc="Creating Model...")
 
         if Material.mats!=[]: Material.create()
         pbar.update(1)
@@ -293,6 +294,9 @@ class Model:
         pbar.update(1)
         pbar.set_description_str("Creating Tapered Group...")
         if Section.TaperedGroup.data !=[] : Section.TaperedGroup.create()
+        pbar.update(1)
+        pbar.set_description_str("Creating Construction Stages...")
+        CS.create()
         pbar.update(1)
         pbar.set_description_str("Creating Moving Load...")
         MovingLoad.create()

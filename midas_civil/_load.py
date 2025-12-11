@@ -99,6 +99,8 @@ class Load_Case:
     
     @classmethod
     def clear(cls):
+        cls.maxID = 0
+        cls.maxNO = 0
         cls.cases=[]
 #---------------------------------------------------------------------------------------------------------------
 
@@ -209,7 +211,7 @@ class Load:
         Example: Load_Node(101, "LC1", "Group1", FZ = 10)
         """
         data = []
-        def __init__(self, node, load_case, load_group = "", FX:float = 0, FY:float = 0, FZ:float= 0, MX:float =0, MY:float =0, MZ:float=0, id = ""):
+        def __init__(self, node, load_case, load_group = "", FX:float = 0, FY:float = 0, FZ:float= 0, MX:float =0, MY:float =0, MZ:float=0, id = None):
 
 
             chk = 0
@@ -232,8 +234,11 @@ class Load:
             self.MX = MX
             self.MY = MY
             self.MZ = MZ
-            if id == "": id = len(Load.Nodal.data) + 1
-            self.ID = id
+
+            if id is None:
+                self.ID = len(Load.Nodal.data) + 1
+            else:
+                self.ID = id
 
             _ADD_NodalLoad(self)
             # Load.Nodal.data.append(self)
@@ -292,15 +297,14 @@ class Load:
     class Beam:
         data = []
         def __init__(self, element, load_case: str, load_group: str = "", value: float=0, direction: str = "GZ",
-            id = "", D = [0, 1, 0, 0], P = [0, 0, 0, 0], cmd = "BEAM", typ = "UNILOAD", use_ecc = False, use_proj = False,
-            eccn_dir = "LY", eccn_type = 1, ieccn = 0, jeccn = 0, adnl_h = False, adnl_h_i = 0, adnl_h_j = 0): 
+             D = [0, 1, 0, 0], P = [0, 0, 0, 0], cmd = "BEAM", typ = "UNILOAD", use_ecc = False, use_proj = False,
+            eccn_dir = "LY", eccn_type = 1, ieccn = 0, jeccn = 0, adnl_h = False, adnl_h_i = 0, adnl_h_j = 0,id = None): 
             """
             element: Element Number 
             load_case (str): Load case name
             load_group (str, optional): Load group name. Defaults to ""
             value (float): Load value
             direction (str): Load direction (e.g., "GX", "GY", "GZ", "LX", "LY", "LZ"). Defaults to "GZ"
-            id (str, optional): Load ID. Defaults to auto-generated
             D: Relative distance (list with 4 values, optional) based on length of element. Defaults to [0, 1, 0, 0]
             P: Magnitude of UDL at corresponding position of D (list with 4 values, optional). Defaults to [value, value, 0, 0]
             cmd: Load command (e.g., "BEAM", "LINE", "TYPICAL")
@@ -311,7 +315,8 @@ class Load:
             eccn_type: Eccentricity from offset (1) or centroid (0). Defaults to 1.
             ieccn, jeccn: Eccentricity values at i-end and j-end of the element
             adnl_h: Consider additional H when applying pressure on beam (True or False). Defaults to False.
-            adnl_h_i, adnl_h_j: Additional H values at i-end and j-end of the beam.  Defaults to 0.\n
+            adnl_h_i, adnl_h_j: Additional H values at i-end and j-end of the beam.  Defaults to 0.
+            id (default=None): Load ID. Defaults to auto-generated\n
             Example:
             - Load_Beam(115, "UDL_Case", "", -50.0, "GZ")  # No eccentricity
             - Load_Beam(115, "UDL_Case", "", -50.0, "GZ", ieccn=2.5)  # With eccentricity
@@ -369,9 +374,11 @@ class Load:
                 self.USE_JH = True
                 self.J_H = adnl_h_j
             
-            if id == "":
-                id = len(Load.Beam.data) + 1
-            self.ID = id
+            if id is None:
+                self.ID = len(Load.Beam.data) + 1
+            else:
+                self.ID = id
+
             _ADD_BeamLoad(self)
             # Load.Beam.data.append(self)
         
@@ -673,13 +680,13 @@ class Load:
         """
         data = []
         
-        def __init__(self, node, load_case, load_group="", values=[0, 0, 0, 0, 0, 0], id=""):
+        def __init__(self, node, load_case, load_group="", values=[0, 0, 0, 0, 0, 0], id=None):
             """
             node (int): Node number (Required)
             load_case (str): Load case name (Required)
             load_group (str, optional): Load group name. Defaults to ""
             values (list): Displacement values [Dx, Dy, Dz, Rx, Ry, Rz]. Defaults to [0, 0, 0, 0, 0, 0]
-            id (str, optional): Load ID. Defaults to auto-generated
+            id (default=None): Load ID. Defaults to auto-generated
             """
             
             # Check if load case exists - give warning if not
@@ -711,10 +718,11 @@ class Load:
             self.LDGR = load_group
             self.VALUES = values
             
-            if id == "":
-                id = len(Load.SpDisp.data) + 1
-            self.ID = id
-            
+            if id is None:
+                self.ID = len(Load.SpDisp.data) + 1
+            else:
+                self.ID = id
+
             Load.SpDisp.data.append(self)
         
         @classmethod

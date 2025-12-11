@@ -14,9 +14,10 @@ class LoadCombination:
             "Composite Steel Girder": "/db/LCOM-STLCOMP",
             "Seismic": "/db/LCOM-SEISMIC"
         }
-    def __init__(self, name, case, classification = "General", active = "ACTIVE", typ = "Add", id = 0, desc = ""):
+    def __init__(self, name, case, classification = "General", active = "ACTIVE", typ = "Add", id:int = None, desc = ""):
         """Name, List of tuple of load cases & factors, classification, active, type. \n
         Sample: LoadCombination('LCB1', [('Dead Load(CS)',1.5), ('Temperature(ST)',0.9)], 'General', 'Active', 'Add')"""
+        if id == None: id =0
         if not isinstance(case, list):
             print("case should be a list that contains tuple of load cases & factors.\nEg: [('Load1(ST)', 1.5), ('Load2(ST)',0.9)]")
             return

@@ -285,7 +285,7 @@ class Temperature:
         """
         temps = []
 
-        def __init__(self, element, type, lcname, tz, group="", id=None, hz=None, ty=0, hy=None):
+        def __init__(self, element, type, lcname, tz, group="", hz=None, ty=0, hy=None,id=None):
 
             chk = 0
             for i in Load_Case.cases:
@@ -542,9 +542,9 @@ class Temperature:
         """
         temps = []
 
-        def __init__(self, element, lcname, section_type='General', type='Element', group="", id=None, 
+        def __init__(self, element, lcname, section_type='General', type='Element', group="", 
                     dir='LZ', ref_pos='Centroid', val_b=0, val_h1=0, val_h2=0, val_t1=0, val_t2=0,
-                    elast=None, thermal=None, psc_ref=0, psc_opt_b=1, psc_opt_h1=3, psc_opt_h2=3):
+                    elast=None, thermal=None, psc_ref=0, psc_opt_b=1, psc_opt_h1=3, psc_opt_h2=3, id=None):
 
             # Validate required parameters for Input type
             if type.upper() == 'INPUT':
