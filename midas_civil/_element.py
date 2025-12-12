@@ -467,6 +467,7 @@ class Element:
 
         @staticmethod
         def SDL(s_loc:list,dir:list,l:float,n:int=1,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = None,bLocalAxis=False): #CHANGE TO TUPLE
+                if id == None: id =0
                 if isinstance(s_loc,Node):
                     s_loc = (s_loc.X,s_loc.Y,s_loc.Z)
 
@@ -490,6 +491,7 @@ class Element:
 
         @staticmethod
         def SE(s_loc:list,e_loc:list,n:int=1,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = None,bLocalAxis=False):
+                if id == None: id =0
                 if isinstance(s_loc,Node):
                     s_loc = (s_loc.X,s_loc.Y,s_loc.Z)
                 if isinstance(e_loc,Node):
@@ -513,7 +515,7 @@ class Element:
                 '''
                 angle : float of list(float)
                 '''
-
+                if id == None: id =0
                 beam_nodes =[]
                 beam_obj = []
                 if n_div == 0 :
@@ -544,7 +546,7 @@ class Element:
                         Inbetween values are **MAKIMA 1D** interpolated. (not cubic)
                 '''
                 from ._utils import _matchArray
-                
+                if id == None: id =0
                 beam_nodes =[]
                 beam_obj = []
                 if n_div == 0 :
@@ -617,6 +619,7 @@ class Element:
 
         @staticmethod
         def SDL(s_loc:list,dir:list,l:float,n:int=1,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = None):
+            if id == None: id =0
             if isinstance(s_loc,Node):
                     s_loc = (s_loc.X,s_loc.Y,s_loc.Z)
 
@@ -640,7 +643,7 @@ class Element:
 
         @staticmethod
         def SE(s_loc:list,e_loc:list,n:int=1,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = None):
-            
+            if id == None: id =0
             if isinstance(s_loc,Node):
                 s_loc = (s_loc.X,s_loc.Y,s_loc.Z)
             if isinstance(e_loc,Node):
@@ -724,7 +727,7 @@ class Element:
             INPUTS 2 or more structure groups to create rectangular plates between the nodes  
             No. of nodes should be same in the Str Group
             """
-            
+            if id == None: id =0
             n_groups = len(strGroups)
             if n_groups < 2 :
                 print("⚠️ No. of structure groups in Plate.loftGroups in less than 2")
