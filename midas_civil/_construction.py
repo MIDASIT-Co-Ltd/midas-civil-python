@@ -11,7 +11,10 @@ class CS:
         if CS.Camber.cambers!=[] : CS.Camber.create()
 
     class STAGE:
-        stages = []  
+        stages = []
+        _maxID_ = 0
+        _maxNO_ = 0
+        _isSync_ = False
 
         def __init__(self, 
                     name: str,
@@ -91,10 +94,13 @@ class CS:
 
             # Set ID
             if id is None:
-                self.ID = len(CS.STAGE.stages) + 1
+                self.ID = CS.STAGE._maxID_ + 1
+                self.NO = CS.STAGE._maxNO_ + 1
             else:
                 self.ID = id
-            
+                self.NO = id
+            CS.STAGE._maxNO_ = max(CS.STAGE._maxNO_ ,self.NO)
+            CS.STAGE._maxID_ = max(CS.STAGE._maxID_ ,self.ID)
 
             # Process structure groups
             if s_group:
@@ -256,7 +262,8 @@ class CS:
                     "DURATION": csa.DURATION,
                     "bSV_RSLT": csa.SV_Result,
                     "bSV_STEP": csa.SV_Step,
-                    "bLOAD_STEP": csa.Load_IN
+                    "bLOAD_STEP": csa.Load_IN,
+                    "NO" : csa.NO
                 }
                 
                 # Add incremental steps if load step is enabled
@@ -327,6 +334,8 @@ class CS:
         @classmethod
         def create(cls):
             """Creates construction stages in the database"""
+            if CS.STAGE._isSync_:
+                MidasAPI("DELETE", "/db/stag")
             MidasAPI("PUT", "/db/stag", cls.json())
         
         @classmethod
@@ -354,19 +363,20 @@ class CS:
                     load_in = stag_data.get("bLOAD_STEP")
                     nl = stag_data.get("INCRE_STEP")
                     addstp = stag_data.get("ADD_STEP")
+                    stagNo = stag_data.get("NO")
                     
                     # Create a new CS object with basic properties
                     new_cs = CS.STAGE(
                         name=name,
                         duration=duration,
-                        id=int(stag_id),
+                        id=int(stagNo),
                         sv_result=sv_result,
                         sv_step=sv_step,
                         load_in=load_in,
                         nl=nl,
                         addstp=addstp
                     )
-                    
+                    new_cs.NO = stagNo
                     CS.STAGE.stages.pop()
                     
                     # Process activation elements
@@ -418,6 +428,10 @@ class CS:
                             new_cs.deact_load_groups.append({"name": group_name, "day": day})
                     
                     CS.STAGE.stages.append(new_cs)
+
+                sorted_stgs = sorted(CS.STAGE.stages,key=lambda x : x.NO)
+                CS.STAGE.stages = sorted_stgs
+                CS.STAGE._isSync_ = True
         
         @classmethod
         def delete(cls):

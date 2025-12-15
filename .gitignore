@@ -5,6 +5,9 @@ Result Test/
 midas_civil/__pycache__/
 midas_civil/_section/__pycache__/
 midas_civil/_utilsFunc/__pycache__/
-cmd_check.py
-cmd_check2.py
-cmd_check3.py
+cmd*.py
+test*.py
+
+
+# Compiled Python bytecode
+*.py[cod]
