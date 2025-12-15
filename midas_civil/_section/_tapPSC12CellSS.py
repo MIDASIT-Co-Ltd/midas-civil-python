@@ -269,33 +269,21 @@ class _SS_TAP_PSC_12CELL(_common):
             pt05 = (-BI1,slope*(-BI1))
             pt04 = (-BI12,slope*(-BI12))
             pt03 = (-BI11,slope*(-BI11))
-            # ---------------------- OUTER POINTS  ---------------------------
 
-            temppt = [pt016,pt015,pt014,pt05,pt04,pt03]
-            points = []
+            #----------------------------- THICKNESS COMPUTATION --------------
 
-            #-------
-            points.append(pt1)
-            points.append(pt2)
-            if JI1 : points.append(pt3)
-            if JI2 : points.append(pt4)
-            points.append(pt5)
-            if JI3 : points.append(pt6)
-            points.append(pt7)
-            if JI4 : points.append(pt8)
-            if JI5 : points.append(pt9)
-            points.append(pt10)
-            points.append(pt11)
-            points.append(pt12)
-            if JO3 : points.append(pt13)
-            points.append(pt14)
-            if JO2 : points.append(pt15)
-            if JO1 : points.append(pt16)
-            points.append(pt17)
-            points.append(pt18)
-            points.append(pt1)
-
-            x_values, y_values = zip(*points)
+            THI1 = HI1
+            TJI1 = distance_point(pt3,pt03)
+            TJI2 = distance_point(pt4,pt04)
+            THI2 = distance_point(pt5,pt05)
+            THO2 = distance_point(pt14,pt014)
+            THO1 = distance_point(pt17,pt18)
+            THI3 = (HI4+HI5)
+            THI5 = HI5
+            TJO1 = distance_point(pt16,pt016)
+            TJO2 = distance_point(pt15,pt015)
+            TJI4 = (HI5+HI42)
+            TJI5 = (HI5+HI41)
 
             # -------------------   CENTER LINE POINTS ------------------
 
@@ -303,21 +291,27 @@ class _SS_TAP_PSC_12CELL(_common):
 
 
             # cp2 = (-BI11,(-HI1-HI21)/2) #JI1
-            cp2 = np.add(pt3,pt03)/2
+            # cp2 = np.add(pt3,pt03)/2
+            cp2 = (pt03[0],pt03[1]-0.5*THI1)
 
             # cp3 = (-BI12,(-HI1-HI22)/2) #JI2
-            cp3 = np.add(pt4,pt04)/2
+            # cp3 = np.add(pt4,pt04)/2
+            cp3 = (pt04[0],pt04[1]-0.5*THI1)
             # cp4 = (-BI1,(-HI1-HI2)/2)
-            cp4 = np.add(pt5,pt05)/2
+            # cp4 = np.add(pt5,pt05)/2
+            cp4 = (pt05[0],pt05[1]-0.5*THI1)
 
             # cp5 = (-BO3-BO2-BO1,-HO1/2)
             cp5 = np.add(pt17,pt18)/2
             # cp6 = (-BO3-BO2-BO1+BO11,(-HO1-HO21)/2) #JO1
-            cp6 = np.add(pt16,pt016)/2
+            # cp6 = np.add(pt16,pt016)/2
+            cp6 = (pt016[0],pt016[1]-0.5*THO1)
             # cp7 = (-BO3-BO2-BO1+BO12,(-HO1-HO22)/2) #JO2
-            cp7 = np.add(pt15,pt015)/2
+            # cp7 = np.add(pt15,pt015)/2
+            cp7 = (pt015[0],pt015[1]-0.5*THO1)
             # cp8 = (-BO3-BO2,(-HO1-HO2)/2)
-            cp8 = np.add(pt14,pt014)/2
+            # cp8 = np.add(pt14,pt014)/2
+            cp8 = (pt014[0],pt014[1]-0.5*THO1)
 
             cp9 = np.add(cp8,cp4)/2
 
@@ -335,29 +329,17 @@ class _SS_TAP_PSC_12CELL(_common):
 
 
             tpt,TJO3 = perpendicular_point(pt7,pt6,pt13)
-            cp12 = np.add(tpt,pt13)/2 #JO3
+            cp12 = np.add(pt7,pt13)/2 #JO3
+
 
             # if cp12[1] < cp13[1] : 
             #     print("JO3 invalid")
 
 
-            #----------------------------- THICKNESS COMPUTATION --------------
-
-            THI1 = HI1
-            TJI1 = distance_point(pt3,pt03)
-            TJI2 = distance_point(pt4,pt04)
-            THI2 = distance_point(pt5,pt05)
-            THO2 = distance_point(pt14,pt014)
-            THO1 = distance_point(pt17,pt18)
-            THI3 = (HI4+HI5)
-            THI5 = HI5
-            TJO1 = distance_point(pt16,pt016)
-            TJO2 = distance_point(pt15,pt015)
-            TJI4 = (HI5+HI42)
-            TJI5 = (HI5+HI41)
+            
 
 
-            TX_INT_FLANGE = (HO1+HO2+HI1+HI2)/3
+            TX_INT_FLANGE = (THO2+THI2)/2
             tpt,THIO2 = perpendicular_point(pt13,pt14,pt5)
             TY_INT_FLANGE = THIO2
 
@@ -366,17 +348,20 @@ class _SS_TAP_PSC_12CELL(_common):
             tpt,TY_BOT_JUNC = perpendicular_point(pt13,pt14,pt7)
             # TY_BOT_JUNC = (TY_BOT_JUNC+hypot(*np.subtract(pt7,pt12)))/2
 
+            TJO3 = max(TJO3,TY_BOT_JUNC)
 
 
             top_flange_point =[]
             top_flange_line = []
             top_flange_thk = []
+            top_flange_thk_off = []
             q=1
             top_flange_point.append(cp1)
             if JI1 : 
                 top_flange_point.append(cp2)
                 top_flange_line.append([q,q+1])
                 top_flange_thk.append([THI1,TJI1])
+                top_flange_thk_off.append([0,(TJI1-THI1)*0.5])
                 q+=1
             if JI2 : 
                 top_flange_point.append(cp3)
@@ -384,23 +369,29 @@ class _SS_TAP_PSC_12CELL(_common):
                 q+=1
                 if JI1:
                     top_flange_thk.append([TJI1,TJI2])
+                    top_flange_thk_off.append([(TJI1-THI1)*0.5,(TJI2-THI1)*0.5])
                 else :
                     top_flange_thk.append([THI1,TJI2])
+                    top_flange_thk_off.append([0,(TJI2-THI1)*0.5])
             top_flange_point.append(cp4)
             top_flange_line.append([q,q+1])
             q+=1
 
             if JI2:
                 top_flange_thk.append([TJI2,THI2])
+                top_flange_thk_off.append([(TJI2-THI1)*0.5,(THI2-THI1)*0.5])
             elif JI1:
                 top_flange_thk.append([TJI1,THI2])
+                top_flange_thk_off.append([(TJI1-THI1)*0.5,(THI2-THI1)*0.5])
             else :
                 top_flange_thk.append([THI1,THI2])
+                top_flange_thk_off.append([0,(THI2-THI1)*0.5])
 
 
             top_flange_line.append([q,q+1]) # TO CONNECT WITH WEB
             q+=1
             top_flange_thk.append([THI2,TX_INT_FLANGE]) 
+            top_flange_thk_off.append([(THI2-THI1)*0.5,(TX_INT_FLANGE-THI1)*0.5])
 
 
             # print(top_flange_thk)
@@ -408,43 +399,53 @@ class _SS_TAP_PSC_12CELL(_common):
             web_point =[]
             web_line =[]
             web_thk = []
+            web_thk_off = []
 
             web_point.append(cp9)
             web_point.append(cp10)
             web_line.append([q,q+1])
             q+=1
             web_thk.append([TY_INT_FLANGE,THIO2])
+            web_thk_off.append([0,0])
             if JI3 : 
                 web_point.append(cp11)
                 web_line.append([q,q+1])
                 q+=1
                 web_thk.append([THIO2,TJI3])
-            if JO3 and cp12[1] < cp13[1]: 
+                web_thk_off.append([0,0])
+            if JO3 : #JO3 and cp12[0] < cp13[0]: 
                 web_point.append(cp12)
                 web_line.append([q,q+1])
                 if JI3 : 
                     web_thk.append([TJI3,TJO3])
+                    web_thk_off.append([0,0])
                 else:
                     web_thk.append([THIO2,TJO3])
+                    web_thk_off.append([0,0])
                 q+=1
 
             web_point.append(cp13)
             web_line.append([q,q+1])
             if JO3:
                 web_thk.append([TJO3,TY_BOT_JUNC])
+                web_thk_off.append([0,0])
             elif JI3:
                 web_thk.append([TJI3,TY_BOT_JUNC])
+                web_thk_off.append([0,0])
             else:
                 web_thk.append([THIO2,TY_BOT_JUNC])
+                web_thk_off.append([0,0])
             q+=1
 
 
             bottom_flange_point =[]
             bottom_flange_line =[]
             bottom_flange_thk = []
+            bottom_flange_thk_off = []
 
             bottom_flange_line.append([q,q+1]) # TO CONNECT WITH WEB
-            bottom_flange_thk.append([TX_BOT_JUNC,THI3])
+            bottom_flange_thk.append([TY_BOT_JUNC,THI3])
+            bottom_flange_thk_off.append([0,0])
             q+=1
             bottom_flange_point.append(cp14)
             if JI4 : 
@@ -452,32 +453,40 @@ class _SS_TAP_PSC_12CELL(_common):
                 bottom_flange_line.append([q,q+1])
                 q+=1
                 bottom_flange_thk.append([THI3,TJI4])
+                bottom_flange_thk_off.append([0,0])
             if JI5 : 
                 bottom_flange_point.append(cp16)
                 bottom_flange_line.append([q,q+1])
                 q+=1
                 if JI4:
                     bottom_flange_thk.append([TJI4,TJI5])
+                    bottom_flange_thk_off.append([0,0])
                 else:
                     bottom_flange_thk.append([THI3,TJI5])
+                    bottom_flange_thk_off.append([0,0])
             bottom_flange_point.append(cp17)
             bottom_flange_line.append([q,q+1])
             n_cp17 = q+1
             if JI5:
                 bottom_flange_thk.append([TJI5,THI5])
+                bottom_flange_thk_off.append([0,0])
             elif JI4:
                 bottom_flange_thk.append([TJI4,THI5])
+                bottom_flange_thk_off.append([0,0])
             else:
                 bottom_flange_thk.append([THI3,THI5])
+                bottom_flange_thk_off.append([0,0])
             q+=1 
 
 
             top_cantelever_point =[]
             top_cantelever_line =[]
             top_cantelever_thk =[]
+            top_cantelever_thk_off =[]
 
             top_cantelever_line.append([len(top_flange_point)+1,q+1]) # TO CONNECT WITH WEB
             top_cantelever_thk.append([TX_INT_FLANGE,THO2])
+            top_cantelever_thk_off.append([(TX_INT_FLANGE-THO1)*0.5,(THO2-THO1)*0.5])
             q+=1
             top_cantelever_point.append(cp8)
             if JO2 : 
@@ -485,55 +494,65 @@ class _SS_TAP_PSC_12CELL(_common):
                 top_cantelever_line.append([q,q+1])
                 q+=1
                 top_cantelever_thk.append([THO2,TJO2])
+                top_cantelever_thk_off.append([(THO2-THO1)*0.5,(TJO2-THO1)*0.5])
             if JO1 : 
                 top_cantelever_point.append(cp6)
                 top_cantelever_line.append([q,q+1])
                 q+=1
                 if JO2:
                     top_cantelever_thk.append([TJO2,TJO1])
+                    top_cantelever_thk_off.append([(TJO2-THO1)*0.5,(TJO1-THO1)*0.5])
                 else:
                     top_cantelever_thk.append([THO2,TJO1])
+                    top_cantelever_thk_off.append([(THO2-THO1)*0.5,(TJO1-THO1)*0.5])
             top_cantelever_point.append(cp5)
             top_cantelever_line.append([q,q+1])
             if JO1:
                 top_cantelever_thk.append([TJO1,THO1])
+                top_cantelever_thk_off.append([(TJO1-THO1)*0.5,0])
             elif JO2:
                 top_cantelever_thk.append([TJO2,THO1])
+                top_cantelever_thk_off.append([(TJO2-THO1)*0.5,0])
             else:
                 top_cantelever_thk.append([THO2,THO1])
+                top_cantelever_thk_off.append([(THO2-THO1)*0.5,0])
 
 
             final_points = top_flange_point+web_point+bottom_flange_point+top_cantelever_point
             final_line = top_flange_line+web_line+bottom_flange_line+top_cantelever_line
             final_thk = top_flange_thk+web_thk+bottom_flange_thk+top_cantelever_thk
+            final_thk_off = top_flange_thk_off+web_thk_off+bottom_flange_thk_off+top_cantelever_thk_off
 
             n_points = len(final_points)
 
+            # print(final_points)
 
-            sect_shape = final_points
+            sect_shape = final_points   # SYMMETRY
             for i in range(n_points):
                 sect_shape.append((-final_points[i][0],final_points[i][1]))
 
 
             sect_lin_con = final_line
             sect_thk = final_thk
+            sect_thk_off = final_thk_off
             
 
-            for q in range(len(final_line)):
+            for q in range(len(final_line)):    # SYMMETRY
                 sect_thk.append([final_thk[q][1],final_thk[q][0]])
+                sect_thk_off.append([final_thk_off[q][1],final_thk_off[q][0]])
                 sect_lin_con.append([final_line[q][1]+n_points,final_line[q][0]+n_points])
 
 
             if shape.SHAPE == '2CEL':
                 sect_lin_con.append([1,n_cp17])
                 sect_thk.append([2*BI4,2*BI4])
-
-            sect_thk_off = [0 for _ in sect_thk]
+                sect_thk_off.append([0,0])
+                
+            # sect_thk_off = [0 for _ in sect_thk]
             
         
 
         sect_cg = (sect_cg_LT,sect_cg_CC,sect_cg_RB)
-
         return sect_shape, sect_thk ,sect_thk_off, sect_cg , sect_lin_con
     
 

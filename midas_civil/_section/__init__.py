@@ -20,8 +20,10 @@ class _helperSECTION:
 
 def _SectionADD(self):
     # Commom HERE ---------------------------------------------
-    if id==None: id = 0
+    
     id = int(self.ID)
+    if id==None: id = 0
+    
     if Section.ids == []: 
         count = 1
     else:
