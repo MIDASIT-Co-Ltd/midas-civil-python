@@ -1,62 +1,14 @@
 
 from ._mapi import MidasAPI
-
+from typing import Literal
 from ._utils import _convItem2List , sFlatten
+# from ._element import _elemByID2
+# from midas_civil import nodeByID,elemByID
 
 # ----------- HELPER FUNCTION -----------
     # --------   RETRIEVE NODE / ELEMENT FROM STRUCTURE GROUP -------
 
-def nodesInGroup(groupName:str,unique:bool=True,reverse:bool=False) -> list:
-    ''' Returns Node ID list in a Structure Group or list of Structure groups
-    eg. nodesInGroup('SG_A')   
-        nodesInGroup(['SG_1','SG_2','SG_3'])
-        groupName : 'SG_A' or ['SG_1' , 'SG_2' , 'SG_2']
-        unique : True -> Only unique ID is returned.
-        In case of multiple groups, we may require only uniques ids
-        reverse : True -> Reverses the returned list
-    '''
-    groupNames = _convItem2List(groupName)
-    nlist = []
-    for gName in groupNames:
-        chk=1
-        rev = reverse
-        if gName[0] == '!':
-            gName = gName[1:]
-            rev = not rev
-        for i in Group.Structure.Groups:
-                if i.NAME == gName:
-                    chk=0
-                    nIDlist = i.NLIST
-                    if rev: nIDlist = list(reversed(nIDlist))
-                    nlist.append(nIDlist)
-        if chk:
-            print(f'⚠️   "{gName}" - Structure group not found !')
-    if unique:
-        return list(dict.fromkeys(sFlatten(nlist)))
-    return sFlatten(nlist)
 
-
-def elemsInGroup(groupName:str,unique:bool=True,reverse:bool=False) -> list:
-    ''' Returns Element ID list in a Structure Group '''
-    groupNames = _convItem2List(groupName)
-    elist = []
-    for gName in groupNames:
-        chk=1
-        rev = reverse
-        if gName[0] == '!':
-            gName = gName[1:]
-            rev = not rev
-        for i in Group.Structure.Groups:
-                if i.NAME == gName:
-                    chk=0
-                    eIDlist = i.ELIST
-                    if rev: eIDlist = list(reversed(eIDlist))
-                    elist.append(eIDlist)
-        if chk:
-            print(f'⚠️   "{gName}" - Structure group not found !')
-    if unique:
-        return list(dict.fromkeys(sFlatten(elist)))
-    return sFlatten(elist)
 
 
     # --------   ADD ELEMENT TO STRUCTURE GROUP -------

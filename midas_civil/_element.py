@@ -1,12 +1,13 @@
 from ._mapi import MidasAPI,NX
-from ._node import Node,nodeByID
-from ._group import _add_node_2_stGroup,Group,nodesInGroup , _add_elem_2_stGroup
+from ._node import Node,nodeByID,nodesInGroup
+from ._group import _add_node_2_stGroup,Group, _add_elem_2_stGroup
 import numpy as np
 from scipy.interpolate import splev, splprep , interp1d , Akima1DInterpolator
 from math import hypot
 # import math
-from ._utils import _convItem2List , _longestList
+from ._utils import _convItem2List , _longestList,sFlatten
 from colorama import Fore,Style
+from typing import Literal
 
 def _SInterp(angle,num_points):
     ''' Angle -> Input list | Num Points -> Output length'''
@@ -323,7 +324,10 @@ def _JS2Obj(id, js):
         'angle': js.get('ANGLE'),
         'stype': js.get('STYPE')
     }
-    
+
+    args['node'] = [x for x in args['node'] if x != 0]
+    nNodes = len(args['node'])
+    maxPlateNode = min(nNodes,4)
     # Prepare individual parameters for optional/subtype-specific parameters
     non_len = js.get('NON_LEN')
     cable_type = js.get('CABLE')
@@ -335,7 +339,7 @@ def _JS2Obj(id, js):
     elif elem_type == 'TRUSS':
         Element.Truss(args['node'][0], args['node'][1], args['mat'], args['sect'], args['angle'],'',  args['id'])
     elif elem_type == 'PLATE':
-        Element.Plate(args['node'], args['stype'], args['mat'], args['sect'], args['angle'], '', args['id'])
+        Element.Plate(args['node'][:maxPlateNode], args['stype'], args['mat'], args['sect'], args['angle'], '', args['id'])
     elif elem_type == 'TENSTR':
         Element.Tension(args['node'][0], args['node'][1], args['stype'], args['mat'], args['sect'], args['angle'], '', args['id'], non_len, cable_type, tens, t_limit)
     elif elem_type == 'COMPTR':
@@ -344,6 +348,8 @@ def _JS2Obj(id, js):
         Element.Solid(nodes=args['node'], mat=args['mat'], sect=args['sect'],group='', id=args['id'])
 
 
+class _helperELEM:
+    ID, TYPE, MATL,SECT,NODE,ANGLE,LENGTH,STYPE,AREA,NORMAL,CENTER = 0,0,0,0,0,0,0,0,0,0,0
 class _common:
     """Common base class for all element types."""
     def __str__(self):
@@ -353,13 +359,13 @@ class _common:
         return _updateElem(self)
 
 # --- Main Element Class ---
-class Element:
+class Element():
     """
     Main class to create and manage structural elements like Beams, Trusses,
     Plates, Tension/Compression-only elements, and Solids.
     """
-    elements = []
-    ids = []
+    elements:list[_helperELEM] = []
+    ids:list[int] = []
     __elemDIC__ = {}
 
     
@@ -445,10 +451,11 @@ class Element:
             self.NODE = [i, j]
             self.ANGLE = angle
             self._GROUP = group
-
+            
             _n1 = nodeByID(i)
             _n2 = nodeByID(j)
             self.LENGTH = _nodeDIST(_n1,_n2)
+            self.CENTER = np.average([_n1.LOC,_n2.LOC],0)
 
             if bLocalAxis:
                 _tempAngle = _nodeAngleVector(_n1,_n2)
@@ -612,8 +619,11 @@ class Element:
             self.NODE = [i, j]
             self.ANGLE = angle
             self._GROUP = group
+            _n1 = nodeByID(i)
             _n2 = nodeByID(j)
-            self.LENGTH = _nodeDIST(nodeByID(i),_n2)
+            self.LENGTH = _nodeDIST(_n1,_n2)
+            self.CENTER = np.average([_n1.LOC,_n2.LOC],0)
+
             Element.lastLoc = (_n2.X,_n2.Y,_n2.Z)
             _ADD(self)
 
@@ -703,13 +713,22 @@ class Element:
             self._NPOINT=len(uniq_nodes)
             if len(uniq_nodes)==3:
                 self.NODE = uniq_nodes
-                self.AREA,self.NORMAL = _triangleAREA(nodeByID(uniq_nodes[0]),nodeByID(uniq_nodes[1]),nodeByID(uniq_nodes[2]))
+                _n1 = nodeByID(uniq_nodes[0])
+                _n2 = nodeByID(uniq_nodes[1])
+                _n3 = nodeByID(uniq_nodes[2])
+                self.CENTER = np.average([_n1.LOC,_n2.LOC,_n3.LOC],0)
+                self.AREA,self.NORMAL = _triangleAREA(_n1,_n2,_n3)
             elif len(uniq_nodes)==4:
                 self.NODE = nodes
-                a1 , n1 = _triangleAREA(nodeByID(nodes[0]),nodeByID(nodes[1]),nodeByID(nodes[2]))
-                a2 , n2 = _triangleAREA(nodeByID(nodes[2]),nodeByID(nodes[3]),nodeByID(nodes[0]))
+                _n1 = nodeByID(uniq_nodes[0])
+                _n2 = nodeByID(uniq_nodes[1])
+                _n3 = nodeByID(uniq_nodes[2])
+                _n4 = nodeByID(uniq_nodes[3])
+                a1 , n1 = _triangleAREA(_n1,_n2,_n3)
+                a2 , n2 = _triangleAREA(_n3,_n4,_n1)
                 self.AREA = a1+a2
                 self.NORMAL = (n1+n2)/np.linalg.norm((n1+n2+0.000001))
+                self.CENTER = np.average([_n1.LOC,_n2.LOC,_n3.LOC,_n4.LOC],0)
                 
 
 
@@ -1103,10 +1122,41 @@ class Element:
 #     print(f'There is no element with ID {elemID}')
 #     return None
 
-def elemByID(elemID:int) -> Element:
+def elemByID(elemID:int) -> _helperELEM:
     ''' Return Element object with the input ID '''
     try:
         return (Element.__elemDIC__[str(elemID)])
     except:
         print(Fore.RED +f'There is no element with ID {elemID}'+Style.RESET_ALL)
         return None
+    
+def elemsInGroup(groupName:str,unique:bool=True,reverse:bool=False,output:Literal['ID','ELEM']='ID') -> list[_helperELEM]:
+    ''' Returns Element ID list or Element object list in a Structure Group '''
+    groupNames = _convItem2List(groupName)
+    elist = []
+    for gName in groupNames:
+        chk=1
+        rev = reverse
+        if gName[0] == '!':
+            gName = gName[1:]
+            rev = not rev
+        for i in Group.Structure.Groups:
+                if i.NAME == gName:
+                    chk=0
+                    eIDlist = i.ELIST
+                    if rev: eIDlist = list(reversed(eIDlist))
+                    elist.append(eIDlist)
+        if chk:
+            print(f'⚠️   "{gName}" - Structure group not found !')
+    if unique:
+        finalElist = list(dict.fromkeys(sFlatten(elist)))
+    else:
+        finalElist = sFlatten(elist)
+
+    if output == 'ELEM':
+        finoutput = []
+        for elm in finalElist:
+            finoutput.append(elemByID(elm))
+        finalElist:Element = finoutput
+
+    return finalElist

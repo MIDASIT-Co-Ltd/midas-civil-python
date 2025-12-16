@@ -2,7 +2,7 @@ from ._mapi import MidasAPI
 from ._group import Group
 from ._element import elemByID
 import numpy as np
-
+from typing import Literal
 
 # -----  Extend for list of nodes/elems -----
 
@@ -12,6 +12,13 @@ def _ADD_NodalLoad(self):
     elif isinstance(self.NODE,list):
         for nID in self.NODE:
             Load.Nodal(nID,self.LCN,self.LDGR,self.FX,self.FY,self.FZ,self.MX,self.MY,self.MZ,self.ID)
+
+def _ADD_PressureLoad(self):
+    if isinstance(self.ELEM,int):
+        Load.Pressure.data.append(self)
+    elif isinstance(self.ELEM,list):
+        for eID in self.ELEM:
+            Load.Pressure(eID,self.LCN,self.LDGR,self.DIR,self.PRES,self.VECTOR,self.bPROJ,self.ID)
 
 
 def _ADD_BeamLoad(self):
@@ -853,5 +860,99 @@ class Load:
 
                         
 
-                
+    class Pressure:
+        """ Assign Pressure load to plates faces.
+        
+        """
+        data = []
+        def __init__(self, element:list, load_case:str, load_group:str = "", D:Literal['LX','LY','LZ','GX','GY','GZ','VECTOR']='LZ', P:list=0, VectorDir:list = [1,0,0],bProjection:bool = False,id:int = None):
+
+
+            chk = 0
+            for i in Load_Case.cases:
+                if load_case in i.NAME: chk = 1
+            if chk == 0: Load_Case("D", load_case)
+            if load_group != "":
+                chk = 0
+                a = [v['NAME'] for v in Group.Load.json()["Assign"].values()]
+                if load_group in a: chk = 1
+                if chk == 0: Group.Load(load_group)
+
+
+            self.ELEM = element
+            self.LCN = load_case
+            self.LDGR = load_group
+            self.DIR = D
+            self.VECTOR = VectorDir
+            self.PRES = P
+
+            if D in ['GX','GY','GZ']: self.bPROJ = bProjection
+            else: self.bPROJ = False
+
+            if id is None:
+                self.ID = len(Load.Pressure.data) + 1
+            else:
+                self.ID = id
+
+            _ADD_PressureLoad(self)
+
+        
+        @classmethod
+        def json(cls):
+            json = {"Assign": {}}
+            for i in cls.data:
+                if i.ELEM not in list(json["Assign"].keys()):
+                    json["Assign"][i.ELEM] = {"ITEMS": []}
+
+                js = {
+                    "ID": i.ID,
+                    "LCNAME": i.LCN,
+                    "GROUP_NAME": i.LDGR,
+                    "CMD": "PRES",
+                    "ELEM_TYPE": "PLATE",
+                    "FACE_EDGE_TYPE": "FACE",
+                    "DIRECTION": i.DIR,
+                    "VECTORS" : i.VECTOR,
+                    "FORCES": i.PRES
+                }
+                if isinstance(i.PRES,float): newP = [i.PRES,0,0,0,0]
+                elif isinstance(i.PRES,list):
+                    trimP = i.PRES[:4]
+                    newP = [0] + trimP
+                js["FORCES"] = newP
+                if i.bPROJ:
+                    js["OPT_PROJECTION"] = True
+
+                json["Assign"][i.ELEM]["ITEMS"].append(js)
+
+            return json
+        
+        @classmethod
+        def create(cls):
+            MidasAPI("PUT", "/db/PRES",cls.json())
+        
+        @classmethod
+        def get(cls):
+            return MidasAPI("GET", "/db/PRES")
+        
+        @classmethod
+        def delete(cls):
+            cls.clear()
+            return MidasAPI("DELETE", "/db/PRES")
+        
+        @classmethod
+        def clear(cls):
+            cls.data=[]
+        
+        # @classmethod
+        # def sync(cls):
+        #     cls.data = []
+        #     a = cls.get()
+        #     if a != {'message': ''}:
+        #         for i in a['PRES'].keys():
+        #             for j in range(len(a['CNLD'][i]['ITEMS'])):
+        #                 Load.Nodal(int(i),a['CNLD'][i]['ITEMS'][j]['LCNAME'], a['CNLD'][i]['ITEMS'][j]['GROUP_NAME'], 
+        #                     a['CNLD'][i]['ITEMS'][j]['FX'], a['CNLD'][i]['ITEMS'][j]['FY'], a['CNLD'][i]['ITEMS'][j]['FZ'], 
+        #                     a['CNLD'][i]['ITEMS'][j]['MX'], a['CNLD'][i]['ITEMS'][j]['MY'], a['CNLD'][i]['ITEMS'][j]['MZ'],
+        #                     a['CNLD'][i]['ITEMS'][j]['ID'])
                 

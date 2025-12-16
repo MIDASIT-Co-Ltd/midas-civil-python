@@ -1,7 +1,7 @@
 import requests
 from colorama import Fore,Style
 from ._mapi import NX,MidasAPI,MAPI_KEY,MAPI_BASEURL,MAPI_COUNTRY,Midas_help
-_version_ = "1.2.9"
+_version_ = "1.3.0"
 
 
 print('\n╭────────────────────────────────────────────────────────────────────────────────────╮')
@@ -21,10 +21,11 @@ if NX.version_check:
 from ._model import Model
 from ._boundary import Boundary
 from ._utils import getID,getNodeID,utils
-from ._node import Node,nodeByID,closestNode,NodeLocalAxis,nodesInRadius
-from ._element import Element,elemByID  #Revise
+from ._node import Node,nodeByID,closestNode,NodeLocalAxis,nodesInRadius,nodesInGroup
+from ._element import Element,elemByID,elemsInGroup  #Revise
+from ._group import Group
 from ._load import Load,Load_Case   # Revise it
-from ._group import nodesInGroup,elemsInGroup,Group
+
 from ._loadcomb import LoadCombination
 
 
@@ -34,7 +35,7 @@ from ._section import Section,Offset
 
 from ._construction import CS
 from ._thickness import Thickness
-from ._temperature import Temperature # dueto LoadCase
+from ._temperature import Temperature
 
 from ._tendon import Tendon
 from ._view import View,ResultGraphic,Image
@@ -44,5 +45,5 @@ from ._settlement import Settlement
 from ._analysiscontrol import AnalysisControl
 from ._BoundaryChangeAssignment import BoundaryChangeAssignment         # <=== NEEDS A REVIEW (UNNECESSARY CALL)
 
-from ._result_test import Result  #Too much time taken here
+from ._result_test import Result
 

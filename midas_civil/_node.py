@@ -1,11 +1,10 @@
 from ._mapi import MidasAPI
-from ._utils import zz_add_to_dict
+from ._utils import zz_add_to_dict,_convItem2List , sFlatten
 from math import hypot
 from ._group import _add_node_2_stGroup
 from typing import Literal
 import numpy as np
-
-_ptInRad_output_ = Literal['ID','Node']
+from ._group import Group
 
 def dist_tol(a,b):
     return hypot((a.X-b.X),(a.Y-b.Y),(a.Z-b.Z)) < 0.00001  #TOLERANCE BUILT IN (UNIT INDEP)
@@ -183,7 +182,43 @@ class Node:
 #     print(f'There is no node with ID {nodeID}')
 #     return None
 
+def nodesInGroup(groupName:str,unique:bool=True,reverse:bool=False,output:Literal['ID','NODE']='ID') -> list[Node]:
+    ''' Returns Node ID list or Node objects in a Structure Group or list of Structure groups
+    eg. nodesInGroup('SG_A')   
+        nodesInGroup(['SG_1','SG_2','SG_3'])
+        groupName : 'SG_A' or ['SG_1' , 'SG_2' , 'SG_2']
+        unique : True -> Only unique ID is returned.
+        In case of multiple groups, we may require only uniques ids
+        reverse : True -> Reverses the returned list
+    '''
+    groupNames = _convItem2List(groupName)
+    nlist = []
+    for gName in groupNames:
+        chk=1
+        rev = reverse
+        if gName[0] == '!':
+            gName = gName[1:]
+            rev = not rev
+        for i in Group.Structure.Groups:
+                if i.NAME == gName:
+                    chk=0
+                    nIDlist = i.NLIST
+                    if rev: nIDlist = list(reversed(nIDlist))
+                    nlist.append(nIDlist)
+        if chk:
+            print(f'⚠️   "{gName}" - Structure group not found !')
+    if unique:
+        finalNlist = list(dict.fromkeys(sFlatten(nlist)))
+    else:
+        finalNlist = sFlatten(nlist)
 
+    if output == 'NODE':
+        finoutput = []
+        for nod in finalNlist:
+            finoutput.append(nodeByID(nod))
+        finalNlist:Node = finoutput
+
+    return finalNlist
 
 def nodeByID(nodeID:int) -> Node:
     ''' Return Node object with the input ID '''
@@ -301,7 +336,7 @@ def _ifNodeExist_(x,y,z) -> tuple:
     return False,0
 
 
-def nodesInRadius(point_location:list , radius:float=0, output :_ptInRad_output_ = 'ID',includeSelf = False)-> list:
+def nodesInRadius(point_location:list , radius:float=0, output :Literal['ID','NODE'] = 'ID',includeSelf = False)-> list:
     gridStr = list(Node.Grid.keys())
 
     bNode = False
