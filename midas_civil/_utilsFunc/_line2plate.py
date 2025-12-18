@@ -11,6 +11,8 @@ class L2P:
     CG_data = {}
     thick_js = {}
     sorted_nodes = []
+    endNodes = []
+    rgdID = 10
 
 # 1. -------------     Getting selected elements, sorting the nodes, deleting the middle node    -------------------
 # Takes in [[1,2] , [3,4] ,[2,3]] returns [1,2,3,4] 
@@ -137,6 +139,12 @@ def delSelectElements(elemList):
         MidasAPI('DELETE',f'/db/NODE/{align_nodes_list_url}')
         k=min(3,len(align_nodes_list)-1)
 
+    L2P.endNodes = [align_nodes_list[0],align_nodes_list[-1]]
+    # Create node here for rigid links purpose
+    nd = align_nodes_list[0]
+    Node(node_json['NODE'][str(nd)]['X'],node_json['NODE'][str(nd)]['Y'],node_json['NODE'][str(nd)]['Z'],nd)
+    nd = align_nodes_list[-1]
+    Node(node_json['NODE'][str(nd)]['X'],node_json['NODE'][str(nd)]['Y'],node_json['NODE'][str(nd)]['Z'],nd)
 
     beta_angle = [align_elem_json['ELEM'][str(arrangeLIST_ELM[0])]['ANGLE']*3.141/180]
     for i in range(len(align_nodes_list)-2):
@@ -252,11 +260,11 @@ def createTapPlateAlign(align_points,t_param,beta_angle,Section4Plate,rigid_LNK 
             if i == 0 :
                 # beamnode = Node(align_points[0][0],align_points[0][1],align_points[0][2]).ID
                 # Boundary.RigidLink(beamnode,list(set(snode)),id=5)
-                Boundary.RigidLink(L2P.sorted_nodes[0],list(set(snode)),id=5)
+                Boundary.RigidLink(L2P.endNodes[0],list(set(snode)),id=L2P.rgdID)
             elif i == align_num_points-2:
                 # beamnode = Node(align_points[-1][0],align_points[-1][1],align_points[-1][2]).ID
                 # Boundary.RigidLink(beamnode,list(set(enode)),id=5)
-                Boundary.RigidLink(L2P.sorted_nodes[-1],list(set(enode)),id=5)
+                Boundary.RigidLink(L2P.endNodes[-1],list(set(enode)),id=L2P.rgdID)
 
 
 
@@ -594,8 +602,6 @@ def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList):
         Boundary.RigidLink.ids = [Model.maxID('RIGD')]
 
 
-    # Boundary.RigidLink
-    # Boundary.RigidLink.sync()
     pbar.update(1)
     pbar.set_description_str("Creating Shell data...")
     myTapShape = plateTapSection(sect_points_arr,cg_arr,align_t_param,lin,thk_arr,thk_off_arr)
@@ -615,7 +621,6 @@ def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList):
     pbar.update(1)
     pbar.set_description_str("Creating Rigid Links...")
     Boundary.RigidLink.create()
-    # print(Boundary.RigidLink.json())
 
     # RESET the function
     L2P.first = 0
@@ -623,6 +628,8 @@ def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList):
     L2P.CG_data = {}
     L2P.thick_js = {}
     L2P.sorted_nodes = []
+    L2P.endNodes = []
+    L2P.rgdID +=1
 
     pbar.update(1)
     pbar.set_description_str(Fore.GREEN+"Line to Plate conversion done"+Style.RESET_ALL)

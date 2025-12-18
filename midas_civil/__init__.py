@@ -1,7 +1,7 @@
 import requests
 from colorama import Fore,Style
 from ._mapi import NX,MidasAPI,MAPI_KEY,MAPI_BASEURL,MAPI_COUNTRY,Midas_help
-_version_ = "1.3.1"
+_version_ = "1.3.2"
 
 
 print('\n╭────────────────────────────────────────────────────────────────────────────────────╮')
