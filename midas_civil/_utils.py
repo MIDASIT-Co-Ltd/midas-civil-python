@@ -120,7 +120,8 @@ def _longestList(A,B):
 class utils:
     ''' Contains helper function and utilities'''
     class Alignment:
-        '''Defines alignment object passing through the points'''
+        '''Defines alignment object passing through the points
+        X -> monotonous increasing'''
         
         def __init__(self,points,type: str = 'cubic'):
             ''' 
@@ -172,6 +173,19 @@ class utils:
             self.X_FINE = _x_fine
             self.Y_FINE = _y_fine
             self.U_FINE = _u_fine
+
+        def getPoint(self,distance):
+            x_interp = np.interp(distance,self.CUMLENGTH,self.X_FINE)
+            y_interp = np.interp(distance,self.CUMLENGTH,self.Y_FINE)
+            return x_interp , y_interp
+        
+        def getSlope(self,distance):
+            'Returns theta in radians (-pi/2  to pi/2)'
+            x_interp = np.interp(distance,self.CUMLENGTH,self.X_FINE)
+            slope = self.ALIGNMENT(x_interp,1) # Tan theta
+            angle = np.atan(slope)
+            return angle
+
 
         @staticmethod
         def transformPoint(point:tuple,initial_align:utils.Alignment,final_align:utils.Alignment) -> list :

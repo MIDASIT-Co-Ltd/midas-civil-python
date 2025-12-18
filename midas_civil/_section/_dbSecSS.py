@@ -1,6 +1,6 @@
 from ._offsetSS import Offset
 from ._offsetSS import _common
-import math
+from math import sin , cos , pi
 
 class _SS_DBUSER(_common):
 
@@ -151,7 +151,7 @@ class _SS_DBUSER(_common):
 
             n = 16
             for i in range(n):
-                sect_shape.append([R*math.sin(i*2*math.pi/n),R*math.cos(i*2*math.pi/n)])
+                sect_shape.append([R*sin(i*2*pi/n),R*cos(i*2*pi/n)])
                 sect_lin_con.append([i+1,i+2])
                 sect_thk.append(tw)
                 sect_thk_off.append(-0.5*tw)

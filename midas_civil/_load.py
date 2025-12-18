@@ -121,6 +121,7 @@ class Load:
         if cls.SW.data!=[]: cls.SW.create()
         if cls.Nodal.data!=[]: cls.Nodal.create()
         if cls.Beam.data!=[]: cls.Beam.create()
+        if cls.Pressure.data!=[]: cls.Pressure.create()
     
     @classmethod
     def clear(cls):
@@ -128,6 +129,7 @@ class Load:
         cls.SW.clear()
         cls.Nodal.clear()
         cls.Beam.clear()
+        cls.Pressure.clear()
 
     class SW:
         """Load Case Name, direction, Value, Load Group.\n

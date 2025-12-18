@@ -1,7 +1,7 @@
 from ._offsetSS import Offset
 from ._offsetSS import _common
 
-import numpy as np
+
 from math import hypot
 class _SS_TAP_PSC_12CELL(_common):
     def __init__(self,Name='',Shape='1CEL',Joint=[0,0,0,0,0,0,0,0],
@@ -181,6 +181,7 @@ class _SS_TAP_PSC_12CELL(_common):
                             offset,uShear,u7DOF,id)
     
     def _centerLine(shape,end,*args):
+        import numpy as np
         if shape.SHAPE in ['1CEL','2CEL'] :
             if end:
                 HO1,HO2,HO21,HO22,HO3,HO31 = shape.HO1_J,shape.HO2_J,shape.HO21_J,shape.HO22_J,shape.HO3_J,shape.HO31_J

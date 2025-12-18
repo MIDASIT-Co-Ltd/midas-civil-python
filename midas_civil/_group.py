@@ -1,10 +1,5 @@
 
 from ._mapi import MidasAPI
-from typing import Literal
-from ._utils import _convItem2List , sFlatten
-# from ._element import _elemByID2
-# from midas_civil import nodeByID,elemByID
-
 # ----------- HELPER FUNCTION -----------
     # --------   RETRIEVE NODE / ELEMENT FROM STRUCTURE GROUP -------
 

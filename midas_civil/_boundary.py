@@ -429,6 +429,7 @@ class Boundary:
     class RigidLink:
 
         links = []
+        ids = [0]
         
         def __init__(self, 
                     master_node: int, 
@@ -469,12 +470,13 @@ class Boundary:
 
             # Auto-assign ID if not provided
             if id is None:
-                self.ID = len(Boundary.RigidLink.links) + 1
+                self.ID = max(Boundary.RigidLink.ids) + 1
             else:
                 self.ID = id
                 
             # Add to static list
             Boundary.RigidLink.links.append(self)
+            Boundary.RigidLink.ids.append(self.ID)
         
 
         @classmethod

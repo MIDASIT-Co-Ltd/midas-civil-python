@@ -2,16 +2,15 @@ from ._mapi import MidasAPI,NX
 from ._node import Node,nodeByID,nodesInGroup
 from ._group import _add_node_2_stGroup,Group, _add_elem_2_stGroup
 import numpy as np
-from scipy.interpolate import splev, splprep , interp1d , Akima1DInterpolator
+# from scipy.interpolate import splev, splprep , interp1d , Akima1DInterpolator
 from math import hypot
-# import math
 from ._utils import _convItem2List , _longestList,sFlatten
 from colorama import Fore,Style
 from typing import Literal
 
 def _SInterp(angle,num_points):
     ''' Angle -> Input list | Num Points -> Output length'''
-
+    from scipy.interpolate import interp1d , Akima1DInterpolator
     angle = _convItem2List(angle)
     if len(angle) == 1 : 
         angle.append(angle[0])
@@ -38,6 +37,7 @@ def _SInterp(angle,num_points):
 
 def _interpolateAlignment(pointsArray,n_seg=10,deg=1,mSize=0,includePoint:bool=True,div_axis="L") -> list:
     ''' Returns point list and beta angle list'''
+    from scipy.interpolate import splev, splprep
     pointsArray = np.array(pointsArray)
     x_p, y_p , z_p  = pointsArray[:,0] , pointsArray[:,1] , pointsArray[:,2]
 
@@ -327,7 +327,6 @@ def _JS2Obj(id, js):
 
     args['node'] = [x for x in args['node'] if x != 0]
     nNodes = len(args['node'])
-    maxPlateNode = min(nNodes,4)
     # Prepare individual parameters for optional/subtype-specific parameters
     non_len = js.get('NON_LEN')
     cable_type = js.get('CABLE')
@@ -339,13 +338,13 @@ def _JS2Obj(id, js):
     elif elem_type == 'TRUSS':
         Element.Truss(args['node'][0], args['node'][1], args['mat'], args['sect'], args['angle'],'',  args['id'])
     elif elem_type == 'PLATE':
-        Element.Plate(args['node'][:maxPlateNode], args['stype'], args['mat'], args['sect'], args['angle'], '', args['id'])
+        Element.Plate(args['node'][:nNodes], args['stype'], args['mat'], args['sect'], args['angle'], '', args['id'])
     elif elem_type == 'TENSTR':
         Element.Tension(args['node'][0], args['node'][1], args['stype'], args['mat'], args['sect'], args['angle'], '', args['id'], non_len, cable_type, tens, t_limit)
     elif elem_type == 'COMPTR':
         Element.Compression(args['node'][0], args['node'][1], args['stype'], args['mat'], args['sect'], args['angle'], '', args['id'], tens, t_limit, non_len)
     elif elem_type == 'SOLID':
-        Element.Solid(nodes=args['node'], mat=args['mat'], sect=args['sect'],group='', id=args['id'])
+        Element.Solid(nodes=args['node'][:nNodes], mat=args['mat'], sect=args['sect'],group='', id=args['id'])
 
 
 class _helperELEM:
@@ -831,7 +830,9 @@ class Element():
         self.ANGLE = angle
         self.STYPE = stype
         self._GROUP = group
+        _n2 = nodeByID(j)
         self.LENGTH = _nodeDIST(nodeByID(i),nodeByID(j))
+        Element.lastLoc = (_n2.X,_n2.Y,_n2.Z)
         
         # Handle subtype-specific parameters
         if stype == 1:  # Tension-only specific
@@ -893,7 +894,9 @@ class Element():
             self.ANGLE = angle
             self.STYPE = stype
             self._GROUP = group
+            _n2 = nodeByID(j)
             self.LENGTH = _nodeDIST(nodeByID(i),nodeByID(j))
+            Element.lastLoc = (_n2.X,_n2.Y,_n2.Z)
             
             # Handle subtype-specific parameters
             if stype == 1:  # Compression-only specific

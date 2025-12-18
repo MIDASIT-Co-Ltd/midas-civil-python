@@ -272,88 +272,548 @@ class ResultGraphic:
         return json_body
     
     @staticmethod
-    def DisplacementContour(lcase_type:str,lcase_name:str,lcase_minmax:str="max",component:str='DXYZ') -> dict:
+    def DisplacementContour(lcase_type:str, lcase_name:str, lcase_minmax:str="Max", component:str="DXYZ", 
+                            th_option:str="Displacement", opt_local_check:bool=False) -> dict:
+        '''
+        Generates JSON for Displacement Contour Result Graphic.
+        
+        Args:
+            lcase_type (str): Load Case Type ("ST", "CS", "RS", "TH", "MV", "SM", "CB").
+            lcase_name (str): Load Case/Combination Name (e.g., "DL").
+            lcase_minmax (str): Load Type ("Max", "Min", "All"). Defaults to "Max".
+            component (str): Component Name ("DX", "DY", "DZ", "DXY", "DYZ", "DXZ", "DXYZ", "RX", "RY", "RZ", "RW"). Defaults to "DXYZ".
+            th_option (str): Time History Function Type ("Displacement", "Velocity", "Acceleration"). Defaults to "Displacement".
+            opt_local_check (bool): Use Node Local Axis (True) or Global Coord System (False). Defaults to False.
 
+        '''
         json_body = {
                 "CURRENT_MODE":"DisplacementContour",
                 "LOAD_CASE_COMB":{
                     "TYPE":lcase_type,
                     "NAME":lcase_name,
-                    "MINMAX" : lcase_minmax
+                    "MINMAX" : lcase_minmax,
+                    "STEP_INDEX": 1,
+                    "TH_OPTION": th_option
                 },
                 "COMPONENTS":{
                     "COMP":component,
-                    "OPT_LOCAL_CHECK" : False
+                    "OPT_LOCAL_CHECK" : opt_local_check
                 },
                 "TYPE_OF_DISPLAY":{
                     "CONTOUR": ResultGraphic.Contour._json(),
                     "DEFORM":ResultGraphic.Deform._json(),
                     "LEGEND":ResultGraphic.Legend._json(),
-                    "VALUES":{
-                        "OPT_CHECK":False
-                    }
+                    "VALUES": ResultGraphic.Values._json(),
+                    "UNDEFORMED": { "OPT_CHECK": False },
+                    "MIRRORED": { "OPT_CHECK": False },
+                    "CUTTING_DIAGRAM": { "OPT_CHECK": False },
+                    "OPT_CUR_STEP_DISPLACEMENT": True,
+                    "OPT_STAGE_STEP_REAL_DISPLACEMENT": True,
+                    "OPT_INCLUDING_CAMBER_DISPLACEMENT": True
                 }
             }
         
         return json_body
 
     @staticmethod
-    def Reaction(lcase_type:str,lcase_name:str,lcase_minmax:str="max",component:str='FXYZ') -> dict:
+    def ReactionForcesMoments(lcase_type:str, lcase_name:str, lcase_minmax:str="Max", component:str="FXYZ", 
+                                opt_local_check:bool=False, arrow_scale_factor:float=1.0) -> dict:
+        '''
+        Generates JSON for Reaction Forces/Moments Result Graphic.
+        
+        Args:
+            lcase_type (str): Load Case Type ("ST", "CS", "RS", "TH", "MV", "SM", "CB").
+            lcase_name (str): Load Case/Combination Name (e.g., "DL").
+            lcase_minmax (str): Load Type ("Max", "Min", "All"). Defaults to "Max".
+            component (str): Component Name ("FX", "FY", "FZ", "FXYZ", "MX", "MY", "MZ", "MXYZ", "Mb"). Defaults to "FXYZ".
+            opt_local_check (bool): Use Node Local Axis (True) or Global Coord System (False). Defaults to False.
+            arrow_scale_factor (float): Scale factor for reaction arrows. Defaults to 1.0.
 
+        '''
         json_body = {
                 "CURRENT_MODE":"ReactionForces/Moments",
                 "LOAD_CASE_COMB":{
                     "TYPE":lcase_type,
                     "NAME":lcase_name,
-                    "MINMAX" : lcase_minmax
+                    "MINMAX" : lcase_minmax,
+                    "STEP_INDEX": 1
                 },
                 "COMPONENTS":{
                     "COMP":component,
-                    "OPT_LOCAL_CHECK" : False
+                    "OPT_LOCAL_CHECK" : opt_local_check
                 },
                 "TYPE_OF_DISPLAY":{
-                    "CONTOUR": ResultGraphic.Contour._json(),
-                    "DEFORM":ResultGraphic.Deform._json(),
                     "LEGEND":ResultGraphic.Legend._json(),
-                    "VALUES":{
-                        "OPT_CHECK":False
-                    }
+                    "VALUES": ResultGraphic.Values._json(),
+                    "ARROW_SCALE_FACTOR": arrow_scale_factor
                 }
             }
         
         return json_body
 
     @staticmethod
-    def DeformedShap(lcase_type:str,lcase_name:str,lcase_minmax:str="max",component:str='FXYZ') -> dict:
+    def DeformedShape(lcase_type:str, lcase_name:str, lcase_minmax:str="Max", component:str="DZ", 
+                    th_option:str="Displacement", opt_local_check:bool=False) -> dict:
+        '''
+        Generates JSON for Deformed Shape Result Graphic.
+        
+        Args:
+            lcase_type (str): Load Case Type ("ST", "CS", "RS", "TH", "MV", "SM", "CB").
+            lcase_name (str): Load Case/Combination Name (e.g., "DL").
+            lcase_minmax (str): Load Type ("Max", "Min", "All"). Defaults to "Max".
+            component (str): Component Name ("DX", "DY", "DZ", "DXY", "DYZ", "DXZ", "DXYZ"). Defaults to "DZ".
+            th_option (str): Time History Function Type ("Displacement", "Velocity", "Acceleration"). Defaults to "Displacement".
+            opt_local_check (bool): Use Node Local Axis (True) or Global Coord System (False). Defaults to False.
 
+        '''
         json_body = {
-                "CURRENT_MODE":"DeformedShap",
+                "CURRENT_MODE":"DeformedShape",
                 "LOAD_CASE_COMB":{
                     "TYPE":lcase_type,
                     "NAME":lcase_name,
-                    "MINMAX" : lcase_minmax
+                    "MINMAX" : lcase_minmax,
+                    "STEP_INDEX": 1,
+                    "TH_OPTION": th_option
                 },
                 "COMPONENTS":{
                     "COMP":component,
-                    "OPT_LOCAL_CHECK" : False
+                    "OPT_LOCAL_CHECK" : opt_local_check
                 },
                 "TYPE_OF_DISPLAY":{
-                    "CONTOUR": ResultGraphic.Contour._json(),
                     "DEFORM":ResultGraphic.Deform._json(),
+                    "VALUES": ResultGraphic.Values._json(),
                     "LEGEND":ResultGraphic.Legend._json(),
-                    "VALUES":{
-                        "OPT_CHECK":False
-                    }
+                    "MIRRORED": { "OPT_CHECK": False },
+                    "UNDEFORMED": { "OPT_CHECK": True },
+                    "OPT_CUR_STEP_DISPLACEMENT": True,
+                    "OPT_STAGE_STEP_REAL_DISPLACEMENT": True,
+                    "OPT_INCLUDING_CAMBER_DISPLACEMENT": True
                 }
             }
         
         return json_body
 
+    @staticmethod
+    def BeamForcesMoments(lcase_type:str, lcase_name:str, lcase_minmax:str="Max",
+                          part:str="total", component:str="Fx") -> dict:
+        '''
+        Generates JSON for Beam Forces/Moments Result Graphic.
+        
+        Args:
+            lcase_type (str): Load Case Type ("ST", "CS", "RS", "TH", "MV", "SM", "CB").
+            lcase_name (str): Load Case/Combination Name (e.g., "dl").
+            lcase_minmax (str): Load Type ("Max", "Min", "All"). Defaults to "Max".
+            part (str): Component Part ("total", ...). Defaults to "total".
+            component (str): Component Name ("Fx", "Fy", "Fz", "Mx", "My", "Mz"). Defaults to "Fx".
+
+        '''
+        json_body = {
+            "CURRENT_MODE": "BeamForces/Moments",
+            "LOAD_CASE_COMB": {
+                "TYPE": lcase_type,
+                "MINMAX": lcase_minmax,
+                "NAME": lcase_name,
+                "STEP_INDEX": 1
+            },
+            "COMPONENTS": {
+                "PART": part,
+                "COMP": component,
+                "OPT_SHOW_TRUSS_FORCES": True
+            },
+            "TYPE_OF_DISPLAY": {
+                "CONTOUR": ResultGraphic.Contour._json(),
+                "DEFORM": ResultGraphic.Deform._json(),
+                "VALUES": ResultGraphic.Values._json(),
+                "LEGEND": ResultGraphic.Legend._json(),
+                "MIRRORED": { "OPT_CHECK": False },
+                "UNDEFORMED": { "OPT_CHECK": True },
+                "OPT_CUR_STEP_FORCE": False,
+                "YIELD_POINT": { "OPT_CHECK": False }
+            },
+            "OUTPUT_SECT_LOCATION": {
+                "OPT_I": True,
+                "OPT_CENTER_MID": True,
+                "OPE_J": True,
+                "OPT_BY_MEMBER": True
+            }
+        }
+        return json_body
+
+    @staticmethod
+    def MovingTracer_Reactions(lcase_name:str, key_node_elem:int, lcase_minmax:str="Max", 
+                         component:str="Fz", opt_local_check:bool=False) -> dict:
+        '''
+        Generates JSON for Moving Tracer Reactions Result Graphic.
+        
+        Args:
+            lcase_name (str): Load Case Name (e.g., "DB").
+            key_node_elem (int): Key Node or Element ID.
+            lcase_minmax (str): Load Type ("Max", "Min", "All"). Defaults to "Max".
+            component (str): Component Name ("FX", "FY", "FZ", "MX", "MY", "MZ", "Mb"). Defaults to "Fz".
+            opt_local_check (bool): Use Node Local Axis (True). Defaults to False.
+
+        '''
+        json_body = {
+            "CURRENT_MODE": "MVLTRC_Reactions",
+            "LOAD_CASE_COMB": {
+                "TYPE": "MV",
+                "MINMAX": lcase_minmax,
+                "NAME": lcase_name,
+                "KEY_NODE_ELEM": key_node_elem
+            },
+            "COMPONENTS": {
+                "COMP": component,
+                "OPT_LOCAL_CHECK": opt_local_check
+            },
+            "TYPE_OF_DISPLAY": {
+                "CONTOUR": ResultGraphic.Contour._json(),
+                "LEGEND": ResultGraphic.Legend._json(),
+                "APPLIED_LOADS": {
+                    "OPT_CHECK": True,
+                    "SCALE_FACTOR": 1.0,
+                    "OPT_LOAD_VALUES": False,
+                    "VALUE_TYPE": "Exponential",
+                    "VALUE_DECIMAL_PT": 1
+                },
+                "OPT_INCLUDE_IMPACT_FACTOR": True
+            }
+        }
+        return json_body
+
+    @staticmethod
+    def MovingTracer_Displacements(lcase_name:str, key_node_elem:int, lcase_minmax:str="Max",component:str="Dz") -> dict:
+        '''
+        Generates JSON for Moving Tracer Displacements Result Graphic.
+        
+        Args:
+            lcase_name (str): Load Case Name (e.g., "DB").
+            key_node_elem (int): Key Node or Element ID.
+            lcase_minmax (str): Load Type ("Max", "Min", "All"). Defaults to "Max".
+            component (str): Component Name ("DX", "DY", "DZ", "RX", "RY", "RZ", "RW"). Defaults to "Dz".
+        '''
+        json_body = {
+            "CURRENT_MODE": "MVLTRC_Displacements",
+            "LOAD_CASE_COMB": {
+                "TYPE": "MV",
+                "MINMAX": lcase_minmax,
+                "NAME": lcase_name,
+                "KEY_NODE_ELEM": key_node_elem
+            },
+            "COMPONENTS": {
+                "COMP": component
+            },
+            "TYPE_OF_DISPLAY": {
+                "CONTOUR": ResultGraphic.Contour._json(),
+                "LEGEND": ResultGraphic.Legend._json(),
+                "APPLIED_LOADS": {
+                    "OPT_CHECK": True,
+                    "SCALE_FACTOR": 1.0,
+                    "OPT_LOAD_VALUES": False,
+                    "VALUE_TYPE": "Exponential",
+                    "VALUE_DECIMAL_PT": 1
+                },
+                "OPT_INCLUDE_IMPACT_FACTOR": True
+            }
+        }
+        return json_body
+
+    @staticmethod
+    def MovingTracer_BeamForcesMoments(lcase_name:str, key_node_elem:int, lcase_minmax:str="Max", 
+                                 part:str="1/4", component:str="My") -> dict:
+        '''
+        Generates JSON for Moving Tracer Beam Forces/Moments Result Graphic.
+        
+        Args:
+            lcase_name (str): Load Case Name (e.g., "DB").
+            key_node_elem (int): Key Node or Element ID.
+            lcase_minmax (str): Load Type ("Max", "Min", "All"). Defaults to "Max".
+            part (str): Part location ("I", "1/4", "1/2", "3/4", "J"). Defaults to "1/4".
+            component (str): Component Name ("FX", "FY", "FZ", "MX", "MY", "MZ", "Mb", "Mt", "Mw"). Defaults to "My".
+
+        '''
+        json_body = {
+            "CURRENT_MODE": "MVLTRC_BeamForces/Moments",
+            "LOAD_CASE_COMB": {
+                "TYPE": "MV",
+                "MINMAX": lcase_minmax,
+                "NAME": lcase_name,
+                "KEY_NODE_ELEM": key_node_elem
+            },
+            "COMPONENTS": {
+                "PART": part,
+                "COMP": component
+            },
+            "TYPE_OF_DISPLAY": {
+                "CONTOUR": ResultGraphic.Contour._json(),
+                "LEGEND": ResultGraphic.Legend._json(),
+                "APPLIED_LOADS": {
+                    "OPT_CHECK": True,
+                    "SCALE_FACTOR": 1.0,
+                    "OPT_LOAD_VALUES": False,
+                    "VALUE_TYPE": "Exponential",
+                    "VALUE_DECIMAL_PT": 1
+                },
+                "OPT_INCLUDE_IMPACT_FACTOR": True
+            }
+        }
+        return json_body
+
+    @staticmethod
+    def VibrationModeShapes(mode_name:str, component:str="Md-XZ") -> dict:
+        '''
+        Generates JSON for Vibration Mode Shapes Result Graphic.
+        
+        Args:
+            mode_name (str): Mode Name (e.g., "Mode6").
+            component (str): Component Name ("Md-X", "Md-Y", "Md-Z", "Md-XY", "Md-YZ", "Md-XZ", "Md-XYZ"). Defaults to "Md-XZ".
+        '''
+        json_body = {
+            "CURRENT_MODE": "VibrationModeShapes",
+            "LOAD_CASE_COMB": {
+                "NAME": mode_name
+            },
+            "COMPONENTS": {
+                "COMP": component
+            },
+            "TYPE_OF_DISPLAY": {
+                "VALUES": ResultGraphic.Values._json(),
+                "MODE_SHAPE": { "OPT_CHECK": True },
+                "UNDEFORMED": { "OPT_CHECK": True },
+                "LEGEND": ResultGraphic.Legend._json(),
+                "CONTOUR": ResultGraphic.Contour._json()
+            }
+        }
+        return json_body
+
+    @staticmethod
+    def BucklingModeShapes(mode_name:str, component:str="Md-XYZ") -> dict:
+        '''
+        Generates JSON for Buckling Mode Shapes Result Graphic.
+        
+        Args:
+            mode_name (str): Mode Name (e.g., "Mode 2").
+            component (str): Component Name ("Md-X", "Md-Y", "Md-Z", "Md-XY", "Md-YZ", "Md-XZ", "Md-XYZ"). Defaults to "Md-XYZ".
+        '''
+        json_body = {
+            "CURRENT_MODE": "Buckling Mode Shapes",
+            "LOAD_CASE_COMB": {
+                "NAME": mode_name
+            },
+            "COMPONENTS": {
+                "COMP": component
+            },
+            "TYPE_OF_DISPLAY": {
+                "MODE_SHAPE": { "OPT_CHECK": True },
+                "VALUES": ResultGraphic.Values._json(),
+                "LEGEND": ResultGraphic.Legend._json(),
+                "CONTOUR": ResultGraphic.Contour._json() 
+            }
+        }
+        return json_body
+
+    @staticmethod
+    def PlateForcesMoments(lcase_type:str, lcase_name:str, lcase_minmax:str="Max",
+                           component:str="MMax", local_ucs_type:str="Local", avg_nodal_type:str="Element",
+                           wood_armer_pos:str="Top", wood_armer_dir:str="Dir.1",
+                           vector_opt_pos:bool=True, vector_opt_neg:bool=False) -> dict:
+        '''
+        Generates JSON for Plate Forces/Moments Result Graphic.
+
+        Args:
+            lcase_type (str): Load Case Type ("ST", "CS", ...).
+            lcase_name (str): Load Case/Combination Name.
+            lcase_minmax (str): Load Type ("Max", "Min", "All"). Defaults to "Max".
+            component (str): Component ("Fxx", "Mxx", "MMax", "WoodArmerMoment", "Mvector"). Defaults to "MMax".
+            local_ucs_type (str): Coordinate System ("Local", "UCS"). Defaults to "Local".
+            avg_nodal_type (str): Avg. Calculation ("Element", "Avg.Nodal"). Defaults to "Element".
+            wood_armer_pos (str): For "WoodArmerMoment" ("Top", "Bottom"). Defaults to "Top".
+            wood_armer_dir (str): For "WoodArmerMoment" ("Dir.1", "Dir.2"). Defaults to "Dir.1".
+            vector_opt_pos (bool): For "Mvector"/"Fvector" (Display Positive). Defaults to True.
+            vector_opt_neg (bool): For "Mvector"/"Fvector" (Display Negative). Defaults to False.
+
+        '''
+        
+        components_json = {"COMP": component}
+        if component == "WoodArmerMoment":
+            components_json["WOOD_ARMER_MOMENT_OPTION"] = {
+                "POSITION": wood_armer_pos,
+                "DIRECTION": wood_armer_dir
+            }
+        elif component in ["Mvector", "Fvector"]:
+            components_json["VECTOR_OPTION"] = {
+                "OPT_POSITIVE": vector_opt_pos,
+                "OPT_NEGATIVE": vector_opt_neg,
+                "SCALE_FACTOR_LENGTH": 1.0,
+                "SCALE_FACTOR_THICKNESS": 1
+            }
+
+        json_body = {
+            "CURRENT_MODE": "PlateForces/Moments",
+            "LOAD_CASE_COMB": {
+                "TYPE": lcase_type,
+                "MINMAX": lcase_minmax,
+                "NAME": lcase_name,
+                "STEP_INDEX": 1
+            },
+            "OPTIONS": {
+                "LOCAL_UCS": {
+                    "TYPE": local_ucs_type
+                    # Can be expanded to include UCS_NAME, OPT_PRINT_UCS_AXIS
+                },
+                "AVERAGE_NODAL": {
+                    "TYPE": avg_nodal_type
+                    # Can be expanded to include OPT_ACTIVE_ONLY
+                }
+            },
+            "COMPONENTS": components_json,
+            "TYPE_OF_DISPLAY": {
+                "CONTOUR": ResultGraphic.Contour._json(),
+                "DEFORM": ResultGraphic.Deform._json(),
+                "UNDEFORMED": { "OPT_CHECK": True },
+                "VALUES": ResultGraphic.Values._json(),
+                "LEGEND": ResultGraphic.Legend._json()
+            }
+        }
+        return json_body
+
+    @staticmethod
+    def TrussStresses(lcase_type:str, lcase_name:str, component:str="All",
+                      output_loc:str="All") -> dict:
+        '''
+        Generates JSON for Truss Stresses Result Graphic.
+        
+        Args:
+            lcase_type (str): Load Case Type ("ST", "CS", ...).
+            lcase_name (str): Load Case/Combination Name.
+            component (str): Component ("All", "Tens.", "Comp."). Defaults to "All".
+            output_loc (str): Output Section Location ("I", "J", "Max", "All"). Defaults to "All".
+        '''
+        json_body = {
+            "CURRENT_MODE": "TrussStresses",
+            "LOAD_CASE_COMB": {
+                "TYPE": lcase_type,
+                "NAME": lcase_name,
+                "STEP_INDEX": 1
+            },
+            "COMPONENTS": {
+                "COMP": component
+            },
+            "TYPE_OF_DISPLAY": {
+                "CONTOUR": ResultGraphic.Contour._json(),
+                "VALUES": ResultGraphic.Values._json(),
+                "DEFORM": ResultGraphic.Deform._json(),
+                "LEGEND": ResultGraphic.Legend._json()
+            },
+            "OUTPUT_SECT_LOCATION": {
+                "OPT_I_J_MAX_ALL": output_loc
+            }
+        }
+        return json_body
+
+    @staticmethod
+    def BeamStresses(lcase_type:str, lcase_name:str, part:str="Total", 
+                     component:str="Combined", comp_sub:str="Maximum", output_loc:str="Max",
+                     comp_7th_dof:str="Combined(Ssy)") -> dict:
+        '''
+        Generates JSON for Beam Stresses Result Graphic.
+        
+        Args:
+            lcase_type (str): Load Case Type ("ST", "CS", ...).
+            lcase_name (str): Load Case/Combination Name.
+            part (str): Part Name. Defaults to "Total".
+            component (str): Component ("Sax", "Ssy", "Ssz", "Sby", "Sbz", "Combined", "7thDOF"). Defaults to "Combined".
+            comp_sub (str): Sub-component ("Maximum", "1(-y,+z)", ...). Defaults to "Maximum".
+            output_loc (str): Output Section Location ("Max", "All"). Defaults to "Max".
+            comp_7th_dof (str): 7th DOF Component ("Sax(Warping)", "Combined(Ssy)", ...). Defaults to "Combined(Ssy)".
+
+        '''
+        
+        components_json = {
+            "PART": part,
+            "COMP": component,
+            "COMP_SUB": comp_sub
+        }
+        if component == "7thDOF":
+            components_json["COMP_7TH_DOF"] = comp_7th_dof
+
+        json_body = {
+            "CURRENT_MODE": "BeamStresses",
+            "LOAD_CASE_COMB": {
+                "TYPE": lcase_type,
+                "NAME": lcase_name,
+                "STEP_INDEX": 1
+            },
+            "COMPONENTS": components_json,
+            "TYPE_OF_DISPLAY": {
+                "CONTOUR": ResultGraphic.Contour._json(),
+                "VALUES": ResultGraphic.Values._json(),
+                "DEFORM": ResultGraphic.Deform._json(),
+                "LEGEND": ResultGraphic.Legend._json()
+            },
+            "OUTPUT_SECT_LOCATION": {
+                "OPT_MAX_ALL": output_loc
+            }
+        }
+        return json_body
+
+    @staticmethod
+    def BeamStressesDiagram(lcase_type:str, lcase_name:str, part:str="Total", 
+                            component:str="Combined", comp_sub:str="Maximum", output_loc:str="all",
+                            comp_7th_dof:str="Combined(Ssy)", fill:str="Solid", scale:float=1.0) -> dict:
+        '''
+        Generates JSON for Beam Stresses Diagram Result Graphic.
+        
+        Args:
+            lcase_type (str): Load Case Type ("ST", "CS", ...).
+            lcase_name (str): Load Case/Combination Name.
+            part (str): Part Name. Defaults to "Total".
+            component (str): Component ("Sax", "Ssy", "Ssz", "Sby", "Sbz", "Combined", "7thDOF"). Defaults to "Combined".
+            comp_sub (str): Sub-component ("Maximum", "1(-y,+z)", ...). Defaults to "Maximum".
+            output_loc (str): Output Section Location ("Max", "MinMax", "all"). Defaults to "all".
+            comp_7th_dof (str): 7th DOF Component ("Sax(Warping)", "Combined(Ssy)", ...). Defaults to "Combined(Ssy)".
+            fill (str): Fill of Diagram ("No", "Line", "Solid"). Defaults to "Solid".
+            scale (float): Scale of Diagram. Defaults to 1.0.
+
+        '''
+        
+        components_json = {
+            "PART": part,
+            "COMP": component,
+            "COMP_SUB": comp_sub
+        }
+        if component == "7thDOF":
+            components_json["COMP_7TH_DOF"] = comp_7th_dof
+
+        json_body = {
+            "CURRENT_MODE": "BeamStressesDiagram",
+            "LOAD_CASE_COMB": {
+                "TYPE": lcase_type,
+                "NAME": lcase_name,
+                "STEP_INDEX": 1
+            },
+            "COMPONENTS": components_json,
+            "DISPLAY_OPTIONS": {
+                "SCALE": scale,
+                "FILL": fill
+            },
+            "TYPE_OF_DISPLAY": {
+                "CONTOUR": ResultGraphic.Contour._json(),
+                "VALUES": ResultGraphic.Values._json(),
+                "DEFORM": ResultGraphic.Deform._json(),
+                "LEGEND": ResultGraphic.Legend._json()
+            },
+            "OUTPUT_SECT_LOCATION": {
+                "OPT_MAX_MINMAX_ALL": output_loc
+            }
+        }
+        return json_body
+
+
 class Image:
     @staticmethod
-    def Capture(location:str="",img_w:int = 1280 , img_h:int = 720,view:str='pre',CS_StageName:str='') -> None:
+    def Capture(location,img_w = 1280 , img_h = 720,view='pre',CS_StageName:str=''):
         ''' 
-        Capture the image in the viewport and saves at shown location
+        Capture the image in the viewport
             Location - image location
             Image height and width
             View - 'pre' or 'post'
@@ -383,14 +843,15 @@ class Image:
             json_body['Argument']['STAGE_NAME'] = CS_StageName
 
         resp = MidasAPI('POST','/view/CAPTURE',json_body)
-        if location:
-            bs64_img = resp["base64String"]
-            decode = open(location, 'wb')  # Open image file to save.
-            decode.write(b64decode(bs64_img))  # Decode and write data.
-            decode.close()
+
+        bs64_img = resp["base64String"]
+        decode = open(location, 'wb')  # Open image file to save.
+        decode.write(b64decode(bs64_img))  # Decode and write data.
+        decode.close()
+        return resp
 
     @staticmethod
-    def CaptureResults(ResultGraphic:ResultGraphic,location:str,img_w:int = 1280 , img_h:int = 720,CS_StageName:str=''):
+    def CaptureResults(ResultGraphic:dict,location:str,img_w:int = 1280 , img_h:int = 720,CS_StageName:str=''):
         ''' 
         Capture Result Graphic in CIVIL NX   
             Result Graphic - ResultGraphic JSON (ResultGraphic.BeamDiagram())
@@ -402,6 +863,7 @@ class Image:
                 "Argument":{
                     "SET_MODE":"post",
                     "SET_HIDDEN":View.Hidden,
+                    "EXPORT_PATH":location,
                     "HEIGHT":img_h,
                     "WIDTH":img_w,
                     "RESULT_GRAPHIC": ResultGraphic
@@ -422,3 +884,4 @@ class Image:
         decode = open(location, 'wb')  # Open image file to save.
         decode.write(b64decode(bs64_img))  # Decode and write data.
         decode.close()
+        return resp

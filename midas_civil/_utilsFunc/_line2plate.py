@@ -1,18 +1,10 @@
-import numpy as np
 # from midas_civil import *
 from midas_civil import MidasAPI,Node,Element,Boundary,Thickness,Section,Model
 from colorama import Fore,Style
-import math
-from scipy.interpolate import splev, splprep
-from math import hypot
+import numpy as np
+from math import hypot , sin , cos
 from tqdm import tqdm
 
-# NX.version_check = False
-# NX.user_print = False
-# MAPI_BASEURL('http://localhost:3000/civil')
-# MAPI_KEY('eyJ1ciI6InN1bWl0QG1pZGFzaXQuY29tIiwicGciOiJjaXZpbCIsImNuIjoiaXpwMnpENVVSZyJ9.d3bd3dae76e28f245958130bc44312e3ed5449f4e8d67f988b29f1f20a6055aa')
-# MAPI_KEY('i_LGyGvPRjKzUB0_ZKh03A')
-# NX.debug_request = True
 class L2P:
     first = 0
     nDivMESH =[]
@@ -198,8 +190,8 @@ def _createSectNodes(section_cordinates,plane_axis,plane_origin,beta_ang=0):
 
     for cord in section_cordinates:
 
-        X = cord[0]*math.cos(beta_ang) - cord[1]*math.sin(beta_ang)
-        Y = cord[1]*math.cos(beta_ang) + cord[0]*math.sin(beta_ang)
+        X = cord[0]*cos(beta_ang) - cord[1]*sin(beta_ang)
+        Y = cord[1]*cos(beta_ang) + cord[0]*sin(beta_ang)
 
         ord = _orientPoint(plane_axis,plane_origin,[X,Y])    # Cord is 2D ; ord is 3D
         node_ids.append(Node(ord[0],ord[1],ord[2]).ID)
@@ -272,6 +264,7 @@ def createTapPlateAlign(align_points,t_param,beta_angle,Section4Plate,rigid_LNK 
 
 def interpolateAlignment(pointsArray,betaAngle,n_seg=10,deg=3,mSize=0):
     ''' Returns point list and beta angle list'''
+    from scipy.interpolate import splev, splprep
     pointsArray = np.array(pointsArray)
     x_p, y_p , z_p  = pointsArray[:,0] , pointsArray[:,1] , pointsArray[:,2]
     ang_p = betaAngle
@@ -516,7 +509,7 @@ def getCGdata():
 
 def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList):
     # ORIGINAL ALIGNMENT
-    pbar = tqdm(total=14,desc="Converting Line to Plate ")
+    pbar = tqdm(total=15,desc="Converting Line to Plate ")
 
     pbar.update(1)
     pbar.set_description_str("Updating Units...")
@@ -593,6 +586,13 @@ def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList):
     pbar.set_description_str("Getting existing Thickness data...")
     Thickness.clear()
     Thickness.ids = [Model.maxID('THIK')]
+
+    if bRigdLnk:
+        pbar.update(1)
+        pbar.set_description_str("Getting existing Rigid Link data...")
+        Boundary.RigidLink.clear()
+        Boundary.RigidLink.ids = [Model.maxID('RIGD')]
+
 
     # Boundary.RigidLink
     # Boundary.RigidLink.sync()

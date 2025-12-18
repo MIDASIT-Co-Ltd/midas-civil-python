@@ -116,6 +116,7 @@ class _SS_PSC_12CELL(_common):
                             offset,uShear,u7DOF,id)
     
     def _centerLine(shape,*args):
+        import numpy as np
         if shape.SHAPE in ['1CEL','2CEL'] :
             HO1,HO2,HO21,HO22,HO3,HO31 = shape.HO1,shape.HO2,shape.HO21,shape.HO22,shape.HO3,shape.HO31
             BO1,BO11,BO12,BO2,BO21,BO3 = shape.BO1,shape.BO11,shape.BO12,shape.BO2,shape.BO21,shape.BO3
@@ -675,8 +676,9 @@ class _SS_PSC_I(_common):
 
 
 
-import numpy as np
+
 def _poly_dir(poly,rot='CCW'):
+    import numpy as np
     outer_cg = np.mean(poly,axis=0)
     outer_t = np.subtract(poly,outer_cg)
     dir = 0
