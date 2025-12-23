@@ -26,6 +26,10 @@ class NX:
     onlyNode = False
     visualiser = False
 
+    def saveJSON(jsonData,fileLocation = "jsData.json"):
+        import json
+        with open(fileLocation, "w", encoding="utf-8") as f:
+            json.dump(jsonData, f, indent=4, ensure_ascii=False)
     
 
 class MAPI_COUNTRY:

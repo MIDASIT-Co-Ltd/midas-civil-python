@@ -36,7 +36,7 @@ import numpy as np
 
 def sFlatten(list_of_list):
     # list_of_list = [list_of_list]
-    return [item for elem in list_of_list for item in (elem if isinstance(elem, list) else [elem])]
+    return [item for elem in list_of_list for item in (elem if isinstance(elem, (list,np.ndarray)) else [elem])]
 
 # def getID_orig(element_list):
 #     """Return ID of Node and Element"""
@@ -54,7 +54,16 @@ def _getID2(objects):
         else:
             objects[i] = objects[i].ID
 
+def getLOC(objects):
+    _getLOC2(objects)
+    return objects
 
+def _getLOC2(objects):
+    for i in range(len(objects)):
+        if isinstance(objects[i], list):
+            _getLOC2(objects[i])  # Recursive call for sublist
+        else:
+            objects[i] = objects[i].LOC
 
 def getNodeID(*objects):
     objects = list(objects)

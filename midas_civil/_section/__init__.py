@@ -8,7 +8,9 @@ from ._TapdbSecSS import _SS_TAPERED_DBUSER
 from ._tapPSC12CellSS import _SS_TAP_PSC_12CELL
 
 from midas_civil import MidasAPI
+from typing import Literal
 
+_dbsection = Literal["L","C","H","T","B","P","2L","2C","SB","SR","OCT"]
 
 class _helperSECTION:
     ID, NAME, SHAPE, TYPE, OFFSET, USESHEAR, USE7DOF = 0,0,0,0,0,0,0
@@ -20,9 +22,9 @@ class _helperSECTION:
 
 def _SectionADD(self):
     # Commom HERE ---------------------------------------------
+    if self.ID==None: id = 0
+    else: id = int(self.ID)
     
-    id = int(self.ID)
-    if id==None: id = 0
     
     if Section.ids == []: 
         count = 1
@@ -158,7 +160,7 @@ class Section:
 
     #---------------------     D B   U S E R    --------------------
     @staticmethod
-    def DBUSER(Name='',Shape='',parameters:list=[],Offset=Offset(),useShear=True,use7Dof=False,id:int=None): 
+    def DBUSER(Name='',Shape:_dbsection='',parameters:list=[],Offset=Offset(),useShear=True,use7Dof=False,id:int=None): 
         args = locals()
         sect_Obj = _SS_DBUSER(**args)
         _SectionADD(sect_Obj)

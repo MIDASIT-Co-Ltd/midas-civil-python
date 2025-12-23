@@ -2,6 +2,9 @@ from ._mapi import MidasAPI
 # from ._model import *
 from ._node import Node
 from ._group import Group
+from typing import Union
+
+
 
 def convList(item):
         if type(item)!=list:
@@ -64,7 +67,7 @@ class Boundary:
         """Create Support Object in Python \n\nNode ID, Constraint, Boundary Group.  Sample: Support(3, "1110000") or Support(3, "pin").  \nValid inputs for DOF are 1s and 0s or "pin", "fix", "free" (no capital letters).  
         \nIf more than 7 characters are entered, then only first 7 characters will be considered to define constraint."""
         sups = []
-        def __init__(self, node, constraint, group = ""):
+        def __init__(self, nodeID:int, constraint:str, group:str = ""):
             if not isinstance(constraint, str): constraint = str(constraint)
             if constraint == "pin": constraint = "111"
             if constraint == "fix": constraint = "1111111"
@@ -82,7 +85,7 @@ class Boundary:
                 if chk == 0:
                     Group.Boundary(group)
 
-            self.NODE = node
+            self.NODE = nodeID
             self.CONST = string
             self.GROUP = group
             self.ID = len(Boundary.Support.sups) + 1
@@ -397,12 +400,12 @@ class Boundary:
                         link_data["NODE"][0],
                         link_data["NODE"][1],
                         link_data.get("BNGR_NAME"),
-                        int(link_id),
                         link_data["LINK"],
                         sdx, sdy, sdz, srx, sry, srz,
                         shear, dr_y, dr_z,
                         link_data.get("ANGLE"),
-                        direction, func_id, distance_ratio
+                        direction, func_id, distance_ratio,
+                        int(link_id)
                     )
         
         @classmethod
@@ -532,7 +535,7 @@ class Boundary:
                 for i in a['RIGD'].keys():
                     for j in range(len(a['RIGD'][i]['ITEMS'])):
                         itm = a['RIGD'][i]['ITEMS'][j]
-                        Boundary.RigidLink(int(i),itm['S_NODE'],itm['GROUP_NAME'],itm['ID'],itm['DOF'])
+                        Boundary.RigidLink(int(i),itm['S_NODE'],itm['GROUP_NAME'],itm['DOF'],itm['ID'])
         
         @classmethod
         def delete(cls):
@@ -837,8 +840,8 @@ class Boundary:
                             direction_str = dir_map.get(0, "Dx+")  # Default for LINEAR
                             
                             Boundary.PointSpring(
-                                int(node_id), spring_type, group_name, spring_id,
-                                stiffness, fixed_option, damping, direction_str
+                                int(node_id), spring_type, group_name, 
+                                stiffness, fixed_option, damping, direction_str,spring_id
                             )
                             
                         elif spring_type in ["COMP", "TENS"]:
@@ -851,8 +854,8 @@ class Boundary:
                             direction_str = dir_map.get(direction_int, "Dx+")
                             
                             Boundary.PointSpring(
-                                int(node_id), spring_type, group_name, spring_id,
-                                stiffness, None, None, direction_str, normal_vector
+                                int(node_id), spring_type, group_name, 
+                                stiffness, None, None, direction_str, normal_vector,spring_id
                             )
                             
                         elif spring_type == "MULTI":
@@ -865,8 +868,8 @@ class Boundary:
                             direction_str = dir_map.get(direction_int, "Dx+")
                             
                             Boundary.PointSpring(
-                                int(node_id), spring_type, group_name, spring_id,
-                                None, None, None, direction_str, normal_vector, function_id
+                                int(node_id), spring_type, group_name, 
+                                None, None, None, direction_str, normal_vector, function_id,spring_id
                             )
         
         @classmethod

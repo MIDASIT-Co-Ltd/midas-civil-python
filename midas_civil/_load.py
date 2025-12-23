@@ -4,6 +4,10 @@ from ._element import elemByID
 import numpy as np
 from typing import Literal
 
+_presDir = Literal['LX','LY','LZ','GX','GY','GZ','VECTOR']
+_beamLoadDir = Literal['LX','LY','LZ','GX','GY','GZ']
+_beamLoadType = Literal['CONLOAD','CONMOMENT','UNILOAD','UNIMOMENT']
+_lineDistType = Literal['Abs','Rel']
 # -----  Extend for list of nodes/elems -----
 
 def _ADD_NodalLoad(self):
@@ -26,8 +30,8 @@ def _ADD_BeamLoad(self):
         Load.Beam.data.append(self)
     elif isinstance(self.ELEMENT,list):
         for eID in self.ELEMENT:
-            Load.Beam(eID,self.LCN,self.LDGR,self.VALUE,self.DIRECTION,self.ID,self.D,self.P,self.CMD,self.TYPE,self.USE_ECCEN,self.USE_PROJECTION,
-                      self.ECCEN_DIR,self.ECCEN_TYPE,self.IECC,self.JECC,self.USE_H,self.I_H,self.J_H)
+            Load.Beam(eID,self.LCN,self.LDGR,self.VALUE,self.DIRECTION,self.D,self.P,self.CMD,self.TYPE,self.USE_ECCEN,self.USE_PROJECTION,
+                      self.ECCEN_DIR,self.ECCEN_TYPE,self.IECC,self.JECC,self.USE_H,self.I_H,self.J_H,self.ID)
 
 
 
@@ -305,11 +309,11 @@ class Load:
     #19 Class to define Beam Loads:
     class Beam:
         data = []
-        def __init__(self, element, load_case: str, load_group: str = "", value: float=0, direction: str = "GZ",
-             D = [0, 1, 0, 0], P = [0, 0, 0, 0], cmd = "BEAM", typ = "UNILOAD", use_ecc = False, use_proj = False,
+        def __init__(self, element:int, load_case: str, load_group: str = "", value: float=0, direction:_beamLoadDir = "GZ",
+             D:list = [0, 1, 0, 0], P = [0, 0, 0, 0], cmd = "BEAM", typ:_beamLoadType = "UNILOAD", use_ecc = False, use_proj = False,
             eccn_dir = "LY", eccn_type = 1, ieccn = 0, jeccn = 0, adnl_h = False, adnl_h_i = 0, adnl_h_j = 0,id = None): 
             """
-            element: Element Number 
+            element: Element ID or list of Element IDs 
             load_case (str): Load case name
             load_group (str, optional): Load group name. Defaults to ""
             value (float): Load value
@@ -340,8 +344,6 @@ class Load:
                 a = [v['NAME'] for v in Group.Load.json()["Assign"].values()]
                 if load_group in a: chk = 1
                 if chk == 0: Group.Load(load_group)
-
-
             D = (D + [0] * 4)[:4]
             P = (P + [0] * 4)[:4]
             if P == [0, 0, 0, 0]: P = [value, value, 0, 0]
@@ -796,9 +798,9 @@ class Load:
                             item['ID']
                         )
     class Line:
-        def __init__(self, element_ids, load_case: str, load_group: str = "", D = [0, 1, 0, 0], P = [0, 0, 0, 0], direction: str = "GZ",
-            id = "", typ = "CONLOAD", use_ecc = False, use_proj = False,
-            eccn_dir = "LY", eccn_type = 1, ieccn = 0, jeccn = 0, adnl_h = False, adnl_h_i = 0, adnl_h_j = 0) :
+        def __init__(self, element_ids, load_case: str, load_group: str = "", D = [0, 1], P = [0, 0], direction:_beamLoadDir = "GZ",
+            type:_beamLoadType = "UNILOAD", distType:_lineDistType='Abs',use_ecc = False, use_proj = False,
+            eccn_dir:_beamLoadDir = "LY", eccn_type = 1, ieccn = 0, jeccn = 0, adnl_h = False, adnl_h_i = 0, adnl_h_j = 0,id = None) :
 
             elem_IDS = []
             elem_LEN = []
@@ -811,9 +813,12 @@ class Load:
                     # print(f"ID = {eID} LEN = {elm_len}")
                 except: pass
             cum_LEN = np.insert(np.cumsum(elem_LEN),0,0)
+            tot_LEN = cum_LEN[-1]
 
+            if distType == 'Rel':
+                D = np.array(D)*tot_LEN
 
-            if typ == 'CONLOAD':
+            if type == 'CONLOAD':
                 for i in range(len(D)):
                     for q in range(len(cum_LEN)):
                         if D[i] >= 0:
@@ -822,42 +827,45 @@ class Load:
                                 rel_loc = (D[i] - cum_LEN[q-1]) / elem_LEN[q-1]
                                 # print(f"Relative location = {rel_loc}")
                                 Load.Beam(element=elem_IDS[q-1],load_case=load_case,load_group=load_group,D=[rel_loc],P=[P[i]],direction=direction,
-                                        id = id, typ = "CONLOAD", use_ecc = use_ecc, use_proj = use_proj,
-                                        eccn_dir = eccn_dir, eccn_type = eccn_type, ieccn = ieccn, jeccn = jeccn, adnl_h = adnl_h, adnl_h_i = adnl_h_i, adnl_h_j = adnl_h_j)
-                                break 
+                                        typ = "CONLOAD", use_ecc = use_ecc, use_proj = use_proj,
+                                        eccn_dir = eccn_dir, eccn_type = eccn_type, ieccn = ieccn, jeccn = jeccn, adnl_h = adnl_h, adnl_h_i = adnl_h_i, adnl_h_j = adnl_h_j,id=id)
+                                break
+                if D[-1] == tot_LEN:
+                    Load.Beam(element=elem_IDS[-1],load_case=load_case,load_group=load_group,D=[1,0,0,0],P=[P[-1]],direction=direction,
+                                        typ = "CONLOAD", use_ecc = use_ecc, use_proj = use_proj,
+                                        eccn_dir = eccn_dir, eccn_type = eccn_type, ieccn = ieccn, jeccn = jeccn, adnl_h = adnl_h, adnl_h_i = adnl_h_i, adnl_h_j = adnl_h_j,id=id) 
             
-            if typ == 'UNILOAD':
-                D = D[:2]
-                P = P[:2]
-                elms_indx = []
-                for i in range(2):
-                    for q in range(len(cum_LEN)):
-                        if D[i] < cum_LEN[q] :
-                            # print(f'LOADING ELEMENT at {D[i]}m = {elem_IDS[q-1]}')
-                            elms_indx.append(q-1)
-                            # rel_loc = (D[i] - cum_LEN[q-1]) / elem_LEN[q-1]
-                            break 
-                if len(elms_indx)==1: elms_indx.append(len(cum_LEN)-2)
-                # print(f"INDEXs = {elms_indx}")
-                # print("-"*10)
-                # print(f"INDEXs = {elms_indx}")
-                # print("-"*10)
-                if elms_indx != []:
-                    for i in range(elms_indx[0],elms_indx[1]+1):
+            if type == 'UNILOAD':
+                n_req = len(D)-1
+                D_orig = D
+                P_orig = P
+                for k in range(n_req):      
+                    D = D_orig[0+k:2+k]
+                    P = P_orig[0+k:2+k]
+                    elms_indx = []
+                    for i in range(2):
+                        for q in range(len(cum_LEN)):
+                            if D[i] < cum_LEN[q] :
+                                # print(f'LOADING ELEMENT at {D[i]}m = {elem_IDS[q-1]}')
+                                elms_indx.append(q-1)
+                                # rel_loc = (D[i] - cum_LEN[q-1]) / elem_LEN[q-1]
+                                break 
+                    if len(elms_indx)==1: elms_indx.append(len(cum_LEN)-2)
+                    if elms_indx != []:
+                        for i in range(elms_indx[0],elms_indx[1]+1):
+                            rel1 = float((max(D[0],cum_LEN[i]) - cum_LEN[i]) / elem_LEN[i])
+                            rel2 = float((min(D[1],cum_LEN[i+1]) - cum_LEN[i]) / elem_LEN[i])
 
-                        rel1 = (max(D[0],cum_LEN[i]) - cum_LEN[i]) / elem_LEN[i]
-                        rel2 = (min(D[1],cum_LEN[i+1]) - cum_LEN[i]) / elem_LEN[i]
+                            p1 = float(P[0]+(max(D[0],cum_LEN[i])-D[0])*(P[1]-P[0])/(D[1]-D[0]))
+                            p2 = float(P[0]+(min(D[1],cum_LEN[i+1])-D[0])*(P[1]-P[0])/(D[1]-D[0]))
+                            if rel2-rel1 == 0: continue
+                            
 
-                        p1 = P[0]+(max(D[0],cum_LEN[i])-D[0])*(P[1]-P[0])/(D[1]-D[0])
-                        p2 = P[0]+(min(D[1],cum_LEN[i+1])-D[0])*(P[1]-P[0])/(D[1]-D[0])
-                        if rel2-rel1 == 0: continue
-                        
-
-                        # print(f"Loading ELEM -> {elem_IDS[i]} , D1 = {rel1} , P1 = {p1} | D2 = {rel2} , P2 = {p2}")
-                        # Load.Beam(elem_IDS[i],load_case,load_group,D=[rel1,rel2],P=[p1,p2],typ=typ,direction=direction)
-                        Load.Beam(element=elem_IDS[i],load_case=load_case,load_group=load_group,D=[rel1,rel2],P=[p1,p2],direction=direction,
-                                        id = id, typ = "UNILOAD", use_ecc = use_ecc, use_proj = use_proj,
-                                        eccn_dir = eccn_dir, eccn_type = eccn_type, ieccn = ieccn, jeccn = jeccn, adnl_h = adnl_h, adnl_h_i = adnl_h_i, adnl_h_j = adnl_h_j)
+                            # print(f"Loading ELEM -> {elem_IDS[i]} , D1 = {rel1} , P1 = {p1} | D2 = {rel2} , P2 = {p2}")
+                            # Load.Beam(elem_IDS[i],load_case,load_group,D=[rel1,rel2],P=[p1,p2],typ=typ,direction=direction)
+                            Load.Beam(element=elem_IDS[i],load_case=load_case,load_group=load_group,D=[rel1,rel2],P=[p1,p2],direction=direction,
+                                            typ = "UNILOAD", use_ecc = use_ecc, use_proj = use_proj,
+                                            eccn_dir = eccn_dir, eccn_type = eccn_type, ieccn = ieccn, jeccn = jeccn, adnl_h = adnl_h, adnl_h_i = adnl_h_i, adnl_h_j = adnl_h_j,id = id)
 
                         
 
@@ -866,7 +874,7 @@ class Load:
         
         """
         data = []
-        def __init__(self, element:list, load_case:str, load_group:str = "", D:Literal['LX','LY','LZ','GX','GY','GZ','VECTOR']='LZ', P:list=0, VectorDir:list = [1,0,0],bProjection:bool = False,id:int = None):
+        def __init__(self, element:list, load_case:str, load_group:str = "", D:_presDir='LZ', P:list=0, VectorDir:list = [1,0,0],bProjection:bool = False,id:int = None):
 
 
             chk = 0

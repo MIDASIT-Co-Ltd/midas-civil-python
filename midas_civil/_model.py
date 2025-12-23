@@ -18,6 +18,7 @@ from ._temperature import Temperature
 from ._construction import CS
 
 from collections import defaultdict
+from typing import Literal
 class Model:
 
     #4 Function to check analysis status & perform analysis if not analyzed
@@ -83,8 +84,13 @@ class Model:
             for i in elem_di.keys():
                 Element(elem_di[i], i)
 
+    _forceType = Literal["KN", "N", "KGF", "TONF", "LBF", "KIPS"]
+    _lengthType = Literal["M", "CM", "MM", "FT", "IN"]
+    _heatType = Literal["CAL", "KCAL", "J", "KJ", "BTU"]
+    _tempType = Literal["C","F"]
+    
     @staticmethod
-    def units(force = "KN",length = "M", heat = "BTU", temp = "C"):
+    def units(force:_forceType = "KN",length:_lengthType = "M", heat:_heatType = "BTU", temp:_tempType = "C"):
         """force --> KN, N, KFG, TONF, LFB, KIPS ||  
         \ndist --> M, CM, MM, FT, IN ||  
         \nheat --> CAL, KCAL, J, KJ, BTU ||  

@@ -173,9 +173,9 @@ def _orientPoint(plane_ax,plane_og,coord):
 
     Y_new = np.cross(Z_new, X_new) # Recomputing
 
-    X_new = X_new / np.linalg.norm(X_new)
-    Y_new = Y_new / np.linalg.norm(Y_new)
-    Z_new = Z_new / np.linalg.norm(Z_new)
+    X_new = np.round(X_new / np.linalg.norm(X_new),3)
+    Y_new = np.round(Y_new / np.linalg.norm(Y_new),3)
+    Z_new = np.round(Z_new / np.linalg.norm(Z_new),3)
 
     # Rotation matrix: columns are new basis vectors in original system
     R = np.vstack((X_new, Y_new, Z_new))
@@ -270,7 +270,7 @@ def createTapPlateAlign(align_points,t_param,beta_angle,Section4Plate,rigid_LNK 
 
 # 3 . ------------------  Smooth Alignment creation ------------------
 
-def interpolateAlignment(pointsArray,betaAngle,n_seg=10,deg=3,mSize=0):
+def interpolateAlignment(pointsArray,betaAngle,n_seg=10,deg=2,mSize=0):
     ''' Returns point list and beta angle list'''
     from scipy.interpolate import splev, splprep
     pointsArray = np.array(pointsArray)
@@ -286,6 +286,7 @@ def interpolateAlignment(pointsArray,betaAngle,n_seg=10,deg=3,mSize=0):
     for i in range(len(dxq)):
         dlq.append(hypot(dxq[i],dyq[i],dzq[i]))
 
+    deg = min(deg,len(pointsArray)-1)
     tck, u = splprep([x_p, y_p, z_p, ang_p], s=0, k=deg)
 
     u_fine = np.linspace(0, 1, 200)
@@ -552,9 +553,6 @@ def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList):
     thk_off_arr =[]
     lin =[]
     
-    sect_dic = {}
-    sect_ids = []
-
     align_sectID_list_sorted.insert(0, align_sectID_list_sorted[0])  # ADD first section again to match node count
                     
     for Sid in align_sectID_list_sorted:
@@ -588,7 +586,8 @@ def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList):
     pbar.update(1)
     pbar.set_description_str("Getting existing Element data...")
     Element.clear()
-    Element.ids = [Model.maxID('ELEM')]
+    # Element.ids = [Model.maxID('ELEM')]
+    Element.maxID = Model.maxID('ELEM')
 
     pbar.update(1)
     pbar.set_description_str("Getting existing Thickness data...")

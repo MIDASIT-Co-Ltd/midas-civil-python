@@ -8,6 +8,47 @@ from ._utils import _convItem2List , _longestList,sFlatten
 from colorama import Fore,Style
 from typing import Literal
 
+_meshType = Literal['Quad','Tri']
+
+def _createSurface(points,mSize,tagID):
+    import gmsh
+    final_points, num_points = _dividePoints(points,mSize)
+    
+    point_tags = []
+    for pt in final_points:
+        # print(pt)
+        point_tags.append(gmsh.model.occ.addPoint(pt[0],pt[1],pt[2],mSize))
+
+    line_tags = []
+    for i in range(num_points):
+        start = point_tags[i]  
+        end = point_tags[(i+1) % num_points]
+        line_tags.append(gmsh.model.occ.addLine(start, end))
+    loop = gmsh.model.occ.addCurveLoop(line_tags)
+    surface = gmsh.model.occ.addPlaneSurface([loop],tag=tagID)
+    gmsh.model.occ.synchronize()
+    return surface
+
+def _dividePoints(points,mSize):
+    num_points = len(points)
+    finer_points = [[points[0]]]
+
+    for q in range(num_points):
+        s_node = points[q]
+        e_node = points[(q+1)% num_points]
+
+        dist_node = hypot(e_node[0]-s_node[0],e_node[1]-s_node[1],e_node[2]-s_node[2])
+        n_div = max(int(dist_node//mSize),1)
+
+        int_nodes = np.linspace(s_node,e_node,n_div+1)
+        finer_points.append(int_nodes[1:])
+        # print(int_nodes)
+
+    final_points = sFlatten(finer_points)[:-1]
+    num_points = len(final_points)
+
+    return final_points,num_points
+
 def _SInterp(angle,num_points):
     ''' Angle -> Input list | Num Points -> Output length'''
     from scipy.interpolate import interp1d , Akima1DInterpolator
@@ -212,15 +253,17 @@ def _ADD(self):
     # ------------  ID assignment -----------------------
     if NX.onlyNode == False :
         id = int(self.ID)
-        if not Element.ids:
-            count = 1
-        else:
-            count = max(Element.ids) + 1
+        # if not Element.ids:
+        #     count = 1
+        # else:
+        #     count = max(Element.ids) + 1
 
+        count = Element.maxID+1
         if id == 0:
             self.ID = count
             Element.elements.append(self)
             Element.ids.append(int(self.ID))
+            Element.maxID+= 1
         elif id in Element.ids:
             self.ID = int(id)
             print(f'⚠️  Element with ID {id} already exists! It will be replaced.')
@@ -230,6 +273,8 @@ def _ADD(self):
             self.ID = id
             Element.elements.append(self)
             Element.ids.append(int(self.ID))
+            if id > Element.maxID:
+                Element.maxID = id
         Element.__elemDIC__[str(self.ID)] = self
         
         # ------------  Group assignment -----------------------
@@ -242,8 +287,8 @@ def _ADD(self):
                     _add_node_2_stGroup(nd,gpName)
         elif isinstance(self._GROUP, str):
             _add_elem_2_stGroup(self.ID,self._GROUP)
-            for nd in self.NODE:
-                _add_node_2_stGroup(nd,self._GROUP)
+            # for nd in self.NODE:
+            _add_node_2_stGroup(self.NODE,self._GROUP)
     else:
         if self._GROUP == "" :
             pass
@@ -365,6 +410,7 @@ class Element():
     """
     elements:list[_helperELEM] = []
     ids:list[int] = []
+    maxID:int = 0
     __elemDIC__ = {}
 
     
@@ -733,13 +779,66 @@ class Element():
 
             _ADD(self)
 
-        # @staticmethod
-        # def fromPoints(points: list, meshSize:float=0, stype: int = 1, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = 0): #CHANGE TO TUPLE
-        #         # INPUTS POINTS and create a triangular meshing with given mesh size  |  If meshSize = 0 , half of shortest length will be taken as mesh size
-        #         return 0
+        @staticmethod
+        def fromPoints(points: list, meshSize:float=1.0,meshType:_meshType='Tri', innerPoints:list=None,stype: int = 1, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = None): #CHANGE TO TUPLE
+            # INPUTS POINTS and create a triangular/quad meshing with given mesh size  |  If meshSize = 0 , half of shortest length will be taken as mesh size
+        
+            bHole = False
+            import gmsh
+            gmsh.initialize()
+            gmsh.option.setNumber("General.Terminal", 0)
+
+            surface_Main = _createSurface(points,meshSize,1)
+            if innerPoints: 
+                surface_Hole = _createSurface(innerPoints,meshSize,2)
+                surface_Final = gmsh.model.occ.cut([(2,1)], [(2,2)], removeObject=True, removeTool=True)
+                bHole = True
+
+
+            gmsh.model.occ.synchronize()
+
+            if meshType == 'Quad':
+                if not bHole:
+                    gmsh.option.setNumber("Mesh.Algorithm", 11)      # WITHOUT HOLE
+                    gmsh.option.setNumber("Mesh.MeshSizeMin", 2*meshSize)
+                
+                else:
+                    gmsh.option.setNumber("Mesh.Algorithm", 1)      # WITH HOLE
+                    gmsh.option.setNumber("Mesh.RecombinationAlgorithm", 2)
+                    gmsh.option.setNumber("Mesh.RecombineAll", 1)
+                    gmsh.option.setNumber("Mesh.MeshSizeMin", 2*meshSize)
+            else:
+                gmsh.option.setNumber("Mesh.Algorithm", 1) 
+                gmsh.option.setNumber("Mesh.MeshSizeMin", 1.5*meshSize)
+
+            
+            gmsh.option.setNumber("Mesh.Smoothing", 3)
+            gmsh.model.mesh.generate(2)
+
+            _, node_coords, _ = gmsh.model.mesh.getNodes()
+            nodes = np.array(node_coords).reshape(-1, 3)  # (N, 3) array
+
+            _, _, elemNodeTags = gmsh.model.mesh.getElements(2)
+            if meshType == 'Quad':
+                elemNODE = np.array(elemNodeTags).reshape(-1, 4) 
+            else:
+                elemNODE = np.array(elemNodeTags).reshape(-1, 3) 
+
+            # gmsh.fltk.run()
+            gmsh.finalize()
+            
+            nID_list = []
+            for nd in nodes:
+                nID_list.append(Node(nd[0],nd[1],nd[2]).ID)
+
+            plate_obj = []
+            for elmNd in elemNODE:
+                plate_obj.append(Element.Plate([nID_list[int(x)-1] for x in elmNd],stype,mat,sect,angle,group,id))
+
+            return plate_obj
         
         @staticmethod
-        def loftGroups(strGroups: list, stype: int = 1, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = None,nDiv=1): #CHANGE TO TUPLE
+        def loftGroups(strGroups: list, stype: int = 1, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = None,nDiv:int=1,bClose:bool=False): #CHANGE TO TUPLE
                 # INPUTS 2 or more structure groups to create rectangular plates between the nodes | No. of nodes should be same in the Str Group
             """
             INPUTS 2 or more structure groups to create rectangular plates between the nodes  
@@ -754,6 +853,9 @@ class Element():
             for ng in range(n_groups-1):
                 nID_A = nodesInGroup(strGroups[ng])   
                 nID_B = nodesInGroup(strGroups[ng+1])
+                if bClose:
+                    nID_A.append(nID_A[0])
+                    nID_B.append(nID_B[0])
 
                 max_len = max(len(nID_A),len(nID_B))
                 if max_len < 2 :
@@ -784,6 +886,75 @@ class Element():
                         for i in range(max_len-1):
                             pt_array = [nID_dic[q][i],nID_dic[q+1][i],nID_dic[q+1][i+1],nID_dic[q][i+1]]
                             plate_obj.append(Element.Plate(pt_array,stype,mat,sect,angle,group,id))
+
+            return plate_obj
+        
+        @staticmethod
+        def extrude(points: list,dir:list,nDiv:int=1,bClose:bool=False,inpType='XYZ', stype: int = 1, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = None): #CHANGE TO TUPLE
+                # INPUTS 2 or more structure groups to create rectangular plates between the nodes | No. of nodes should be same in the Str Group
+            """
+            INPUTS 2 or more structure groups to create rectangular plates between the nodes  
+            No. of nodes should be same in the Str Group
+            """
+            if id == None: id =0
+            nID_A = []
+            nID_B = []
+
+            if inpType == 'XYZ':
+
+                f_pt = np.add(points,dir)
+
+                for i,pt in enumerate(points):
+                    nID_A.append(Node(pt[0],pt[1],pt[2]).ID)
+                    nID_B.append(Node(f_pt[i][0],f_pt[i][1],f_pt[i][2]).ID)
+            if inpType == 'ID':
+                nID_A = points
+                pts_loc = [nodeByID(pt).LOC for pt in points]
+
+                f_pt = np.add(pts_loc,dir)
+
+                for i in range(len(points)):
+                    nID_B.append(Node(f_pt[i][0],f_pt[i][1],f_pt[i][2]).ID)
+
+            if inpType == 'NODE':
+                nID_A = [pt.ID for pt in points]
+                pts_loc = [pt.LOC for pt in points]
+
+                f_pt = np.add(pts_loc,dir)
+
+                for i in range(len(points)):
+                    nID_B.append(Node(f_pt[i][0],f_pt[i][1],f_pt[i][2]).ID)
+                
+
+            if bClose:
+                nID_A.append(nID_A[0])
+                nID_B.append(nID_B[0])
+
+            max_len = len(nID_B)
+
+            plate_obj = []
+            if nDiv == 1 :
+                for i in range(max_len-1):
+                    pt_array = [nID_A[i],nID_B[i],nID_B[i+1],nID_A[i+1]]
+                    plate_obj.append(Element.Plate(pt_array,stype,mat,sect,angle,group,id))
+            if nDiv > 1 :
+                nID_dic = {}
+                for j in range(nDiv+1):
+                    nID_dic[j] = []
+                nID_dic[0] = nID_A
+                nID_dic[nDiv] = nID_B
+                for i in range(max_len):
+                    loc0= nodeByID(nID_A[i]).LOC
+                    loc1 = nodeByID(nID_B[i]).LOC
+                    int_points = np.linspace(loc0,loc1,nDiv+1)
+
+                    for j in range(nDiv-1):
+                        nID_dic[j+1].append(Node(int_points[j+1][0],int_points[j+1][1],int_points[j+1][2]).ID)
+                
+                for q in range(nDiv):
+                    for i in range(max_len-1):
+                        pt_array = [nID_dic[q][i],nID_dic[q+1][i],nID_dic[q+1][i+1],nID_dic[q][i+1]]
+                        plate_obj.append(Element.Plate(pt_array,stype,mat,sect,angle,group,id))
 
             return plate_obj
             

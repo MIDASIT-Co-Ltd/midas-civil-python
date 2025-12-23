@@ -5,7 +5,7 @@ with open('README.md','r') as f:
 
 
 setup(name='midas_civil',
-    version="1.3.2",
+    version="1.3.3",
     description='Python library for MIDAS Civil NX',
     author='Sumit Shekhar',
     author_email='sumit.midasit@gmail.com',
@@ -13,12 +13,12 @@ setup(name='midas_civil',
     install_requires=[
         'numpy',
         'polars',
-        'xlsxwriter',
         'requests',
         'scipy',
         'colorama',
         'openpyxl',
-        'tqdm'
+        'tqdm',
+        'gmsh'
     ],          
     long_description= description,
     long_description_content_type='text/markdown',

@@ -1,6 +1,8 @@
 from ._mapi import MidasAPI
 
+from typing import Literal
 
+_dbConc = Literal["KSCE-LSD15(RC)","KS01-Civil(RC)","KS-Civil(RC)","KS19(RC)","KS01(RC)","KS(RC)","ASTM19(RC)","ASTM(RC)","U.S.C(US)(RC)","U.S.C(SI)(RC)","NMX NTC-2017(RC)","CSA(RC)","JIS(RC)","JIS-Civil(RC)","JTJ023-85(RC)","Q/CR 9300-18(RC)","GB 50917-13(RC)","GB10(RC)","GB(RC)","GB-Civil(RC)","TB10092-17(RC)","JTG3362-18(RC)","JTG04(RC)","TB05(RC)","BS(RC)","EN04(RC)","EN(RC)","NTC08(RC)","NTC12(RC)","NTC18(RC)","UNI(RC)","SS(RC)","GOST-SP(RC)","GOST-SNIP(RC)","IRC(RC)","IRS(RC)","IS(RC)","CNS560-18(RC)","CNS560(RC)","CNS(RC)","AS17(RC)","TMH7(RC)","PNS49(RC)","SNI(RC)","TIS(RC)","TIS(MKS)(RC)"]
 
 
 class Material:
@@ -87,7 +89,7 @@ class Material:
 
         # ----------------------------------  DB MATERIAL ---------------------------------------------------
 
-        def __init__(self,name='',standard='',db='',id:int=None,):
+        def __init__(self,name='',standard:_dbConc='',db='',id:int=None,):
             if id == None: id =0  
             js =  {
                 "TYPE": "CONC",

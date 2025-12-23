@@ -164,7 +164,34 @@ class Node:
         Node.Grid={}
         Node.__nodeDic__ = {}
 
+    @staticmethod
+    def SE(s_loc:list,e_loc:list,n:int=1,id:int=None,group:str='',merge:bool=True):
+        if isinstance(s_loc,Node):
+            s_loc = (s_loc.X,s_loc.Y,s_loc.Z)
+        if isinstance(e_loc,Node):
+            e_loc = (e_loc.X,e_loc.Y,e_loc.Z)
 
+        beam_nodes =[]
+        i_loc = np.linspace(s_loc,e_loc,n+1)
+        for i in range(n+1):
+            beam_nodes.append(Node(i_loc[i][0].item(),i_loc[i][1].item(),i_loc[i][2].item(),id,group,merge))
+
+        return beam_nodes
+    
+    @staticmethod
+    def SDL(s_loc:list,dir:list,l:float,n:int=1,id:int=None,group:str='',merge:bool=True):
+        if isinstance(s_loc,Node):
+            s_loc = (s_loc.X,s_loc.Y,s_loc.Z)
+
+        beam_nodes =[]
+        s_locc = np.array(s_loc)
+        unit_vec = np.array(dir)/np.linalg.norm(dir)
+
+        for i in range(n+1):
+            locc = s_locc+i*l*unit_vec/n
+            beam_nodes.append(Node(locc[0].item(),locc[1].item(),locc[2].item(),id,group,merge))
+
+        return beam_nodes
 
 
 

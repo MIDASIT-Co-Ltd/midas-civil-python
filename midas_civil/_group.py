@@ -1,5 +1,6 @@
 
 from ._mapi import MidasAPI
+from ._utils import _convItem2List
 # ----------- HELPER FUNCTION -----------
     # --------   RETRIEVE NODE / ELEMENT FROM STRUCTURE GROUP -------
 
@@ -9,7 +10,6 @@ from ._mapi import MidasAPI
     # --------   ADD ELEMENT TO STRUCTURE GROUP -------
 
 def _add_elem_2_stGroup(elemID,groupName):
-    up = 0
     if groupName in Group.Structure._names:
         for i in Group.Structure.Groups:
             if i.NAME == groupName:
@@ -24,8 +24,9 @@ def _add_node_2_stGroup(nodeID,groupName):
     if groupName in Group.Structure._names:
         for i in Group.Structure.Groups:
             if i.NAME == groupName:
-                if nodeID not in i.NLIST:
-                    i.NLIST = list(i.NLIST + [nodeID])
+                # if nodeID not in i.NLIST:
+                #     i.NLIST = list(i.NLIST + [nodeID])
+                i.NLIST = i.NLIST + _convItem2List(nodeID)
     else:
         Group.Structure(groupName)
         _add_node_2_stGroup(nodeID,groupName)
@@ -158,6 +159,17 @@ class Group:
 
 
 #---------------------------------         BOUNDARY       ---------------------------------------
+    @staticmethod
+    def _BoundaryADD(name):
+        if Group.Boundary.ids == []: id = 1
+        else: id = max(Group.Boundary.ids)+1
+        if isinstance(name,str):
+            Group.Boundary.ids.append(id)
+            Group.Boundary.Groups.append(name)
+        elif isinstance(name,list):
+            for nam in name:
+                Group._BoundaryADD(nam)
+
 
     class Boundary:
 
@@ -166,20 +178,16 @@ class Group:
         url= "/db/BNGR"
 
         def __init__(self, name:str):
-            """"""
             self.NAME = name
-            if Group.Boundary.Groups == []: self.ID=1
-            else: self.ID= max(Group.Boundary.ids)+1
-            Group.Boundary.ids.append(self.ID)
-            Group.Boundary.Groups.append(self)
+            Group._BoundaryADD(name)    
         
         @classmethod
         def json(cls) -> dict:
             "Generates the json file for all defined structure groups."
             json = {"Assign":{}}
-            for i in cls.Groups:
-                json["Assign"][i.ID] = {
-                    "NAME": i.NAME,
+            for i,grp in enumerate(cls.Groups):
+                json["Assign"][cls.ids[i]] = {
+                    "NAME": grp,
                     "AUTOTYPE": 0,
                 }
             return json

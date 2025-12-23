@@ -425,7 +425,6 @@ class Image:
         
         resp = MidasAPI('POST','/view/CAPTURE',json_body)
 
-        bs64_img = resp["base64String"]
-        decode = open(location, 'wb')  # Open image file to save.
-        decode.write(b64decode(bs64_img))  # Decode and write data.
-        decode.close()
+        if location:
+            _saveImg_(location,resp)
+        return resp

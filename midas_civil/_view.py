@@ -108,6 +108,10 @@ class View:
         __newH__ = False
         __newV__ = False
 
+        def __new__(self,horizontal, vertical):
+            View.Angle.__horizontal__ = horizontal
+            View.Angle.__vertical__ = vertical
+            
         @classmethod
         def _json(cls):
 
