@@ -5,6 +5,7 @@ midas_civil/_section/__pycache__/
 midas_civil/_utilsFunc/__pycache__/
 cmd*.py
 test*.py
+back*.py
 
 
 # Compiled Python bytecode

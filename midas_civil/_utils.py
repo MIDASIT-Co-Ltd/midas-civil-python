@@ -55,6 +55,7 @@ def _getID2(objects):
             objects[i] = objects[i].ID
 
 def getLOC(objects):
+    ''' Get location for multiple node objects'''
     _getLOC2(objects)
     return objects
 
