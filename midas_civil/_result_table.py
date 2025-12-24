@@ -61,7 +61,18 @@ def _JSToDF_ResTable(js_json,excelLoc,sheetName,cellLoc="A1"):
 def _Head_Data_2_DF_JSON(head,data):
     res_json = {}
     c=0
+    headers = []
     for heading in head:
+        if heading not in headers:
+            headers.append(heading)
+        elif f"{heading}_2" not in headers:
+            headers.append(f"{heading}_2")
+        elif f"{heading}_3" not in headers:
+            headers.append(f"{heading}_3")
+        elif f"{heading}_4" not in headers:
+            headers.append(f"{heading}_4")  # Upto 4 repeated column names | Manually handled here
+
+    for heading in headers:
         for dat in data:
             try:
                 res_json[heading].append(dat[c])
@@ -73,11 +84,11 @@ def _Head_Data_2_DF_JSON(head,data):
     return res_json
     
 
-def _JSToDF_UserDefined(tableName,js_json,summary):
+def _JSToDF_UserDefined(tableName,js_json,summary,excelLoc,sheetName,cellLoc="A1"):
     import polars as pl
     if 'message' in js_json:
         print(f'⚠️  {tableName} table name does not exist.')
-        Result.UserDefinedTables_print()
+        Result.TABLE.UserDefinedTables_list()
         return 'Check table name'
     
     if tableName not in js_json:
@@ -100,6 +111,10 @@ def _JSToDF_UserDefined(tableName,js_json,summary):
 
     res_json = _Head_Data_2_DF_JSON(head,data)
     res_df = pl.DataFrame(res_json)
+
+    if excelLoc:
+        _write_df_to_existing_excel(res_df,(excelLoc,sheetName, cellLoc))
+
     return(res_df)
 
     
@@ -186,10 +201,13 @@ def _changeUNITandGetData(js_dat,force_unit,len_unit,jsonloc,keyName):
     Model.units(force=force_unit,length=len_unit)
     ss_json = MidasAPI("POST","/post/table",js_dat)
     # _setUNIT(currUNIT)
-    if jsonloc: 
-        ss_json[keyName] = ss_json.pop("SS_Table")
-        _saveJSON(ss_json,jsonloc)
-        ss_json["SS_Table"] = ss_json.pop(keyName)
+    if jsonloc:
+        if "SS_Table" in ss_json:
+            ss_json[keyName] = ss_json.pop("SS_Table")
+            _saveJSON(ss_json,jsonloc)
+            ss_json["SS_Table"] = ss_json.pop(keyName)
+        else:
+            _saveJSON(ss_json,jsonloc)
     return ss_json
 
 
@@ -292,41 +310,6 @@ class TableOptions:
 
 class Result :
 
-    # ---------- User defined TABLE (Dynamic Report Table) ------------------------------
-    @staticmethod
-    def UserDefinedTable(tableName:str, summary=0, force_unit='KN',len_unit='M'):
-        js_dat = {
-            "Argument": {
-                "TABLE_NAME": tableName,
-                "STYLES": {
-                    "FORMAT": "Fixed",
-                    "PLACE": 5
-                }
-            }
-        }
-        currUNIT = _getUNIT()
-        Model.units(force=force_unit,length=len_unit)
-        ss_json = MidasAPI("POST","/post/TABLE",js_dat)
-        _setUNIT(currUNIT)
-        return _JSToDF_UserDefined(tableName,ss_json,summary)
-    
-    # ---------- LIST ALL USER DEFINED TABLE ------------------------------
-    @staticmethod
-    def UserDefinedTables_print():
-        ''' Print all the User defined table names '''
-        ss_json = MidasAPI("GET","/db/UTBL",{})
-        table_name =[]
-        try:
-            for id in ss_json['UTBL']:
-                table_name.append(ss_json["UTBL"][id]['NAME'])
-            
-            print('Available user-defined tables in Civil NX are : ')
-            print(*table_name,sep=' , ')
-        except:
-            print(' ⚠️  There are no user-defined tables in Civil NX')
-
-
-
     # ---------- Result TABLE (For ALL TABLES)------------------------------    
 
     class TABLE :
@@ -354,6 +337,41 @@ class Result :
             polarDF = _JSToDF_ResTable(ResultJSON,options.EXCEL_FILE_LOC,sheetName,options.EXCEL_CELL_POS)
             return polarDF
         
+            # ---------- User defined TABLE (Dynamic Report Table) ------------------------------
+        @staticmethod
+        def UserDefinedTable(tableName:str, summary=0,options:TableOptions=None):
+            if options == None : options = TableOptions()
+            sheetName = options.EXCEL_SHEET_NAME or f"{tableName} Table"
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": tableName,
+                    "STYLES": options.Style
+                }
+            }
+
+
+
+            ResultJSON = _changeUNITandGetData(js_dat,options.FORCE_UNIT,options.LEN_UNIT,options.JSON_FILE_LOC,tableName)
+            polarDF = _JSToDF_UserDefined(tableName,ResultJSON,summary,options.EXCEL_FILE_LOC,sheetName,options.EXCEL_CELL_POS)
+            return polarDF
+
+        
+        # ---------- LIST ALL USER DEFINED TABLE ------------------------------
+        @staticmethod
+        def UserDefinedTables_list():
+            ''' Print all the User defined table names '''
+            ss_json = MidasAPI("GET","/ope/UTBLTYPES",{})
+            table_name =[]
+            try:
+                for tabName in ss_json['UTBLTYPES']:
+                    table_name.append(tabName)
+                
+                print('Available user-defined tables in Civil NX are : ')
+                print(*table_name,sep=' , ')
+            except:
+                print(' ⚠️  There are no user-defined tables in Civil NX')
+
+            return table_name
 
         @staticmethod
         def Reaction(keys=[], loadcase:list=[], components=['all'],
