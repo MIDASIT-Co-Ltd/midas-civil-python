@@ -5,6 +5,10 @@ from ._utils import _convItem2List
     # --------   RETRIEVE NODE / ELEMENT FROM STRUCTURE GROUP -------
 
 
+class _BGrup:
+        def __init__(self,id,name):
+            self.ID = id
+            self.NAME = name
 
 
     # --------   ADD ELEMENT TO STRUCTURE GROUP -------
@@ -165,7 +169,7 @@ class Group:
         else: id = max(Group.Boundary.ids)+1
         if isinstance(name,str):
             Group.Boundary.ids.append(id)
-            Group.Boundary.Groups.append(name)
+            Group.Boundary.Groups.append(_BGrup(id,name))
         elif isinstance(name,list):
             for nam in name:
                 Group._BoundaryADD(nam)
@@ -173,7 +177,7 @@ class Group:
 
     class Boundary:
 
-        Groups = []
+        Groups:list[_BGrup] = []
         ids=[]
         url= "/db/BNGR"
 
