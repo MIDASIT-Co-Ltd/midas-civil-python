@@ -242,7 +242,7 @@ class utils:
             return (round(x2_interp+x_off*off,5),round(y2_interp+y_off*off,5))
                 
         @staticmethod
-        def modifyNXModel(initial_align:utils.Alignment,final_align:utils.Alignment,bElement:bool=True,bUpdateModel=True):
+        def modifyNXModel(initial_align:utils.Alignment,final_align:utils.Alignment,bElement:bool=True,bUpdateModel=True,bSync=True):
             '''
             Modifies CIVIL NX model as per new alignment.  
             Meant for **standalone** use  
@@ -256,8 +256,9 @@ class utils:
             :type bElement: bool
             '''
             from midas_civil import Node,Element,MidasAPI,nodeByID
-            Node.sync()
-            if bElement: Element.sync()
+            if bSync:
+                Node.sync()
+                if bElement: Element.sync()
 
             ptsXY = [(nd.X , nd.Y , nd.ID ) for nd in Node.nodes]
             dist_range = 0.25*initial_align.TOTALLENGTH    # 0.1 * total length
