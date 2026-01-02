@@ -189,9 +189,9 @@ class Group:
         def json(cls) -> dict:
             "Generates the json file for all defined structure groups."
             json = {"Assign":{}}
-            for i,grp in enumerate(cls.Groups):
-                json["Assign"][cls.ids[i]] = {
-                    "NAME": grp,
+            for grp in cls.Groups:
+                json["Assign"][grp.ID] = {
+                    "NAME": grp.NAME,
                     "AUTOTYPE": 0,
                 }
             return json

@@ -3,7 +3,7 @@
 from __future__ import annotations
 from math import hypot,sqrt
 import numpy as np
-
+from typing import Literal
 
 #Function to remove duplicate set of values from 2 lists
 # def unique_lists(li1, li2):
@@ -125,7 +125,7 @@ def _longestList(A,B):
     return (A + [A[-1]] * (nB - nA),B)
 
 
-
+_alignType = Literal['cubic','akima','makima','pchip']
 
 class utils:
     ''' Contains helper function and utilities'''
@@ -133,7 +133,7 @@ class utils:
         '''Defines alignment object passing through the points
         X -> monotonous increasing'''
         
-        def __init__(self,points,type: str = 'cubic'):
+        def __init__(self,points,type: _alignType = 'cubic'):
             ''' 
             **POINTS** -> Points on the alignment [[x,y] , [x,y] , [x,y] ....]   
             **TYPE** -> Type of interpolating curve
@@ -156,7 +156,7 @@ class utils:
 
             # _alignSlope = Akima1DInterpolator(_pt_x, _pt_y,method='akima') # Used for slope calculation
 
-            _n=500
+            _n=100
             # INITIAL ALGINMENT - Mapping U parameter to X (based on Distance)
             _x_fine = np.linspace(_pt_x[0],_pt_x[-1],_n)
 
@@ -240,8 +240,120 @@ class utils:
             # print(f"Point loc = [{point}] , Index match = {idx} , Point X on Initial = {ptx+initial_align.TOTALLENGTH*(idx-50)/8000} , Point Y = {y_ref} , Distance = {off} , Xoff = {slope}")
 
             return (round(x2_interp+x_off*off,5),round(y2_interp+y_off*off,5))
+                
+        @staticmethod
+        def modifyNXModel(initial_align:utils.Alignment,final_align:utils.Alignment,bElement:bool=True,bUpdateModel=True):
+            '''
+            Modifies CIVIL NX model as per new alignment.  
+            Meant for **standalone** use  
+            Use transformPoint in other cases
+            
+            :param initial_align: Intitial alignment of the model
+            :type initial_align: utils.Alignment
+            :param final_align: Final alignment of the model
+            :type final_align: utils.Alignment
+            :param bElement: If beta angle of element should be modified
+            :type bElement: bool
+            '''
+            from midas_civil import Node,Element,MidasAPI,nodeByID
+            Node.sync()
+            if bElement: Element.sync()
 
-    
+            ptsXY = [(nd.X , nd.Y , nd.ID ) for nd in Node.nodes]
+            dist_range = 0.25*initial_align.TOTALLENGTH    # 0.1 * total length
+
+            dist_array = [dist_range*0.5-i*dist_range/50 for i in range(51)]    # 50 divisions
+
+            finalXY = []
+            for pt in ptsXY:
+                ptx = pt[0]
+                pty = pt[1]
+
+                if ptx < initial_align.PT_X[0]:
+                    x_onLine1 = initial_align.PT_X[0]
+                    y_onLine1 = initial_align.PT_Y[0]
+                    slope_onLine1 = initial_align.ALIGNMENT(x_onLine1,1)
+                    angle_onLine1 = np.atan(slope_onLine1)
+
+                    dist = hypot(ptx-x_onLine1,pty-y_onLine1)
+                    tangent_angleO = np.atan((pty-y_onLine1)/(ptx-x_onLine1))    # Radian theta
+
+                    x_onLine2 = final_align.PT_X[0]
+                    y_onLine2 = final_align.PT_Y[0]
+                    slope_onLine2 = final_align.ALIGNMENT(x_onLine2,1)
+                    angle_onLine2 = np.atan(slope_onLine2)
+
+                    totalAngle = angle_onLine2-angle_onLine1+tangent_angleO
+                    x_off = np.cos(totalAngle)
+                    y_off = np.sin(totalAngle)
+                    angle = np.degrees(angle_onLine2-angle_onLine1)
+
+                    finalXY.append([x_onLine2-x_off*dist,y_onLine2-y_off*dist,angle]) 
+
+                elif ptx > initial_align.PT_X[-1]:
+                    x_onLine1 = initial_align.PT_X[-1]
+                    y_onLine1 = initial_align.PT_Y[-1]
+                    slope_onLine1 = initial_align.ALIGNMENT(x_onLine1,1)
+                    angle_onLine1 = np.atan(slope_onLine1)
+
+                    dist = hypot(ptx-x_onLine1,pty-y_onLine1)
+                    off = np.sign(pty-y_onLine1)*dist
+                    tangent_angleO = np.atan((pty-y_onLine1)/(ptx-x_onLine1))    # Radian theta
+
+                    x_onLine2 = final_align.PT_X[-1]
+                    y_onLine2 = final_align.PT_Y[-1]
+                    slope_onLine2 = final_align.ALIGNMENT(x_onLine2,1)
+                    angle_onLine2 = np.atan(slope_onLine2)
+                    
+                    totalAngle = angle_onLine2-angle_onLine1+tangent_angleO
+
+                    x_off = np.cos(totalAngle)
+                    y_off = np.sin(totalAngle)
+                    angle = np.degrees(angle_onLine2-angle_onLine1)
+
+                    finalXY.append([x_onLine2+x_off*dist,y_onLine2+y_off*dist,angle]) 
+
+                else:
+                    x_onLine1 = np.add(ptx,dist_array)
+                    y_onLine1 = initial_align.ALIGNMENT(x_onLine1)
+
+                    sqDist = np.sum((np.array([ptx,pty]) - np.array(list(zip(x_onLine1,y_onLine1)))) ** 2, axis=1)
+                    min_index = np.argmin(sqDist)
+
+                    x_ref = x_onLine1[min_index]
+                    y_ref = y_onLine1[min_index]
+                    dist_ref = sqrt(sqDist[min_index])
+
+                    final_u = np.interp(x_ref,initial_align.X_FINE,initial_align.U_FINE)
+                    off = np.sign(pty-y_ref)*dist_ref
+                    x2_interp = np.interp(final_u,final_align.U_FINE,final_align.X_FINE)
+                    y2_interp = final_align.ALIGNMENT(x2_interp)  
+
+                    slope = final_align.ALIGNMENT(x2_interp,1) # Tan theta
+                    norm = sqrt(1+slope*slope)
+                    x_off = -slope/norm
+                    y_off = 1/norm
+
+                    angle = np.degrees(np.atan(slope))
+
+                    finalXY.append([x2_interp+x_off*off,y2_interp+y_off*off,angle])
+
+            for i,nod in enumerate(Node.nodes):
+                nod.X , nod.Y , nod.TEMP_ANG = float(finalXY[i][0]),float(finalXY[i][1]),float(finalXY[i][2])
+
+            if bUpdateModel: Node.create()
+
+            #---------------- BLOCK START FOR VERTICAL ELEMENT -------------------------------------------
+            if bElement:
+                editedElemsJS = {"Assign":{}}
+                for elm in Element.elements:
+                    if elm.LOCALX[0]==0 and elm.LOCALX[1]==0 :
+                        elm.ANGLE += np.sign(elm.LOCALX[2])*nodeByID(elm.NODE[0]).TEMP_ANG
+
+                        editedElemsJS["Assign"][elm.ID] = {"ANGLE":elm.ANGLE}
+                if bUpdateModel: MidasAPI("PUT","/db/ELEM",editedElemsJS)
+
+            
     
     @staticmethod
     def LineToPlate(nDiv:int = 10 , mSizeDiv:float = 0, bRigdLnk:bool=True , meshSize:float=0.5, elemList:list=None):

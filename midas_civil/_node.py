@@ -18,12 +18,14 @@ def cell(point,size=1): #SIZE OF GRID - string format
 # -------- FUNCTIONS ARE DEFINED BELOW TO RECOGNISE NODE CLASS ----------------
 
 
+class _hNode:
+    ID,X,Y,Z,AXIS = 0,0,0,0,0
 
 #5 Class to create nodes
 class Node:
     """X ordinate, Y ordinate, Z ordinate, Node ID (optional). \nSample: Node(1,0,5)"""
-    nodes = [] # Node object stores in a list
-    ids = []    # Node IDs used for auto increment of ID and replacement of nodes
+    nodes:list[_hNode] = [] # Node object stores in a list
+    ids:list[int] = []    # Node IDs used for auto increment of ID and replacement of nodes
     Grid ={}    # Node object in cube grid
     __nodeDic__ = {} # Stores node object corresponding to ID (faster get with nodebyID)
     def __init__(self,x,y,z,id:int=None,group:str='',merge:bool=True):
@@ -141,10 +143,7 @@ class Node:
     
     @staticmethod
     def sync():
-        Node.nodes=[]
-        Node.ids=[]
-        Node.Grid={}
-        Node.__nodeDic__ = {}
+        Node.clear()
         a = Node.get()
         if a != {'message': ''}:
             if list(a['NODE'].keys()) != []:

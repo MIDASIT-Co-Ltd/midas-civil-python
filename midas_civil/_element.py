@@ -393,7 +393,7 @@ def _JS2Obj(id, js):
 
 
 class _helperELEM:
-    ID, TYPE, MATL,SECT,NODE,ANGLE,LENGTH,STYPE,AREA,NORMAL,CENTER = 0,0,0,0,0,0,0,0,0,0,0
+    ID, TYPE, MATL,SECT,NODE,ANGLE,LENGTH,STYPE,AREA,NORMAL,CENTER,LOCALX = 0,0,0,0,0,0,0,0,0,0,0,0
 class _common:
     """Common base class for all element types."""
     def __str__(self):
@@ -501,6 +501,8 @@ class Element():
             _n2 = nodeByID(j)
             self.LENGTH = _nodeDIST(_n1,_n2)
             self.CENTER = np.average([_n1.LOC,_n2.LOC],0)
+            _dirVect = np.subtract(_n2.LOC,_n1.LOC)
+            self.LOCALX = _dirVect/(np.linalg.norm(_dirVect))
 
             if bLocalAxis:
                 _tempAngle = _nodeAngleVector(_n1,_n2)
@@ -668,6 +670,8 @@ class Element():
             _n2 = nodeByID(j)
             self.LENGTH = _nodeDIST(_n1,_n2)
             self.CENTER = np.average([_n1.LOC,_n2.LOC],0)
+            _dirVect = np.subtract(_n2.LOC,_n1.LOC)
+            self.LOCALX = _dirVect/(np.linalg.norm(_dirVect))
 
             Element.lastLoc = (_n2.X,_n2.Y,_n2.Z)
             _ADD(self)
@@ -1001,8 +1005,11 @@ class Element():
         self.ANGLE = angle
         self.STYPE = stype
         self._GROUP = group
+        _n1 = nodeByID(i)
         _n2 = nodeByID(j)
-        self.LENGTH = _nodeDIST(nodeByID(i),nodeByID(j))
+        self.LENGTH = _nodeDIST(_n1,_n2)
+        _dirVect = np.subtract(_n2.LOC,_n1.LOC)
+        self.LOCALX = _dirVect/(np.linalg.norm(_dirVect))
         Element.lastLoc = (_n2.X,_n2.Y,_n2.Z)
         
         # Handle subtype-specific parameters
@@ -1065,8 +1072,11 @@ class Element():
             self.ANGLE = angle
             self.STYPE = stype
             self._GROUP = group
+            _n1 = nodeByID(i)
             _n2 = nodeByID(j)
-            self.LENGTH = _nodeDIST(nodeByID(i),nodeByID(j))
+            self.LENGTH = _nodeDIST(_n1,_n2)
+            _dirVect = np.subtract(_n2.LOC,_n1.LOC)
+            self.LOCALX = _dirVect/(np.linalg.norm(_dirVect))
             Element.lastLoc = (_n2.X,_n2.Y,_n2.Z)
             
             # Handle subtype-specific parameters
