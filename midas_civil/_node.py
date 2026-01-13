@@ -28,7 +28,7 @@ class Node:
     ids:list[int] = []    # Node IDs used for auto increment of ID and replacement of nodes
     Grid ={}    # Node object in cube grid
     __nodeDic__ = {} # Stores node object corresponding to ID (faster get with nodebyID)
-    def __init__(self,x,y,z,id:int=None,group:str='',merge:bool=True):
+    def __init__(self,x:float,y:float,z:float,id:int=None,group:str='',merge:bool=True):
         ''' Create Node object
 
             Parameters:
@@ -424,7 +424,7 @@ class NodeLocalAxis:
     skew = []
     ids = [] 
 
-    def __init__(self,nodeID,type,angle):
+    def __init__(self,nodeID:int,type:Literal['X' , 'Y' , 'Z' , 'XYZ','Vector'],angle:list):
         '''
         nodeID(int) : ID of the node
         axis (str) : Axis of rotation, 'X' , 'Y' , 'Z' , 'XYZ' or 'Vector'

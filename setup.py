@@ -18,7 +18,7 @@ setup(name='midas_civil',
         'colorama',
         'openpyxl',
         'tqdm',
-        'gmsh'
+        'gmsh',
     ],          
     long_description= description,
     long_description_content_type='text/markdown',

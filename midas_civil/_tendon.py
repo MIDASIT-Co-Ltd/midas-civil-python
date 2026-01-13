@@ -191,7 +191,9 @@ class _POINT_ : # Local class to store points
         self.X = x
         self.Y = y
         self.Z = z
-
+    
+    def __str__(self):
+        return str(self.X , self.Y, self.Z)
 
 #5 Class to create nodes
 class Tendon:

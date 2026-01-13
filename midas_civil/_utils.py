@@ -348,10 +348,11 @@ class utils:
             if bElement:
                 editedElemsJS = {"Assign":{}}
                 for elm in Element.elements:
-                    if elm.LOCALX[0]==0 and elm.LOCALX[1]==0 :
-                        elm.ANGLE += np.sign(elm.LOCALX[2])*nodeByID(elm.NODE[0]).TEMP_ANG
+                    if elm.TYPE in ['BEAM','TRUSS','TENSTR','COMPTR']:
+                        if elm.LOCALX[0]==0 and elm.LOCALX[1]==0 :
+                            elm.ANGLE += np.sign(elm.LOCALX[2])*nodeByID(elm.NODE[0]).TEMP_ANG
 
-                        editedElemsJS["Assign"][elm.ID] = {"ANGLE":elm.ANGLE}
+                            editedElemsJS["Assign"][elm.ID] = {"ANGLE":elm.ANGLE}
                 if bUpdateModel: MidasAPI("PUT","/db/ELEM",editedElemsJS)
 
             

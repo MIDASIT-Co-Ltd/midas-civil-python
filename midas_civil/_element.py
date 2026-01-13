@@ -459,7 +459,7 @@ class Element():
 
     class Beam(_common):
 
-        def __init__(self, i: int, j: int, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = None,bLocalAxis=False):
+        def __init__(self, i: int, j: int, mat: int = 1, sect: int = 1, angle: float = 0, group:str = "" , id: int = None,bLocalAxis:bool=False):
             """
             Creates a BEAM element for frame analysis.
             
@@ -520,7 +520,7 @@ class Element():
             _ADD(self)
 
         @staticmethod
-        def SDL(s_loc:list,dir:list,l:float,n:int=1,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = None,bLocalAxis=False): #CHANGE TO TUPLE
+        def SDL(s_loc:list,dir:list,l:float,n:int=1,mat:int=1,sect:int=1,angle:float=0, group:str = "" , id: int = None,bLocalAxis:bool=False): #CHANGE TO TUPLE
                 if id == None: id =0
                 if isinstance(s_loc,Node):
                     s_loc = (s_loc.X,s_loc.Y,s_loc.Z)
@@ -544,7 +544,7 @@ class Element():
                     
 
         @staticmethod
-        def SE(s_loc:list,e_loc:list,n:int=1,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = None,bLocalAxis=False):
+        def SE(s_loc:list,e_loc:list,n:int=1,mat:int=1,sect:int=1,angle:float=0, group:str = "" , id: int = None,bLocalAxis:bool=False):
                 if id == None: id =0
                 if isinstance(s_loc,Node):
                     s_loc = (s_loc.X,s_loc.Y,s_loc.Z)
@@ -565,7 +565,7 @@ class Element():
                 return beam_obj
         
         @staticmethod
-        def PLine(points_loc:list,n_div:int=0,deg:int=1,includePoint:bool=False,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = None,bLocalAxis=False,div_axis="L"):
+        def PLine(points_loc:list,n_div:int=0,deg:int=1,includePoint:bool=False,mat:int=1,sect:int=1,angle:float=0, group:str = "" , id: int = None,bLocalAxis:bool=False,div_axis:Literal['X','Y','Z','L']="L"):
                 '''
                 angle : float of list(float)
                 '''
@@ -591,7 +591,7 @@ class Element():
                 return beam_obj
         
         @staticmethod
-        def PLine2(points_loc:list,n_div:int=0,deg:int=1,includePoint:bool=False,mat:int=1,sect:int=1,angle:list[float]=0, group = "" , id: int = None,bLocalAxis=False,div_axis="L",yEcc:list[float]=0,zEcc:list[float]=0,bAngleInEcc:bool=True):
+        def PLine2(points_loc:list,n_div:int=0,deg:int=1,includePoint:bool=False,mat:int=1,sect:int=1,angle:list[float]=0, group:str = "" , id: int = None,bLocalAxis:bool=False,div_axis:Literal['X','Y','Z','L']="L",yEcc:list[float]=0,zEcc:list[float]=0,bAngleInEcc:bool=True):
                 '''
                 Creates a polyline with Eccentricity considering the beta angle provided   
                 angle , yEcc , zEcc : float or list(float)   
