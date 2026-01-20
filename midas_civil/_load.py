@@ -8,6 +8,7 @@ _presDir = Literal['LX','LY','LZ','GX','GY','GZ','VECTOR']
 _beamLoadDir = Literal['LX','LY','LZ','GX','GY','GZ']
 _beamLoadType = Literal['CONLOAD','CONMOMENT','UNILOAD','UNIMOMENT']
 _lineDistType = Literal['Abs','Rel']
+_swDir= Literal['X','Y','Z','VECTOR']
 # -----  Extend for list of nodes/elems -----
 
 def _ADD_NodalLoad(self):
@@ -139,7 +140,7 @@ class Load:
         """Load Case Name, direction, Value, Load Group.\n
         Sample: Load_SW("Self-Weight", "Z", -1, "DL")"""
         data = []
-        def __init__(self, load_case, dir = "Z", value = -1, load_group = ""):
+        def __init__(self, load_case:str, dir:_swDir = "Z", value = -1, load_group:str = ""):
 
             chk = 0
             for i in Load_Case.cases:
@@ -161,6 +162,7 @@ class Load:
                     fv = [0, 0, value]
             elif type(value)==list:
                 fv = value
+                dir = 'VECTOR'
             else: fv = [0,0,-1]
 
 
@@ -204,15 +206,19 @@ class Load:
             a = Load.SW.get()
             if a != {'message': ''}:
                 for i in list(a['BODF'].keys()):
-                    if a['BODF'][i]['FV'][0] != 0:
+                    if a['BODF'][i]['FV'][0] != 0 and a['BODF'][i]['FV'][1] == 0 and a['BODF'][i]['FV'][2] == 0:
                         di = "X"
                         va = a['BODF'][i]['FV'][0]
-                    elif a['BODF'][i]['FV'][1] != 0:
+                    elif a['BODF'][i]['FV'][0] == 0 and a['BODF'][i]['FV'][1] != 0 and a['BODF'][i]['FV'][2] == 0:
                         di = "Y"
                         va = a['BODF'][i]['FV'][1]
-                    else:
+                    elif a['BODF'][i]['FV'][0] == 0 and a['BODF'][i]['FV'][1] == 0 and a['BODF'][i]['FV'][2] != 0:
                         di = "Z"
                         va = a['BODF'][i]['FV'][2]
+                    else:
+                        di = 'VECTOR'
+                        va = a['BODF'][i]['FV']
+                    
                     Load.SW(a['BODF'][i]['LCNAME'], di, va, a['BODF'][i]['GROUP_NAME'])
     
     

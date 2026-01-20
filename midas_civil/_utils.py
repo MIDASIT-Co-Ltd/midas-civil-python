@@ -416,7 +416,7 @@ class utils:
         mat_E : float, optional
             Modulus of elasticity of the material (default is 30,000,000).
         """
-        from midas_civil import Model,Material,Section,Offset,nodesInGroup,Element,Boundary,Load,elemsInGroup,Node
+        from midas_civil import Model,Material,Section,Offset,nodesInGroup,Element,Boundary,Load,elemsInGroup,Node,Group
         import math
 
         Model.units()
@@ -472,23 +472,23 @@ class utils:
 
         offTrans = 0.5*width/girder_no
         # Longitudinal
-        Element.Beam.SDL(np.add([0,0,0],start_loc),[1,0,0],span_length,int(span_length),nMat+2,9,group=f'CrashBarrier_R')
+        Element.Beam.SDL(np.add([0,0,0],start_loc),[1,0,0],span_length,int(span_length),nMat+2,9,group=f'CrashBarrier_R {utils.__RC_Grillage_nSpan}')
         for i in range(girder_no):
             Element.Beam.SDL(np.add([(2*i*offTrans+offTrans)*tan_theta,2*i*offTrans+offTrans,0],start_loc),[1,0,0],span_length,int(span_length),nMat+1,nSec+5,group=f'Girder {i+1} Span {utils.__RC_Grillage_nSpan}')
             Boundary.Support(nodesInGroup(f'Girder {i+1} Span {utils.__RC_Grillage_nSpan}')[0],support,'Support')
             Boundary.Support(nodesInGroup(f'Girder {i+1} Span {utils.__RC_Grillage_nSpan}')[-1],support,'Support')
-        Element.Beam.SDL(np.add([width*tan_theta,width,0],start_loc),[1,0,0],span_length,int(span_length),nMat+2,9,group=f'CrashBarrier_L')
+        Element.Beam.SDL(np.add([width*tan_theta,width,0],start_loc),[1,0,0],span_length,int(span_length),nMat+2,9,group=f'CrashBarrier_L {utils.__RC_Grillage_nSpan}')
 
 
         spacing = span_length/int(span_length)
         # Cross
-        Element.Beam.SE(start_loc,np.add([width*tan_theta,width,0],start_loc),2*girder_no,nMat+1,nSec+4,group='Diaphragm')
-        Element.Beam.SE(start_loc,np.add([width*tan_theta,width,0],start_loc),2*girder_no,nMat+2,nSec+7,group='CrossEnd')
+        Element.Beam.SE(start_loc,np.add([width*tan_theta,width,0],start_loc),2*girder_no,nMat+1,nSec+4,group=f'Diaphragm {utils.__RC_Grillage_nSpan}')
+        Element.Beam.SE(start_loc,np.add([width*tan_theta,width,0],start_loc),2*girder_no,nMat+2,nSec+7,group=f'CrossEnd {utils.__RC_Grillage_nSpan}')
         for i in range(int(span_length)-1):
-            Element.Beam.SE(np.add([(i+1)*spacing,0,0],start_loc),np.add([(i+1)*spacing+width*tan_theta,width,0],start_loc),2*girder_no,nMat+2,nSec+6,group='Cross Slab')
+            Element.Beam.SE(np.add([(i+1)*spacing,0,0],start_loc),np.add([(i+1)*spacing+width*tan_theta,width,0],start_loc),2*girder_no,nMat+2,nSec+6,group=f'Cross Slab {utils.__RC_Grillage_nSpan}')
 
-        Element.Beam.SE(np.add([span_length,0,0],start_loc),np.add([span_length+width*tan_theta,width,0],start_loc),2*girder_no,nMat+2,nSec+8,group='CrossEnd')
-        Element.Beam.SE(np.add([span_length,0,0],start_loc),np.add([span_length+width*tan_theta,width,0],start_loc),2*girder_no,nMat+1,nSec+4,group='Diaphragm')
+        Element.Beam.SE(np.add([span_length,0,0],start_loc),np.add([span_length+width*tan_theta,width,0],start_loc),2*girder_no,nMat+2,nSec+8,group=f'CrossEnd {utils.__RC_Grillage_nSpan}')
+        Element.Beam.SE(np.add([span_length,0,0],start_loc),np.add([span_length+width*tan_theta,width,0],start_loc),2*girder_no,nMat+1,nSec+4,group=f'Diaphragm {utils.__RC_Grillage_nSpan}')
 
 
         # # Overhang
@@ -496,13 +496,13 @@ class utils:
             Element.Beam.SE(np.add([-o_elem_len,0,0],start_loc),np.add([width*tan_theta-o_elem_len,width,0],start_loc),2*girder_no,nMat+2,nSec+2)
             Element.Beam.SE(np.add([span_length+o_elem_len,0,0],start_loc),np.add([width*tan_theta+span_length+o_elem_len,width,0],start_loc),2*girder_no,nMat+2,nSec+3)
 
-            Element.Beam.SDL(np.add([-o_elem_len,0,0],start_loc),[1,0,0],o_elem_len,1,nMat+2,9,group=f'CrashBarrier_R')
-            Element.Beam.SDL(np.add([span_length,0,0],start_loc),[1,0,0],o_elem_len,1,nMat+2,9,group=f'CrashBarrier_R')
+            Element.Beam.SDL(np.add([-o_elem_len,0,0],start_loc),[1,0,0],o_elem_len,1,nMat+2,9,group=f'CrashBarrier_R {utils.__RC_Grillage_nSpan}')
+            Element.Beam.SDL(np.add([span_length,0,0],start_loc),[1,0,0],o_elem_len,1,nMat+2,9,group=f'CrashBarrier_R {utils.__RC_Grillage_nSpan}')
             for i in range(girder_no):
-                Element.Beam.SDL(np.add([-o_elem_len+(2*i*offTrans+offTrans)*tan_theta,2*i*offTrans+offTrans,0],start_loc),[1,0,0],o_elem_len,1,nMat+1,nSec+5,group=f'Girder {i+1}')
-                Element.Beam.SDL(np.add([span_length+(2*i*offTrans+offTrans)*tan_theta,2*i*offTrans+offTrans,0],start_loc),[1,0,0],o_elem_len,1,nMat+1,nSec+5,group=f'Girder {i+1}')
-            Element.Beam.SDL(np.add([-o_elem_len+width*tan_theta,width,0],start_loc),[1,0,0],o_elem_len,1,nMat+2,9,group=f'CrashBarrier_L')
-            Element.Beam.SDL(np.add([span_length+width*tan_theta,width,0],start_loc),[1,0,0],o_elem_len,1,nMat+2,9,group=f'CrashBarrier_L')
+                Element.Beam.SDL(np.add([-o_elem_len+(2*i*offTrans+offTrans)*tan_theta,2*i*offTrans+offTrans,0],start_loc),[1,0,0],o_elem_len,1,nMat+1,nSec+5,group=f'Girder {i+1} Span {utils.__RC_Grillage_nSpan}')
+                Element.Beam.SDL(np.add([span_length+(2*i*offTrans+offTrans)*tan_theta,2*i*offTrans+offTrans,0],start_loc),[1,0,0],o_elem_len,1,nMat+1,nSec+5,group=f'Girder {i+1} Span {utils.__RC_Grillage_nSpan}')
+            Element.Beam.SDL(np.add([-o_elem_len+width*tan_theta,width,0],start_loc),[1,0,0],o_elem_len,1,nMat+2,9,group=f'CrashBarrier_L {utils.__RC_Grillage_nSpan}')
+            Element.Beam.SDL(np.add([span_length+width*tan_theta,width,0],start_loc),[1,0,0],o_elem_len,1,nMat+2,9,group=f'CrashBarrier_L {utils.__RC_Grillage_nSpan}')
 
         # extra diaphragm
         span_idx = list(range(int(span_length+1)))
@@ -512,17 +512,18 @@ class utils:
                 Element.Beam.SE(np.add([span_idx[int((i+1)*span_length/(dia_no-1))]*spacing,0,0],start_loc),np.add([span_idx[int((i+1)*span_length/(dia_no-1))]*spacing+width*tan_theta,width,0],start_loc),2*girder_no,nMat+2,nSec+4,group='Diaphragm')
 
 
-
-        Load.SW('Self Weight',load_group='Self Weight')
+        if utils.__RC_Grillage_nSpan == 1 :
+            Load.SW('Self Weight',load_group='Self Weight')
 
         # WCloading = -1.9
         WCloading = -22 * 0.075 * cos_theta
-        Load.Beam(elemsInGroup('Cross Slab'),'Wearing Course','Wearing Course',WCloading)
-        Load.Beam(elemsInGroup('CrossEnd'),'Wearing Course','Wearing Course',WCloading*0.5)
+        Load.Beam(elemsInGroup(f'Cross Slab {utils.__RC_Grillage_nSpan}'),'Wearing Course','Wearing Course',WCloading)
+        Load.Beam(elemsInGroup(f'CrossEnd {utils.__RC_Grillage_nSpan}'),'Wearing Course','Wearing Course',WCloading*0.5)
 
 
         CBloading = -22 * 0.5
-        Load.Beam(elemsInGroup(['CrashBarrier_R','CrashBarrier_L']),'Crash Barrier','Crash Barrier',CBloading)
+        Load.Beam(elemsInGroup([f'CrashBarrier_R {utils.__RC_Grillage_nSpan}',f'CrashBarrier_L {utils.__RC_Grillage_nSpan}']),'Crash Barrier','Crash Barrier',CBloading)
+        Group.Structure.clear()
 
         utils.__RC_Grillage_nSpan+=1
         #---------------------------------------------------------------------------------------

@@ -3,7 +3,7 @@ from ._node import Node,nodeByID,nodesInGroup
 from ._group import _add_node_2_stGroup,Group, _add_elem_2_stGroup
 import numpy as np
 # from scipy.interpolate import splev, splprep , interp1d , Akima1DInterpolator
-from math import hypot
+from math import hypot,ceil
 from ._utils import _convItem2List , _longestList,sFlatten
 from colorama import Fore,Style
 from typing import Literal
@@ -393,7 +393,7 @@ def _JS2Obj(id, js):
 
 
 class _helperELEM:
-    ID, TYPE, MATL,SECT,NODE,ANGLE,LENGTH,STYPE,AREA,NORMAL,CENTER,LOCALX = 0,0,0,0,0,0,0,0,0,0,0,0
+    ID, TYPE, MATL,SECT,NODE,ANGLE,LENGTH,STYPE,AREA,NORMAL,CENTER,LOCALX,LOCALY,LOCALZ = 0,0,0,0,0,0,0,0,0,0,0,0,0,0
 class _common:
     """Common base class for all element types."""
     def __str__(self):
@@ -419,6 +419,7 @@ class Element():
 
     @classmethod
     def json(cls):
+        # if _quadShape.shapes!=[]: Element.Plate.__meshShapes()
         json_data = {"Assign": {}}
         for elem in cls.elements:
             js = _Obj2JS(elem)
@@ -438,9 +439,7 @@ class Element():
     def sync():
         a = Element.get()
         if a and 'ELEM' in a and a['ELEM']:
-            Element.elements = []
-            Element.ids = []
-            Element.__elemDIC__={}
+            Element.clear()
             for elem_id, data in a['ELEM'].items():
                 _JS2Obj(elem_id, data)
 
@@ -454,6 +453,8 @@ class Element():
         Element.elements = []
         Element.ids = []
         Element.__elemDIC__={}
+        # _curve.curves = []
+        # _quadShape.shapes = []
 
     # --- Element Type Subclasses ---
 
@@ -502,7 +503,15 @@ class Element():
             self.LENGTH = _nodeDIST(_n1,_n2)
             self.CENTER = np.average([_n1.LOC,_n2.LOC],0)
             _dirVect = np.subtract(_n2.LOC,_n1.LOC)
-            self.LOCALX = _dirVect/(np.linalg.norm(_dirVect))
+            self.LOCALX = np.round(_dirVect/(np.linalg.norm(_dirVect)),4)
+            _tempZ = (0.00001,0,1)
+            _LOCALY = np.cross(_tempZ,self.LOCALX)
+            _ROTLY = _rotatePT(_LOCALY,self.LOCALX,angle)
+
+            self.LOCALY = np.round(_ROTLY / np.linalg.norm(_ROTLY),4)
+
+            _LOCALZ = np.cross(self.LOCALX, self.LOCALY)
+            self.LOCALZ = np.round(_LOCALZ / np.linalg.norm(_LOCALZ),4)
 
             if bLocalAxis:
                 _tempAngle = _nodeAngleVector(_n1,_n2)
@@ -671,7 +680,15 @@ class Element():
             self.LENGTH = _nodeDIST(_n1,_n2)
             self.CENTER = np.average([_n1.LOC,_n2.LOC],0)
             _dirVect = np.subtract(_n2.LOC,_n1.LOC)
-            self.LOCALX = _dirVect/(np.linalg.norm(_dirVect))
+            self.LOCALX = np.round(_dirVect/(np.linalg.norm(_dirVect)),4)
+            _tempZ = (0.00001,0,1)
+            _LOCALY = np.cross(_tempZ,self.LOCALX)
+            _ROTLY = _rotatePT(_LOCALY,self.LOCALX,angle)
+
+            self.LOCALY = np.round(_ROTLY / np.linalg.norm(_ROTLY),4)
+
+            _LOCALZ = np.cross(self.LOCALX, self.LOCALY)
+            self.LOCALZ = np.round(_LOCALZ / np.linalg.norm(_LOCALZ),4)
 
             Element.lastLoc = (_n2.X,_n2.Y,_n2.Z)
             _ADD(self)
@@ -897,8 +914,7 @@ class Element():
         def extrude(points: list,dir:list,nDiv:int=1,bClose:bool=False,inpType='XYZ', stype: int = 1, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = None): #CHANGE TO TUPLE
                 # INPUTS 2 or more structure groups to create rectangular plates between the nodes | No. of nodes should be same in the Str Group
             """
-            INPUTS 2 or more structure groups to create rectangular plates between the nodes  
-            No. of nodes should be same in the Str Group
+            Enter node id list to extrude along a vector
             """
             if id == None: id =0
             nID_A = []
@@ -962,6 +978,35 @@ class Element():
 
             return plate_obj
             
+
+        # @staticmethod
+        # def quad(points:list,meshSize:float=1):
+        #     if len(points)!=4:
+        #         print("Enter 4 points !!")
+        #         return 0
+            
+        #     _n1 = Node(points[0][0],points[0][1],points[0][2])
+        #     _n2 = Node(points[1][0],points[1][1],points[1][2])
+        #     _n3 = Node(points[2][0],points[2][1],points[2][2])
+        #     _n4 = Node(points[3][0],points[3][1],points[3][2])
+
+        #     _c1 = _createCurve(_n1.ID,_n2.ID,meshSize)
+        #     _c2 = _createCurve(_n2.ID,_n3.ID,meshSize)
+        #     _c3 = _createCurve(_n3.ID,_n4.ID,meshSize)
+        #     _c4 = _createCurve(_n4.ID,_n1.ID,meshSize)
+
+        #     _shape = _quadShape([_c1,_c2,_c3,_c4])
+
+        #     return _shape
+
+        # @staticmethod
+        # def __meshShapes():
+        #     for shape in _quadShape.shapes:
+        #         shape.mesh()
+
+
+
+
     class Tension(_common):
      def __init__(self, i: int, j: int, stype: int, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = None, non_len: float = None, cable_type: int = None, tens: float = None, t_limit: float = None):
         """
@@ -1009,7 +1054,15 @@ class Element():
         _n2 = nodeByID(j)
         self.LENGTH = _nodeDIST(_n1,_n2)
         _dirVect = np.subtract(_n2.LOC,_n1.LOC)
-        self.LOCALX = _dirVect/(np.linalg.norm(_dirVect))
+        self.LOCALX = np.round(_dirVect/(np.linalg.norm(_dirVect)),4)
+        _tempZ = (0.00001,0,1)
+        _LOCALY = np.cross(_tempZ,self.LOCALX)
+        _ROTLY = _rotatePT(_LOCALY,self.LOCALX,angle)
+
+        self.LOCALY = np.round(_ROTLY / np.linalg.norm(_ROTLY),4)
+
+        _LOCALZ = np.cross(self.LOCALX, self.LOCALY)
+        self.LOCALZ = np.round(_LOCALZ / np.linalg.norm(_LOCALZ),4)
         Element.lastLoc = (_n2.X,_n2.Y,_n2.Z)
         
         # Handle subtype-specific parameters
@@ -1076,7 +1129,15 @@ class Element():
             _n2 = nodeByID(j)
             self.LENGTH = _nodeDIST(_n1,_n2)
             _dirVect = np.subtract(_n2.LOC,_n1.LOC)
-            self.LOCALX = _dirVect/(np.linalg.norm(_dirVect))
+            self.LOCALX = np.round(_dirVect/(np.linalg.norm(_dirVect)),4)
+            _tempZ = (0.00001,0,1)
+            _LOCALY = np.cross(_tempZ,self.LOCALX)
+            _ROTLY = _rotatePT(_LOCALY,self.LOCALX,angle)
+
+            self.LOCALY = np.round(_ROTLY / np.linalg.norm(_ROTLY),4)
+
+            _LOCALZ = np.cross(self.LOCALX, self.LOCALY)
+            self.LOCALZ = np.round(_LOCALZ / np.linalg.norm(_LOCALZ),4)
             Element.lastLoc = (_n2.X,_n2.Y,_n2.Z)
             
             # Handle subtype-specific parameters
@@ -1129,168 +1190,232 @@ class Element():
             self._GROUP = group
             _ADD(self)
 
-    
-#-----------------------------------------------Stiffness Scale Factor------------------------------
+# class _quadShape():
+#     shapes = []
+#     def __init__(self,curves):
+#         self.CURVE = curves
+#         _quadShape.shapes.append(self)
+#     def __str__(self):
+#         nIds = []
+#         mSize = []
+#         for crv in self.CURVE:
+#             nIds.append(crv.ONODE)
+#             mSize.append(crv.MESH_SIZE)
+#         return str(f"QUAD SHAPE\nNODES = {nIds}\nSIZE = {mSize}")
+#     def mesh(self):
+#         nX = max(self.CURVE[0].NUM,self.CURVE[2].NUM)
+#         nY = max(self.CURVE[1].NUM,self.CURVE[3].NUM)
+#         # print(nX,nY)
+#         loc0= nodeByID(self.CURVE[0].ONODE[0]).LOC
+#         loc1= nodeByID(self.CURVE[1].ONODE[0]).LOC
+#         loc2= nodeByID(self.CURVE[2].ONODE[0]).LOC
+#         loc3= nodeByID(self.CURVE[3].ONODE[0]).LOC
+#         # print(loc0,loc1,loc2,loc3)
+#         c1_points = np.linspace(loc0,loc1,nX+1)
+#         # c2_points = np.linspace(loc1,loc2,nY+1)
+#         c3_points = np.linspace(loc3,loc2,nX+1)
+#         # c4_points = np.linspace(loc0,loc3,nY+1)
+#         nIDList = {}
+#         for i in range(nX+1):
+#             nIDList[i] = []
+#             ndY = np.linspace(c1_points[i],c3_points[i],nY+1)
+#             for j in range(nY+1):
+#                 nIDList[i].append(Node(ndY[j][0],ndY[j][1],ndY[j][2]).ID)
 
-    class StiffnessScaleFactor:
+#         for q in range(nX):
+#             for i in range(nY):
+#                 pt_array = [nIDList[q][i],nIDList[q+1][i],nIDList[q+1][i+1],nIDList[q][i+1]]
+#                 Element.Plate(pt_array)
+
+
+
+#         # Element.Plate([self.CURVE[0].ONODE[0],self.CURVE[1].ONODE[0],self.CURVE[2].ONODE[0],self.CURVE[3].ONODE[0]])
+        
+
+# class _curve():
+#     curves = []
+#     def __init__(self,iNodeID,jNodeID,meshSize):
+#         _nodes = sorted([iNodeID,jNodeID])  
+#         self.NODE = _nodes
+#         self.ONODE = [iNodeID,jNodeID]
+#         self.MESH_SIZE = meshSize
+#         self.LENGTH = _nodeDIST(nodeByID(iNodeID),nodeByID(jNodeID))
+#     @property
+#     def NUM(self):
+#         return ceil(self.LENGTH/self.MESH_SIZE)
+
+# def _createCurve(iNodeID,jNodeID,meshSize)-> _curve:
+#     _nodes = sorted([iNodeID,jNodeID])
+#     for crv in _curve.curves:
+#         if _nodes == crv.NODE:
+#             meshSize = min(crv.MESH_SIZE,meshSize)
+#             crv.MESH_SIZE = meshSize
+#     newcrv = _curve(iNodeID,jNodeID,meshSize)
+#     _curve.curves.append(newcrv)
+#     return newcrv
+
+
+# #-----------------------------------------------Stiffness Scale Factor------------------------------
+
+#     class StiffnessScaleFactor:
     
-        data = []
+#         data = []
         
-        def __init__(self, 
-                    element_id,
-                    area_sf: float = 1.0,
-                    asy_sf: float = 1.0,
-                    asz_sf: float = 1.0,
-                    ixx_sf: float = 1.0,
-                    iyy_sf: float = 1.0,
-                    izz_sf: float = 1.0,
-                    wgt_sf: float = 1.0,
-                    group: str = "",
-                    id: int = None):
-            """
-                element_id: Element ID(s) where scale factor is applied (can be int or list)
-                area_sf: Cross-sectional area scale factor
-                asy_sf: Effective Shear Area scale factor (y-axis)
-                asz_sf: Effective Shear Area scale factor (z-axis)
-                ixx_sf: Torsional Resistance scale factor (x-axis)
-                iyy_sf: Area Moment of Inertia scale factor (y-axis)
-                izz_sf: Area Moment of Inertia scale factor (z-axis)
-                wgt_sf: Weight scale factor
-                group: Group name (default "")
-                id: Scale factor ID (optional, auto-assigned if None)
+#         def __init__(self, 
+#                     element_id,
+#                     area_sf: float = 1.0,
+#                     asy_sf: float = 1.0,
+#                     asz_sf: float = 1.0,
+#                     ixx_sf: float = 1.0,
+#                     iyy_sf: float = 1.0,
+#                     izz_sf: float = 1.0,
+#                     wgt_sf: float = 1.0,
+#                     group: str = "",
+#                     id: int = None):
+#             """
+#                 element_id: Element ID(s) where scale factor is applied (can be int or list)
+#                 area_sf: Cross-sectional area scale factor
+#                 asy_sf: Effective Shear Area scale factor (y-axis)
+#                 asz_sf: Effective Shear Area scale factor (z-axis)
+#                 ixx_sf: Torsional Resistance scale factor (x-axis)
+#                 iyy_sf: Area Moment of Inertia scale factor (y-axis)
+#                 izz_sf: Area Moment of Inertia scale factor (z-axis)
+#                 wgt_sf: Weight scale factor
+#                 group: Group name (default "")
+#                 id: Scale factor ID (optional, auto-assigned if None)
             
-            Examples:
-                StiffnessScaleFactor(908, area_sf=0.5, asy_sf=0.6, asz_sf=0.7, 
-                                ixx_sf=0.8, iyy_sf=0.8, izz_sf=0.9, wgt_sf=0.95)
+#             Examples:
+#                 StiffnessScaleFactor(908, area_sf=0.5, asy_sf=0.6, asz_sf=0.7, 
+#                                 ixx_sf=0.8, iyy_sf=0.8, izz_sf=0.9, wgt_sf=0.95)
                 
-            """
+#             """
             
-            # Check if group exists, create if not
-            if group != "":
-                chk = 0
-                a = [v['NAME'] for v in Group.Boundary.json()["Assign"].values()]
-                if group in a:
-                    chk = 1
-                if chk == 0:
-                    Group.Boundary(group)
+#             # Check if group exists, create if not
+#             if group != "":
+#                 chk = 0
+#                 a = [v['NAME'] for v in Group.Boundary.json()["Assign"].values()]
+#                 if group in a:
+#                     chk = 1
+#                 if chk == 0:
+#                     Group.Boundary(group)
             
-            # Handle element_id as single int or list
-            if isinstance(element_id, (list, tuple)):
-                self.ELEMENT_IDS = list(element_id)
-            else:
-                self.ELEMENT_IDS = [element_id]
+#             # Handle element_id as single int or list
+#             if isinstance(element_id, (list, tuple)):
+#                 self.ELEMENT_IDS = list(element_id)
+#             else:
+#                 self.ELEMENT_IDS = [element_id]
             
-            self.AREA_SF = area_sf
-            self.ASY_SF = asy_sf
-            self.ASZ_SF = asz_sf
-            self.IXX_SF = ixx_sf
-            self.IYY_SF = iyy_sf
-            self.IZZ_SF = izz_sf
-            self.WGT_SF = wgt_sf
-            self.GROUP_NAME = group
+#             self.AREA_SF = area_sf
+#             self.ASY_SF = asy_sf
+#             self.ASZ_SF = asz_sf
+#             self.IXX_SF = ixx_sf
+#             self.IYY_SF = iyy_sf
+#             self.IZZ_SF = izz_sf
+#             self.WGT_SF = wgt_sf
+#             self.GROUP_NAME = group
             
-            # Auto-assign ID if not provided
-            if id is None:
-                self.ID = len(Element.StiffnessScaleFactor.data) + 1
-            else:
-                self.ID = id
+#             # Auto-assign ID if not provided
+#             if id is None:
+#                 self.ID = len(Element.StiffnessScaleFactor.data) + 1
+#             else:
+#                 self.ID = id
             
-            # Add to static list
-            Element.StiffnessScaleFactor.data.append(self)
+#             # Add to static list
+#             Element.StiffnessScaleFactor.data.append(self)
         
-        @classmethod
-        def json(cls):
-            """
-            Converts StiffnessScaleFactor data to JSON format
-            """
-            json_data = {"Assign": {}}
+#         @classmethod
+#         def json(cls):
+#             """
+#             Converts StiffnessScaleFactor data to JSON format
+#             """
+#             json_data = {"Assign": {}}
             
-            for scale_factor in cls.data:
-                # Create scale factor item
-                scale_factor_item = {
-                    "ID": scale_factor.ID,
-                    "AREA_SF": scale_factor.AREA_SF,
-                    "ASY_SF": scale_factor.ASY_SF,
-                    "ASZ_SF": scale_factor.ASZ_SF,
-                    "IXX_SF": scale_factor.IXX_SF,
-                    "IYY_SF": scale_factor.IYY_SF,
-                    "IZZ_SF": scale_factor.IZZ_SF,
-                    "WGT_SF": scale_factor.WGT_SF,
-                    "GROUP_NAME": scale_factor.GROUP_NAME
-                }
+#             for scale_factor in cls.data:
+#                 # Create scale factor item
+#                 scale_factor_item = {
+#                     "ID": scale_factor.ID,
+#                     "AREA_SF": scale_factor.AREA_SF,
+#                     "ASY_SF": scale_factor.ASY_SF,
+#                     "ASZ_SF": scale_factor.ASZ_SF,
+#                     "IXX_SF": scale_factor.IXX_SF,
+#                     "IYY_SF": scale_factor.IYY_SF,
+#                     "IZZ_SF": scale_factor.IZZ_SF,
+#                     "WGT_SF": scale_factor.WGT_SF,
+#                     "GROUP_NAME": scale_factor.GROUP_NAME
+#                 }
                 
-                # Assign to each element ID
-                for element_id in scale_factor.ELEMENT_IDS:
-                    if str(element_id) not in json_data["Assign"]:
-                        json_data["Assign"][str(element_id)] = {"ITEMS": []}
+#                 # Assign to each element ID
+#                 for element_id in scale_factor.ELEMENT_IDS:
+#                     if str(element_id) not in json_data["Assign"]:
+#                         json_data["Assign"][str(element_id)] = {"ITEMS": []}
                     
-                    json_data["Assign"][str(element_id)]["ITEMS"].append(scale_factor_item)
+#                     json_data["Assign"][str(element_id)]["ITEMS"].append(scale_factor_item)
             
-            return json_data
+#             return json_data
         
-        @classmethod
-        def create(cls):
-            """
-            Sends all StiffnessScaleFactor data to the API
-            """
-            MidasAPI("PUT", "/db/essf", cls.json())
+#         @classmethod
+#         def create(cls):
+#             """
+#             Sends all StiffnessScaleFactor data to the API
+#             """
+#             MidasAPI("PUT", "/db/essf", cls.json())
         
-        @classmethod
-        def get(cls):
-            """
-            Retrieves StiffnessScaleFactor data from the API
-            """
-            return MidasAPI("GET", "/db/essf")
+#         @classmethod
+#         def get(cls):
+#             """
+#             Retrieves StiffnessScaleFactor data from the API
+#             """
+#             return MidasAPI("GET", "/db/essf")
         
-        @classmethod
-        def sync(cls):
-            """
-            Updates the StiffnessScaleFactor class with data from the API
-            """
-            cls.data = []
-            response = cls.get()
+#         @classmethod
+#         def sync(cls):
+#             """
+#             Updates the StiffnessScaleFactor class with data from the API
+#             """
+#             cls.data = []
+#             response = cls.get()
             
-            if response != {'message': ''}:
-                processed_ids = set()  # To avoid duplicate processing
+#             if response != {'message': ''}:
+#                 processed_ids = set()  # To avoid duplicate processing
                 
-                for element_data in response.get("ESSF", {}).items():
-                    for item in element_data.get("ITEMS", []):
-                        scale_factor_id = item.get("ID", 1)
+#                 for element_data in response.get("ESSF", {}).items():
+#                     for item in element_data.get("ITEMS", []):
+#                         scale_factor_id = item.get("ID", 1)
                         
-                        # Skip if already processed (for multi-element scale factors)
-                        if scale_factor_id in processed_ids:
-                            continue
+#                         # Skip if already processed (for multi-element scale factors)
+#                         if scale_factor_id in processed_ids:
+#                             continue
                         
-                        # Find all elements with the same scale factor ID
-                        element_ids = []
-                        for eid, edata in response.get("ESSF", {}).items():
-                            for eitem in edata.get("ITEMS", []):
-                                if eitem.get("ID") == scale_factor_id:
-                                    element_ids.append(int(eid))
+#                         # Find all elements with the same scale factor ID
+#                         element_ids = []
+#                         for eid, edata in response.get("ESSF", {}).items():
+#                             for eitem in edata.get("ITEMS", []):
+#                                 if eitem.get("ID") == scale_factor_id:
+#                                     element_ids.append(int(eid))
                         
-                        # Create StiffnessScaleFactor object
-                        Element.StiffnessScaleFactor(
-                            element_id=element_ids if len(element_ids) > 1 else element_ids[0],
-                            area_sf=item.get("AREA_SF", 1.0),
-                            asy_sf=item.get("ASY_SF", 1.0),
-                            asz_sf=item.get("ASZ_SF", 1.0),
-                            ixx_sf=item.get("IXX_SF", 1.0),
-                            iyy_sf=item.get("IYY_SF", 1.0),
-                            izz_sf=item.get("IZZ_SF", 1.0),
-                            wgt_sf=item.get("WGT_SF", 1.0),
-                            group=item.get("GROUP_NAME", ""),
-                            id=scale_factor_id
-                        )
+#                         # Create StiffnessScaleFactor object
+#                         Element.StiffnessScaleFactor(
+#                             element_id=element_ids if len(element_ids) > 1 else element_ids[0],
+#                             area_sf=item.get("AREA_SF", 1.0),
+#                             asy_sf=item.get("ASY_SF", 1.0),
+#                             asz_sf=item.get("ASZ_SF", 1.0),
+#                             ixx_sf=item.get("IXX_SF", 1.0),
+#                             iyy_sf=item.get("IYY_SF", 1.0),
+#                             izz_sf=item.get("IZZ_SF", 1.0),
+#                             wgt_sf=item.get("WGT_SF", 1.0),
+#                             group=item.get("GROUP_NAME", ""),
+#                             id=scale_factor_id
+#                         )
                         
-                        processed_ids.add(scale_factor_id)
+#                         processed_ids.add(scale_factor_id)
         
-        @classmethod
-        def delete(cls):
-            """
-            Deletes all stiffness scale factors from the database and resets the class.
-            """
-            cls.data = []
-            return MidasAPI("DELETE", "/db/essf")
+#         @classmethod
+#         def delete(cls):
+#             """
+#             Deletes all stiffness scale factors from the database and resets the class.
+#             """
+#             cls.data = []
+#             return MidasAPI("DELETE", "/db/essf")
 
 
 

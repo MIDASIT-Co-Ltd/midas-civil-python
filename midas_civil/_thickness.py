@@ -48,19 +48,20 @@ def _Obj2JS(obj):
 
 
 def _JS2Obj(id,js):
-    name = js['NAME']
-    type = js['TYPE']
-    binout = js['bINOUT']
-    t_in = js['T_IN']
-    t_out = js['T_OUT']
-    try : offset = js['OFFSET'] 
-    except: offset = 0
-    off_value = js['O_VALUE']
+    if js['TYPE'] == 'VALUE':
+        name = js['NAME']
+        type = js['TYPE']
+        binout = js['bINOUT']
+        t_in = js['T_IN']
+        t_out = js['T_OUT']
+        try : offset = js['OFFSET'] 
+        except: offset = 0
+        off_value = js['O_VALUE']
 
-    t_out2=-1
-    if binout:t_out2 = t_out
+        t_out2=-1
+        if binout:t_out2 = t_out
 
-    if type == 'VALUE':
+    
         Thickness(t_in,t_out2,off_value,offset,name,id)
     
 
