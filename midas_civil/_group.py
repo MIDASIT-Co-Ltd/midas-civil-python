@@ -9,6 +9,10 @@ class _BGrup:
         def __init__(self,id,name):
             self.ID = id
             self.NAME = name
+class _LGrup:
+        def __init__(self,id,name):
+            self.ID = id
+            self.NAME = name
 
 
     # --------   ADD ELEMENT TO STRUCTURE GROUP -------
@@ -173,6 +177,18 @@ class Group:
         elif isinstance(name,list):
             for nam in name:
                 Group._BoundaryADD(nam)
+    
+    @staticmethod
+    def _LoadADD(name):
+        if Group.Load.ids == []: id = 1
+        else: id = max(Group.Load.ids)+1
+        if isinstance(name,str):
+            Group.Load.ids.append(id)
+            Group.Load.Groups.append(_LGrup(id,name))
+        elif isinstance(name,list):
+            for nam in name:
+                Group._LoadADD(nam)
+
 
 
     class Boundary:
@@ -237,10 +253,7 @@ class Group:
         def __init__(self, name:str):
             """"""
             self.NAME = name
-            if Group.Load.Groups == []: self.ID=1
-            else: self.ID= max(Group.Load.ids)+1
-            Group.Load.ids.append(self.ID)
-            Group.Load.Groups.append(self)
+            Group._LoadADD(name)    
     
         
         @classmethod

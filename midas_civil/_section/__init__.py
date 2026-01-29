@@ -2,8 +2,10 @@ from ._pscSS import _SS_PSC_12CELL,_SS_PSC_I,_SS_PSC_Value
 from ._dbSecSS import _SS_DBUSER,_SS_DB_SECTION
 from ._offsetSS import Offset
 from ._unSupp import _SS_UNSUPP,_SS_STD_DB
-from ._compositeSS import _SS_COMP_PSC_I,_SS_COMP_STEEL_I_TYPE1,_SS_COMP_PSC_VALUE
+from ._compositeSS_PSC import _SS_COMP_PSC_I,_SS_COMP_PSC_VALUE
+from ._compositeSS_Steel import _SS_COMP_STEEL_I_TYPE1,_SS_COMP_STEEL_TUB_TYPE1
 from ._TapdbSecSS import _SS_TAPERED_DBUSER
+from ._Tap_CompSteelSS import _SS_TAP_COMP_STEEL_TUB_TYPE1
 
 from ._tapPSC12CellSS import _SS_TAP_PSC_12CELL
 
@@ -95,6 +97,7 @@ def _JS2OBJ(id,js):
         if shape in ['CI']: obj = _SS_COMP_PSC_I._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
         elif shape in ['I']: obj = _SS_COMP_STEEL_I_TYPE1._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
         elif shape in ['PC']: obj = _SS_COMP_PSC_VALUE._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
+        elif shape in ['Tub']: obj = _SS_COMP_STEEL_TUB_TYPE1._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
         else: obj = _SS_UNSUPP(id,name,type,shape,offset,uShear,u7DOF,js)
 
     elif type == 'TAPERED' :
@@ -104,6 +107,7 @@ def _JS2OBJ(id,js):
         if typeDB == 2: 
             obj = _SS_TAPERED_DBUSER._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
         elif shape in ['1CEL','2CEL']: obj = _SS_TAP_PSC_12CELL._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
+        elif shape == 'CP_T': obj = _SS_TAP_COMP_STEEL_TUB_TYPE1._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
         else: obj = _SS_UNSUPP(id,name,type,shape,offset,uShear,u7DOF,js)
 
     else :
@@ -287,6 +291,21 @@ class Section:
             return sect_Obj
         
         @staticmethod
+        def SteelTub_Type1(Name='',
+                Bc=0,tc=0,Hh=0,
+                Hw=0,B1=0,Bf1=0,tf1=0,Bf3=0,
+                tw=0,B2=0,Bf2=0,tf2=0,tfp=0,
+                EsEc =0, DsDc=0,Ps=0,Pc=0,TsTc=0,
+                MultiModulus = False,CreepEratio=0,ShrinkEratio=0,
+                Offset:Offset=Offset.CC(),useShear:bool=True,use7Dof:bool=False,id:int=None):
+             
+            args = locals()
+            sect_Obj = _SS_COMP_STEEL_TUB_TYPE1(**args)
+            
+            _SectionADD(sect_Obj)
+            return sect_Obj
+        
+        @staticmethod
         def PSC_Value(Name:str, Bc:float,tc:float,Hh:float,
                         OuterPolygon:list,InnerPolygon:list=[],
                         EgEs =1, DgDs=1,Pg=0.2,Ps=0.2,TgTs=1,
@@ -323,6 +342,21 @@ class Section:
                     Offset:Offset=Offset.CC(),useShear:bool=True,use7Dof:bool=False,id:int=None):
             args = locals()
             sect_Obj = _SS_TAP_PSC_12CELL(**args)
+            
+            _SectionADD(sect_Obj)
+            return sect_Obj
+        
+        @staticmethod
+        def SteelTub_Type1(Name='',
+                Bc=0,tc=0,Hh=0,
+                params_I=[0,0,0,0,0,0,0,0,0,0],
+                params_J=[0,0,0,0,0,0,0,0,0,0],
+                EsEc =0, DsDc=0,Ps=0,Pc=0,TsTc=0,
+                MultiModulus = False,CreepEratio=0,ShrinkEratio=0,
+                Offset:Offset=Offset.CC(),useShear:bool=True,use7Dof:bool=False,id:int=None):
+             
+            args = locals()
+            sect_Obj = _SS_TAP_COMP_STEEL_TUB_TYPE1(**args)
             
             _SectionADD(sect_Obj)
             return sect_Obj

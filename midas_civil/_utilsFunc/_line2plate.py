@@ -413,6 +413,15 @@ def Mesh_SHAPE(shape:Section,meshSize=0.1):
 
     offset_CG1 = [L2P.CG_data[str(shape.ID)]['Y1'],-L2P.CG_data[str(shape.ID)]['Z1']]
     offset_CG2 = [-L2P.CG_data[str(shape.ID)]['Y2'],L2P.CG_data[str(shape.ID)]['Z2']]
+
+    if shape.TYPE == 'COMPOSITE':
+        if shape.SHAPE == 'Tub':
+            offset_CG1 = [L2P.CG_data[str(shape.ID)]['Y1'],-(L2P.CG_data[str(shape.ID)]['Z1']+shape.HH+shape.TC)]
+    elif shape.TYPE == 'TAPERED':
+        if shape.SHAPE == 'CP_T':
+            offset_CG1 = [L2P.CG_data[str(shape.ID)]['Y1'],-(L2P.CG_data[str(shape.ID)]['Z1']+shape.HH+shape.TC)]
+
+    
     sect_cg_CC1 = np.add(sect_cg_LT,offset_CG1)
     sect_cg_CC2 = np.add(sect_cg_RB,offset_CG2)
 
@@ -552,13 +561,15 @@ def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList):
     dicParams = {}
 
     resp = MidasAPI('POST','/post/TABLE',jsRes)
-    for q in resp['SS_Table']['DATA']:
-        dicParams[q[1]] = [float(q[11+j]) for j in range(10)]
 
-    for sec in Section.sect:
-        if sec.TYPE=='DBUSER':
-            if sec.DATATYPE==1:
-                Section.DBUSER(f"{sec.NAME}_conv",sec.SHAPE,dicParams[str(sec.ID)],sec.OFFSET,sec.USESHEAR,sec.USE7DOF,sec.ID)
+    if 'SS_Table' in resp:
+        for q in resp['SS_Table']['DATA']:
+            dicParams[q[1]] = [float(q[11+j]) for j in range(10)]
+
+        for sec in Section.sect:
+            if sec.TYPE=='DBUSER':
+                if sec.DATATYPE==1:
+                    Section.DBUSER(f"{sec.NAME}_conv",sec.SHAPE,dicParams[str(sec.ID)],sec.OFFSET,sec.USESHEAR,sec.USE7DOF,sec.ID)
 
     #----------------------------------------------------
 
