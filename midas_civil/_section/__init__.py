@@ -1,8 +1,8 @@
 from ._pscSS import _SS_PSC_12CELL,_SS_PSC_I,_SS_PSC_Value
-from ._dbSecSS import _SS_DBUSER
+from ._dbSecSS import _SS_DBUSER,_SS_DB_SECTION
 from ._offsetSS import Offset
 from ._unSupp import _SS_UNSUPP,_SS_STD_DB
-from ._compositeSS import _SS_COMP_PSC_I,_SS_COMP_STEEL_I_TYPE1,SS_COMP_PSC_VALUE
+from ._compositeSS import _SS_COMP_PSC_I,_SS_COMP_STEEL_I_TYPE1,_SS_COMP_PSC_VALUE
 from ._TapdbSecSS import _SS_TAPERED_DBUSER
 
 from ._tapPSC12CellSS import _SS_TAP_PSC_12CELL
@@ -11,6 +11,8 @@ from midas_civil import MidasAPI
 from typing import Literal
 
 _dbsection = Literal["L","C","H","T","B","P","2L","2C","SB","SR","OCT"]
+_variation = Literal["LINEAR","POLY"]
+_symplane = Literal["i","j"]
 
 class _helperSECTION:
     ID, NAME, SHAPE, TYPE, OFFSET, USESHEAR, USE7DOF = 0,0,0,0,0,0,0
@@ -44,6 +46,7 @@ def _SectionADD(self):
         self.ID=id        
         Section.sect.append(self)
         Section.ids.append(int(self.ID))
+    Section._dic[self.NAME] = int(self.ID)
     # Common END -------------------------------------------------------
 
 
@@ -79,6 +82,7 @@ def _JS2OBJ(id,js):
     u7DOF = js['SECT_BEFORE']['USE_WARPING_EFFECT']
     if type == 'DBUSER':
         if js['SECT_BEFORE']['DATATYPE'] ==2: obj = _SS_DBUSER._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
+        elif js['SECT_BEFORE']['DATATYPE'] ==1: obj = _SS_DB_SECTION._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
         else: obj = _SS_STD_DB(id,name,type,shape,offset,uShear,u7DOF,js)
 
     elif type == 'PSC' :
@@ -90,6 +94,7 @@ def _JS2OBJ(id,js):
     elif type == 'COMPOSITE':
         if shape in ['CI']: obj = _SS_COMP_PSC_I._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
         elif shape in ['I']: obj = _SS_COMP_STEEL_I_TYPE1._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
+        elif shape in ['PC']: obj = _SS_COMP_PSC_VALUE._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
         else: obj = _SS_UNSUPP(id,name,type,shape,offset,uShear,u7DOF,js)
 
     elif type == 'TAPERED' :
@@ -112,9 +117,10 @@ def _JS2OBJ(id,js):
 
 
 class Section:
-    """ NEW Create Sections \n Use Section.USER , Section.PSC to create sections"""
+    """ NEW Create Sections \n Use Section.DBUSER etc. to create sections"""
     sect:list[_helperSECTION] = []
     ids:list[int] = []
+    _dic = {}
 
 
     @classmethod
@@ -160,9 +166,52 @@ class Section:
 
     #---------------------     D B   U S E R    --------------------
     @staticmethod
-    def DBUSER(Name='',Shape:_dbsection='',parameters:list=[],Offset=Offset(),useShear=True,use7Dof=False,id:int=None): 
+    def DBUSER(Name:str='',Shape:_dbsection='',parameters:list=[],Offset=Offset(),useShear:bool=True,use7Dof:bool=False,id:int=None): 
+        '''
+        Standard Sections with User Inputs
+        
+        :param Name: Name of the Section
+        :type Name: str
+        :param Shape: Shape of Section
+        :type Shape: _dbsection
+        :param parameters: Section dimensions
+        :type parameters: list
+        :param Offset: Offset of Section
+        :param useShear: Consider Shear Deformation
+        :type useShear: bool
+        :param use7Dof: Consider Warping Effect
+        :type use7Dof: bool
+        :param id: ID of section
+        :type id: int
+        '''
         args = locals()
         sect_Obj = _SS_DBUSER(**args)
+        _SectionADD(sect_Obj)
+        return sect_Obj
+    
+    @staticmethod
+    def DB(Name:str='',Shape:_dbsection='',DB_Name:str='',Sect_Name:str='',Offset=Offset(),useShear:bool=True,use7Dof:bool=False,id:int=None): 
+        '''
+        Standard Sections from Codal Database
+        
+        :param Name: Name of Section
+        :type Name: str
+        :param Shape: Shape of Section
+        :type Shape: _dbsection
+        :param DB_Name: Database Name
+        :type DB_Name: str
+        :param Sect_Name: DB Section Name
+        :type Sect_Name: str
+        :param Offset: Offset of Section
+        :param useShear: Consider Shear Deformation
+        :type useShear: bool
+        :param use7Dof: Consider Warping Effect
+        :type use7Dof: bool
+        :param id: ID of section
+        :type id: int
+        ''' 
+        args = locals()
+        sect_Obj = _SS_DB_SECTION(**args)
         _SectionADD(sect_Obj)
         return sect_Obj
     
@@ -174,7 +223,7 @@ class Section:
                     BO1=0,BO11=0,BO12=0,BO2=0,BO21=0,BO3=0,
                     HI1=0,HI2=0,HI21=0,HI22=0,HI3=0,HI31=0,HI4=0,HI41=0,HI42=0,HI5=0,
                     BI1=0,BI11=0,BI12=0,BI21=0,BI3=0,BI31=0,BI32=0,BI4=0,
-                    Offset:Offset=Offset.CC(),useShear=True,use7Dof=False,id:int=None):
+                    Offset:Offset=Offset.CC(),useShear:bool=True,use7Dof:bool=False,id:int=None):
             args = locals()
             sect_Obj = _SS_PSC_12CELL(**args)
             _SectionADD(sect_Obj)
@@ -187,7 +236,7 @@ class Section:
                             BL1=0,BL2=0,BL21=0,BL22=0,BL4=0,BL41=0,BL42=0,
                             HR1=0,HR2=0,HR21=0,HR22=0,HR3=0,HR4=0,HR41=0,HR42=0,HR5=0,
                             BR1=0,BR2=0,BR21=0,BR22=0,BR4=0,BR41=0,BR42=0,
-                            Offset:Offset=Offset.CC(),useShear=True,use7Dof=False,id:int=None):
+                            Offset:Offset=Offset.CC(),useShear:bool=True,use7Dof:bool=False,id:int=None):
              
             args = locals()
             sect_Obj = _SS_PSC_I(**args)
@@ -198,7 +247,7 @@ class Section:
         @staticmethod
         def Value(Name:str,
                     OuterPolygon:list,InnerPolygon:list=[],
-                    Offset:Offset=Offset.CC(),useShear=True,use7Dof=False,id:int=None):
+                    Offset:Offset=Offset.CC(),useShear:bool=True,use7Dof:bool=False,id:int=None):
              
             args = locals()
             sect_Obj = _SS_PSC_Value(**args)
@@ -218,7 +267,7 @@ class Section:
                     BR1=0,BR2=0,BR21=0,BR22=0,BR4=0,BR41=0,BR42=0,
                     EgdEsb =0, DgdDsb=0,Pgd=0,Psb=0,TgdTsb=0,
                     MultiModulus = False,CreepEratio=0,ShrinkEratio=0,
-                    Offset:Offset=Offset.CC(),useShear=True,use7Dof=False,id:int=None):
+                    Offset:Offset=Offset.CC(),useShear:bool=True,use7Dof:bool=False,id:int=None):
              
             args = locals()
             sect_Obj = _SS_COMP_PSC_I(**args)
@@ -229,7 +278,7 @@ class Section:
         @staticmethod
         def SteelI_Type1(Name='',Bc=0,tc=0,Hh=0,Hw=0,B1=0,tf1=0,tw=0,B2=0,tf2=0,EsEc =0, DsDc=0,Ps=0,Pc=0,TsTc=0,
                 MultiModulus = False,CreepEratio=0,ShrinkEratio=0,
-                Offset:Offset=Offset.CC(),useShear=True,use7Dof=False,id:int=None):
+                Offset:Offset=Offset.CC(),useShear:bool=True,use7Dof:bool=False,id:int=None):
              
             args = locals()
             sect_Obj = _SS_COMP_STEEL_I_TYPE1(**args)
@@ -242,9 +291,9 @@ class Section:
                         OuterPolygon:list,InnerPolygon:list=[],
                         EgEs =1, DgDs=1,Pg=0.2,Ps=0.2,TgTs=1,
                         MultiModulus = False,CreepEratio=0,ShrinkEratio=0,
-                        Offset:Offset=Offset.CC(),useShear=True,use7Dof=False,id:int=0):
+                        Offset:Offset=Offset.CC(),useShear:bool=True,use7Dof:bool=False,id:int=None):
             args = locals()
-            sect_Obj = SS_COMP_PSC_VALUE(**args)
+            sect_Obj = _SS_COMP_PSC_VALUE(**args)
             
             _SectionADD(sect_Obj)
             return sect_Obj
@@ -252,7 +301,7 @@ class Section:
     class Tapered:
 
         @staticmethod
-        def DBUSER(Name='',Shape='',params_I:list=[],params_J:list=[],Offset=Offset(),useShear=True,use7Dof=False,id:int=None):
+        def DBUSER(Name:str='',Shape:_dbsection='',params_I:list=[],params_J:list=[],Offset=Offset(),useShear:bool=True,use7Dof:bool=False,id:int=None):
             args = locals()
             sect_Obj = _SS_TAPERED_DBUSER(**args)
             
@@ -271,7 +320,7 @@ class Section:
                     HI1_J=0,HI2_J=0,HI21_J=0,HI22_J=0,HI3_J=0,HI31_J=0,HI4_J=0,HI41_J=0,HI42_J=0,HI5_J=0,
                     BI1_J=0,BI11_J=0,BI12_J=0,BI21_J=0,BI3_J=0,BI31_J=0,BI32_J=0,BI4_J=0,
 
-                    Offset:Offset=Offset.CC(),useShear=True,use7Dof=False,id:int=None):
+                    Offset:Offset=Offset.CC(),useShear:bool=True,use7Dof:bool=False,id:int=None):
             args = locals()
             sect_Obj = _SS_TAP_PSC_12CELL(**args)
             
@@ -286,8 +335,8 @@ class Section:
         
         data = []
         
-        def __init__(self, name, elem_list, z_var="LINEAR", y_var="LINEAR", z_exp=2.0, z_from="i", z_dist=0, 
-                     y_exp=2.0, y_from="i", y_dist=0, id=""):
+        def __init__(self, name, elem_list:list, z_var:_variation="LINEAR", y_var:_variation="LINEAR", z_exp:float=2.0, z_from:_symplane="i", z_dist:float=0, 
+                     y_exp:float=2.0, y_from:_symplane="i", y_dist:float=0, id:int=None):
             """
             Args:
                 name (str): Tapered Group Name (Required).

@@ -7,7 +7,8 @@ from math import hypot,ceil
 from ._utils import _convItem2List , _longestList,sFlatten
 from colorama import Fore,Style
 from typing import Literal
-
+from ._material import Material
+from ._section import Section
 _meshType = Literal['Quad','Tri']
 
 def _createSurface(points,mSize,tagID):
@@ -289,6 +290,15 @@ def _ADD(self):
             _add_elem_2_stGroup(self.ID,self._GROUP)
             # for nd in self.NODE:
             _add_node_2_stGroup(self.NODE,self._GROUP)
+
+        
+        if isinstance(self.MATL,str):
+            self.MATL = Material._dic.get(self.MATL,99)
+
+        if isinstance(self.SECT,str):
+            self.SECT = Section._dic.get(self.SECT,99)
+
+
     else:
         if self._GROUP == "" :
             pass

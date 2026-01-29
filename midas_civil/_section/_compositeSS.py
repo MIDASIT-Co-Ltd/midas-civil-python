@@ -297,7 +297,7 @@ def _poly_dir(poly,rot='CCW'):
 
     return poly
 
-class SS_COMP_PSC_VALUE(_common):
+class _SS_COMP_PSC_VALUE(_common):
     def __init__(self,Name:str, Bc:float,tc:float,Hh:float,
                     OuterPolygon:list,InnerPolygon:list=[],
                     EgEs =0, DgDs=0,Pg=0,Ps=0,TgTs=0,

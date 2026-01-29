@@ -540,6 +540,27 @@ def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList):
     pbar.set_description_str("Getting Section Data...")
     Section.sync()
 
+    #------------ NEWEST UPDATE fOR DB SECTIONS --------
+
+    jsRes = {
+        "Argument": {
+            "TABLE_NAME": "SS_Table",
+            "TABLE_TYPE": "SECTIONDB/USER"
+        }
+    }
+
+    dicParams = {}
+
+    resp = MidasAPI('POST','/post/TABLE',jsRes)
+    for q in resp['SS_Table']['DATA']:
+        dicParams[q[1]] = [float(q[11+j]) for j in range(10)]
+
+    for sec in Section.sect:
+        if sec.TYPE=='DBUSER':
+            if sec.DATATYPE==1:
+                Section.DBUSER(f"{sec.NAME}_conv",sec.SHAPE,dicParams[str(sec.ID)],sec.OFFSET,sec.USESHEAR,sec.USE7DOF,sec.ID)
+
+    #----------------------------------------------------
 
     pbar.update(1)
     pbar.set_description_str("Processing Sections...")

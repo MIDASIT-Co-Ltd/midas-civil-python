@@ -162,3 +162,64 @@ class _SS_DBUSER(_common):
         sect_cg = (sect_cg_LT,sect_cg_CC,sect_cg_RB)
 
         return sect_shape, sect_thk ,sect_thk_off, sect_cg , sect_lin_con
+    
+
+class _SS_DB_SECTION(_common):
+
+    """ Create Standard DB sections"""
+
+    def __init__(self,Name='',Shape='',DB_Name='',Sect_Name='',Offset=Offset(),useShear=True,use7Dof=False,id:int=0):  
+        """ Shape = 'SB' 'SR' for rectangle \n For cylinder"""
+        self.ID = id
+        self.NAME = Name
+        self.TYPE = 'DBUSER'
+        self.SHAPE = Shape
+        self.OFFSET = Offset
+        self.USESHEAR = useShear
+        self.USE7DOF = use7Dof
+        self.DATATYPE = 1
+        self.DB_NAME = DB_Name
+        self.SECT_NAME = Sect_Name
+    
+    def __str__(self):
+         return f'  >  ID = {self.ID}   |  USER DEFINED STANDARD SECTION \nJSON = {self.toJSON()}\n'
+
+
+    def toJSON(sect):
+        js =  {
+                "SECTTYPE": "DBUSER",
+                "SECT_NAME": sect.NAME,
+                "SECT_BEFORE": {
+                    "SHAPE": sect.SHAPE,
+                    "DATATYPE": sect.DATATYPE,
+                    "SECT_I": {
+                        "DB_NAME": sect.DB_NAME,
+                        "SECT_NAME": sect.SECT_NAME
+                    }
+                }
+            }
+        js['SECT_BEFORE'].update(sect.OFFSET.JS)
+        js['SECT_BEFORE']['USE_SHEAR_DEFORM'] = sect.USESHEAR
+        js['SECT_BEFORE']['USE_WARPING_EFFECT'] = sect.USE7DOF
+        return js
+    
+    @staticmethod
+    def _objectify(id,name,type,shape,offset,uShear,u7DOF,js):
+        return _SS_DB_SECTION(name,shape,js['SECT_BEFORE']['SECT_I']['DB_NAME'],js['SECT_BEFORE']['SECT_I']['SECT_NAME'],offset,uShear,u7DOF,id)
+    
+    def _centerLine(shape,*args):
+        H,B = shape.PARAMS[1,1] # DUMMY RECT SECTION
+
+        sect_lin_con = [[1,2],[3,1]]
+
+        sect_cg_LT = [-B/2,H/2]
+        sect_cg_CC = [0,0]
+        sect_cg_RB = [B/2,-H/2]
+
+        sect_shape = [[0,0],[0,H/2],[0,-H/2]]
+        sect_thk = [B,B]
+        sect_thk_off = [0,0]
+
+        sect_cg = (sect_cg_LT,sect_cg_CC,sect_cg_RB)
+
+        return sect_shape, sect_thk ,sect_thk_off, sect_cg , sect_lin_con

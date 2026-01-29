@@ -8,6 +8,7 @@ _dbConc = Literal["KSCE-LSD15(RC)","KS01-Civil(RC)","KS-Civil(RC)","KS19(RC)","K
 class Material:
     mats = []
     ids = []
+    _dic = {}
     def __init__(self,data,id=None):
         if id == None: id =0
         if Material.ids == []: 
@@ -21,6 +22,7 @@ class Material:
 
         Material.mats.append(self)
         Material.ids.append(self.ID)
+        Material._dic[data["NAME"]] = self.ID
     
     @classmethod
     def json(cls):
