@@ -393,17 +393,18 @@ class Section:
             self.ELEM_LIST = elem_list
             self.Z_VAR = z_var
             self.Y_VAR = y_var
+            self.Z_FROM = z_from
+            self.Y_FROM = y_from
+            self.Z_DIST = z_dist
+            self.Y_DIST = y_dist
             
             # Z-axis parameters (only for POLY)
             if z_var == "POLY":
                 if z_exp is None:
                     raise ValueError("z_exp is required when z_var is 'POLY'")
                 self.Z_EXP = z_exp
-                self.Z_FROM = z_from if z_from is not None else "i"
-                self.Z_DIST = z_dist if z_dist is not None else 0
             else:
                 self.Z_EXP = None
-                self.Z_FROM = None
                 self.Z_DIST = None
             
             # Y-axis parameters (only for POLY)
@@ -411,14 +412,11 @@ class Section:
                 if y_exp is None:
                     raise ValueError("y_exp is required when y_var is 'POLY'")
                 self.Y_EXP = y_exp
-                self.Y_FROM = y_from if y_from is not None else "i"
-                self.Y_DIST = y_dist if y_dist is not None else 0
             else:
                 self.Y_EXP = None
-                self.Y_FROM = None
                 self.Y_DIST = None
             
-            if id == "":
+            if id == None:
                 id = len(Section.TaperedGroup.data) + 1
             self.ID = id
             
@@ -433,19 +431,19 @@ class Section:
                     "NAME": i.NAME,
                     "ELEMLIST": i.ELEM_LIST,
                     "ZVAR": i.Z_VAR,
-                    "YVAR": i.Y_VAR
+                    "YVAR": i.Y_VAR,
+                    "ZFROM" : i.Z_FROM,
+                    "YFROM" : i.Y_FROM
                 }
                 
                 # Add Z-axis polynomial parameters only if Z_VAR is "POLY"
                 if i.Z_VAR == "POLY":
                     tapper_data["ZEXP"] = i.Z_EXP
-                    tapper_data["ZFROM"] = i.Z_FROM
                     tapper_data["ZDIST"] = i.Z_DIST
                 
                 # Add Y-axis polynomial parameters only if Y_VAR is "POLY"
                 if i.Y_VAR == "POLY":
                     tapper_data["YEXP"] = i.Y_EXP
-                    tapper_data["YFROM"] = i.Y_FROM
                     tapper_data["YDIST"] = i.Y_DIST
                 
                 json_data["Assign"][str(i.ID)] = tapper_data

@@ -930,7 +930,7 @@ class Load:
                     "VECTORS" : i.VECTOR,
                     "FORCES": i.PRES
                 }
-                if isinstance(i.PRES,float): newP = [i.PRES,0,0,0,0]
+                if isinstance(i.PRES,(float,int)): newP = [i.PRES,0,0,0,0]
                 elif isinstance(i.PRES,list):
                     trimP = i.PRES[:4]
                     newP = [0] + trimP
@@ -959,15 +959,29 @@ class Load:
         def clear(cls):
             cls.data=[]
         
-        # @classmethod
-        # def sync(cls):
-        #     cls.data = []
-        #     a = cls.get()
-        #     if a != {'message': ''}:
-        #         for i in a['PRES'].keys():
-        #             for j in range(len(a['CNLD'][i]['ITEMS'])):
-        #                 Load.Nodal(int(i),a['CNLD'][i]['ITEMS'][j]['LCNAME'], a['CNLD'][i]['ITEMS'][j]['GROUP_NAME'], 
-        #                     a['CNLD'][i]['ITEMS'][j]['FX'], a['CNLD'][i]['ITEMS'][j]['FY'], a['CNLD'][i]['ITEMS'][j]['FZ'], 
-        #                     a['CNLD'][i]['ITEMS'][j]['MX'], a['CNLD'][i]['ITEMS'][j]['MY'], a['CNLD'][i]['ITEMS'][j]['MZ'],
-        #                     a['CNLD'][i]['ITEMS'][j]['ID'])
-                
+        @classmethod
+        def sync(cls):
+            cls.data = []
+            a = cls.get()
+            if a != {'message': ''}:
+                for i in a['PRES'].keys():
+                    for j in range(len(a['PRES'][i]['ITEMS'])):
+                        if a['PRES'][i]['ITEMS'][j]['ELEM_TYPE'] == 'PLATE' and a['PRES'][i]['ITEMS'][j]['FACE_EDGE_TYPE'] == 'FACE':
+
+                            _defProjOpt = False
+                            _defVector = [0,0,1]
+                            _defLoad = 0
+
+                            if a['PRES'][i]['ITEMS'][j]['FORCES'][0] == 0 : _defLoad = a['PRES'][i]['ITEMS'][j]['FORCES'][1:]
+                            else: _defLoad = a['PRES'][i]['ITEMS'][j]['FORCES'][0]
+
+                            
+                            if 'OPT_PROJECTION' in a['PRES'][i]['ITEMS'][j]: _defProjOpt = a['PRES'][i]['ITEMS'][j]['OPT_PROJECTION']
+                            if 'VECTORS' in a['PRES'][i]['ITEMS'][j]: _defVector = a['PRES'][i]['ITEMS'][j]['VECTORS']
+
+                            Load.Pressure(
+                                int(i),a['PRES'][i]['ITEMS'][j]['LCNAME'], a['PRES'][i]['ITEMS'][j]['GROUP_NAME'],
+                                a['PRES'][i]['ITEMS'][j]['DIRECTION'],_defLoad,
+                                _defVector,_defProjOpt,
+                                a['PRES'][i]['ITEMS'][j]['ID'],
+                                )

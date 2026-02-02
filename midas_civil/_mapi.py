@@ -25,6 +25,7 @@ class NX:
     debug_response = False
     onlyNode = False
     visualiser = False
+    projStatus = {}
 
     def saveJSON(jsonData,fileLocation = "jsData.json"):
         import json

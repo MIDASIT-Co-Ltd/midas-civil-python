@@ -1,5 +1,7 @@
 from ._mapi import MidasAPI,NX
 from colorama import Fore,Style
+import numpy as np
+import math
 from ._node import Node , NodeLocalAxis
 from ._element import Element
 from ._group import Group
@@ -19,6 +21,27 @@ from ._construction import CS
 
 from collections import defaultdict
 from typing import Literal
+
+_forceUnit = Literal["KN", "N", "KGF", "TONF", "LBF", "KIPS"]
+_lengthUnit = Literal["M", "CM", "MM", "FT", "IN"]
+_heatUnit = Literal["CAL", "KCAL", "J", "KJ", "BTU"]
+_tempUnit = Literal["C","F"]
+
+_dbNames = Literal['NODE','ELEM','MATL','SECT','RIGD','ELNK','THK']
+_dbMapping = {
+    "NODE" : "Node",
+    "ELEM" : "Element",
+    "MATL" : "Material",
+    "SECT" : "Section",
+    "THK" : "Thickness",
+    "ELNK" : "Elastic Link",
+    "RIGD" : "Rigid Link",
+    "SKEW" : "Node Local Axis",
+    "STLD" : "Static Load Case",
+
+}
+_SelectOutput = Literal['NODE_ID','NODE','ELEM_ID','ELEM']
+
 class Model:
 
     #4 Function to check analysis status & perform analysis if not analyzed
@@ -39,7 +62,6 @@ class Model:
                 return True
         print(" ⚠️   Model ananlysed. Switching to post-processing mode.")
 
-    #9 Function to remove duplicate nodes and elements from Node & Element classes\
     # @staticmethod
     # def merge_nodes(tolerance = 0):
     #     """This functions removes duplicate nodes defined in the Node Class and modifies Element class accordingly.  \nSample: remove_duplicate()"""
@@ -84,13 +106,9 @@ class Model:
     #         for i in elem_di.keys():
     #             Element(elem_di[i], i)
 
-    _forceType = Literal["KN", "N", "KGF", "TONF", "LBF", "KIPS"]
-    _lengthType = Literal["M", "CM", "MM", "FT", "IN"]
-    _heatType = Literal["CAL", "KCAL", "J", "KJ", "BTU"]
-    _tempType = Literal["C","F"]
     
     @staticmethod
-    def units(force:_forceType = "KN",length:_lengthType = "M", heat:_heatType = "BTU", temp:_tempType = "C"):
+    def units(force:_forceUnit = "KN",length:_lengthUnit = "M", heat:_heatUnit = "BTU", temp:_tempUnit = "C"):
         """force --> KN, N, KFG, TONF, LFB, KIPS ||  
         \ndist --> M, CM, MM, FT, IN ||  
         \nheat --> CAL, KCAL, J, KJ, BTU ||  
@@ -114,96 +132,95 @@ class Model:
         }}
         MidasAPI("PUT","/db/UNIT",unit)
 
-    @staticmethod
-    def select(crit_1 = "X", crit_2 = 0, crit_3 = 0, st = 'a', en = 'a', tolerance = 0):
-        """Get list of nodes/elements as required.\n
-        crit_1 (=> Along: "X", "Y", "Z". OR, IN: "XY", "YZ", "ZX". OR "USM"),\n
-        crit_2 (=> With Ordinate value: Y value, X value, X Value, Z value, X value, Y value. OR Material ID),\n
-        crit_3 (=> At Ordinate 2 value: Z value, Z value, Y value, 0, 0, 0. OR Section ID),\n
-        starting ordinate, end ordinate, tolerance, node dictionary, element dictionary.\n
-        Sample:  get_select("Y", 0, 2) for selecting all nodes and elements parallel Y axis with X ordinate as 0 and Z ordinate as 2."""
-        output = {'NODE':[], 'ELEM':[]}
-        ok = 0
-        no = Node.json()
-        el = Element.json()
-        if crit_1 == "USM":
-            materials = Material.json()
-            sections = Section.json()
-            elements = el
-            k = list(elements.keys())[0]
-            mat_nos = list((materials["Assign"].keys()))
-            sect_nos = list((sections["Assign"].keys()))
-            elem = {}
-            for m in mat_nos:
-                elem[int(m)] = {}
-                for s in sect_nos:
-                        elem[int(m)][int(s)] = []
-            for e in elements[k].keys(): elem[((elements[k][e]['MATL']))][((elements[k][e]['SECT']))].append(int(e))
-            output['ELEM'] = elem[crit_2][crit_3]
-            ok = 1
-        elif no != "" and el != "":
-            n_key = list(no.keys())[0]
-            e_key = list(el.keys())[0]
-            if n_key == "Assign": no["Assign"] = {str(key):value for key,value in no["Assign"].items()}
-            if e_key == "Assign": el["Assign"] = {str(key):value for key,value in el["Assign"].items()}
-            if crit_1 == "X": 
-                cr2 = "Y"
-                cr3 = "Z"
-                ok = 1
-            if crit_1 == "Y": 
-                cr2 = "X"
-                cr3 = "Z"
-                ok = 1
-            if crit_1 == "Z": 
-                cr2 = "X"
-                cr3 = "Y"
-                ok = 1
-            if crit_1 == "XY" or crit_1 == "YX":
-                cr2 = "Z"
-                ok = 1
-            if crit_1 == "YZ" or crit_1 == "ZY":
-                cr2 = "X"
-                ok = 1
-            if crit_1 == "ZX" or crit_1 == "XZ":
-                cr2 = "Y"
-                ok = 1
-            if len(crit_1) == 1 and ok == 1:
-                if st == 'a': st = min([v[crit_1] for v in no[n_key].values()])
-                if en == 'a': en = max([v[crit_1] for v in no[n_key].values()])
-                for n in no[n_key].keys():
-                    curr = no[n_key][n]
-                    if curr[cr2] >= crit_2 - tolerance and curr[cr2] <= crit_2 + tolerance:
-                        if curr[cr3] >= crit_3 - tolerance and curr[cr3] <= crit_3 + tolerance:
-                            if curr[crit_1] >= st and curr[crit_1] <= en: output['NODE'].append(int(n))
-                for e in el[e_key].keys():
-                    curr_0 = no[n_key][str(el[e_key][e]['NODE'][0])]
-                    curr_1 = no[n_key][str(el[e_key][e]['NODE'][1])]
-                    if curr_0[cr2] == curr_1[cr2] and curr_0[cr3] == curr_1[cr3]:
-                        if curr_0[cr2] >= crit_2 - tolerance and curr_0[cr2] <= crit_2 + tolerance:
-                            if curr_0[cr3] >= crit_3 - tolerance and curr_0[cr3] <= crit_3 + tolerance:
-                                if curr_1[cr2] >= crit_2 - tolerance and curr_1[cr2] <= crit_2 + tolerance:
-                                    if curr_1[cr3] >= crit_3 - tolerance and curr_1[cr3] <= crit_3 + tolerance:
-                                        if curr_0[crit_1] >= st and curr_0[crit_1] <= en and curr_1[crit_1] >= st and curr_1[crit_1] <= en:
-                                            output['ELEM'].append(int(e))
-            if len(crit_1) == 2 and ok == 1:
-                if st == 'a': st = min(min([v[crit_1[0]] for v in no[n_key].values()]), min([v[crit_1[1]] for v in no[n_key].values()]))
-                if en == 'a': en = max(max([v[crit_1[0]] for v in no[n_key].values()]), max([v[crit_1[1]] for v in no[n_key].values()]))
-                for n in no[n_key].keys():
-                    curr = no[n_key][n]
-                    if curr[cr2] >= crit_2 - tolerance and curr[cr2] <= crit_2 + tolerance:
-                        if curr[crit_1[0]] >= st and curr[crit_1[1]] >= st and curr[crit_1[0]] <= en and curr[crit_1[1]] <= en: output['NODE'].append(int(n))
-                for e in el[e_key].keys():
-                    curr_0 = no[n_key][str(el[e_key][e]['NODE'][0])]
-                    curr_1 = no[n_key][str(el[e_key][e]['NODE'][1])]
-                    if curr_0[cr2] == curr_1[cr2]:
-                        if curr_0[cr2] >= crit_2 - tolerance and curr_0[cr2] <= crit_2 + tolerance:
-                            if curr_1[cr2] >= crit_2 - tolerance and curr_1[cr2] <= crit_2 + tolerance:
-                                if curr_0[crit_1[0]] >= st and curr_0[crit_1[0]] <= en and curr_1[crit_1[0]] >= st and curr_1[crit_1[0]] <= en:
-                                    if curr_0[crit_1[1]] >= st and curr_0[crit_1[1]] <= en and curr_1[crit_1[1]] >= st and curr_1[crit_1[1]] <= en:
-                                        output['ELEM'].append(int(e))
-        if ok != 1: output = "Incorrect input.  Please check the syntax!"
-        return output
-
+    # @staticmethod
+    # def select(crit_1 = "X", crit_2 = 0, crit_3 = 0, st = 'a', en = 'a', tolerance = 0):
+    #     """Get list of nodes/elements as required.\n
+    #     crit_1 (=> Along: "X", "Y", "Z". OR, IN: "XY", "YZ", "ZX". OR "USM"),\n
+    #     crit_2 (=> With Ordinate value: Y value, X value, X Value, Z value, X value, Y value. OR Material ID),\n
+    #     crit_3 (=> At Ordinate 2 value: Z value, Z value, Y value, 0, 0, 0. OR Section ID),\n
+    #     starting ordinate, end ordinate, tolerance, node dictionary, element dictionary.\n
+    #     Sample:  get_select("Y", 0, 2) for selecting all nodes and elements parallel Y axis with X ordinate as 0 and Z ordinate as 2."""
+    #     output = {'NODE':[], 'ELEM':[]}
+    #     ok = 0
+    #     no = Node.json()
+    #     el = Element.json()
+    #     if crit_1 == "USM":
+    #         materials = Material.json()
+    #         sections = Section.json()
+    #         elements = el
+    #         k = list(elements.keys())[0]
+    #         mat_nos = list((materials["Assign"].keys()))
+    #         sect_nos = list((sections["Assign"].keys()))
+    #         elem = {}
+    #         for m in mat_nos:
+    #             elem[int(m)] = {}
+    #             for s in sect_nos:
+    #                     elem[int(m)][int(s)] = []
+    #         for e in elements[k].keys(): elem[((elements[k][e]['MATL']))][((elements[k][e]['SECT']))].append(int(e))
+    #         output['ELEM'] = elem[crit_2][crit_3]
+    #         ok = 1
+    #     elif no != "" and el != "":
+    #         n_key = list(no.keys())[0]
+    #         e_key = list(el.keys())[0]
+    #         if n_key == "Assign": no["Assign"] = {str(key):value for key,value in no["Assign"].items()}
+    #         if e_key == "Assign": el["Assign"] = {str(key):value for key,value in el["Assign"].items()}
+    #         if crit_1 == "X": 
+    #             cr2 = "Y"
+    #             cr3 = "Z"
+    #             ok = 1
+    #         if crit_1 == "Y": 
+    #             cr2 = "X"
+    #             cr3 = "Z"
+    #             ok = 1
+    #         if crit_1 == "Z": 
+    #             cr2 = "X"
+    #             cr3 = "Y"
+    #             ok = 1
+    #         if crit_1 == "XY" or crit_1 == "YX":
+    #             cr2 = "Z"
+    #             ok = 1
+    #         if crit_1 == "YZ" or crit_1 == "ZY":
+    #             cr2 = "X"
+    #             ok = 1
+    #         if crit_1 == "ZX" or crit_1 == "XZ":
+    #             cr2 = "Y"
+    #             ok = 1
+    #         if len(crit_1) == 1 and ok == 1:
+    #             if st == 'a': st = min([v[crit_1] for v in no[n_key].values()])
+    #             if en == 'a': en = max([v[crit_1] for v in no[n_key].values()])
+    #             for n in no[n_key].keys():
+    #                 curr = no[n_key][n]
+    #                 if curr[cr2] >= crit_2 - tolerance and curr[cr2] <= crit_2 + tolerance:
+    #                     if curr[cr3] >= crit_3 - tolerance and curr[cr3] <= crit_3 + tolerance:
+    #                         if curr[crit_1] >= st and curr[crit_1] <= en: output['NODE'].append(int(n))
+    #             for e in el[e_key].keys():
+    #                 curr_0 = no[n_key][str(el[e_key][e]['NODE'][0])]
+    #                 curr_1 = no[n_key][str(el[e_key][e]['NODE'][1])]
+    #                 if curr_0[cr2] == curr_1[cr2] and curr_0[cr3] == curr_1[cr3]:
+    #                     if curr_0[cr2] >= crit_2 - tolerance and curr_0[cr2] <= crit_2 + tolerance:
+    #                         if curr_0[cr3] >= crit_3 - tolerance and curr_0[cr3] <= crit_3 + tolerance:
+    #                             if curr_1[cr2] >= crit_2 - tolerance and curr_1[cr2] <= crit_2 + tolerance:
+    #                                 if curr_1[cr3] >= crit_3 - tolerance and curr_1[cr3] <= crit_3 + tolerance:
+    #                                     if curr_0[crit_1] >= st and curr_0[crit_1] <= en and curr_1[crit_1] >= st and curr_1[crit_1] <= en:
+    #                                         output['ELEM'].append(int(e))
+    #         if len(crit_1) == 2 and ok == 1:
+    #             if st == 'a': st = min(min([v[crit_1[0]] for v in no[n_key].values()]), min([v[crit_1[1]] for v in no[n_key].values()]))
+    #             if en == 'a': en = max(max([v[crit_1[0]] for v in no[n_key].values()]), max([v[crit_1[1]] for v in no[n_key].values()]))
+    #             for n in no[n_key].keys():
+    #                 curr = no[n_key][n]
+    #                 if curr[cr2] >= crit_2 - tolerance and curr[cr2] <= crit_2 + tolerance:
+    #                     if curr[crit_1[0]] >= st and curr[crit_1[1]] >= st and curr[crit_1[0]] <= en and curr[crit_1[1]] <= en: output['NODE'].append(int(n))
+    #             for e in el[e_key].keys():
+    #                 curr_0 = no[n_key][str(el[e_key][e]['NODE'][0])]
+    #                 curr_1 = no[n_key][str(el[e_key][e]['NODE'][1])]
+    #                 if curr_0[cr2] == curr_1[cr2]:
+    #                     if curr_0[cr2] >= crit_2 - tolerance and curr_0[cr2] <= crit_2 + tolerance:
+    #                         if curr_1[cr2] >= crit_2 - tolerance and curr_1[cr2] <= crit_2 + tolerance:
+    #                             if curr_0[crit_1[0]] >= st and curr_0[crit_1[0]] <= en and curr_1[crit_1[0]] >= st and curr_1[crit_1[0]] <= en:
+    #                                 if curr_0[crit_1[1]] >= st and curr_0[crit_1[1]] <= en and curr_1[crit_1[1]] >= st and curr_1[crit_1[1]] <= en:
+    #                                     output['ELEM'].append(int(e))
+    #     if ok != 1: output = "Incorrect input.  Please check the syntax!"
+    #     return output
 
 
     # @staticmethod
@@ -249,16 +266,34 @@ class Model:
 
 
     @staticmethod
-    def maxID(dbNAME:str = 'NODE') -> int :
+    def maxID(dbNAME:_dbNames = 'NODE' , fast:bool=True) -> int :
         ''' 
         Returns maximum ID of a DB in CIVIL NX
         dbNAME - 'NODE' , 'ELEM' , 'THIK' , 'SECT' 
         If no data exist, 0 is returned
         '''
-        dbJS = MidasAPI('GET',f'/db/{dbNAME}')
-        if dbJS == {'message': ''}:
+
+        if fast:
+            if NX.projStatus == {}:
+                resp = MidasAPI('GET','/ope/PROJECTSTATUS')
+                NX.projStatus = resp["PROJECTSTATUS"]["DATA"]
+                NX.projStatus += resp["PROJECTSTATUS"]["DATA_LOAD"]
+
+            for data in NX.projStatus:
+                if data[0].lower() == _dbMapping[dbNAME].lower() :
+                    _d2 = 0
+                    try: _d2 = int(data[2])
+                    except: pass
+                    if _d2==0:
+                        return int(data[1])
+                    return _d2
             return 0
-        return max(map(int, list(dbJS[dbNAME].keys())))
+        
+        else:
+            dbJS = MidasAPI('GET',f'/db/{dbNAME}')
+            if dbJS == {'message': ''}:
+                return 0
+            return max(map(int, list(dbJS[dbNAME].keys())))
 
     @staticmethod
     def create():
@@ -280,6 +315,9 @@ class Model:
         pbar.set_description_str("Creating Element...")
         if Element.elements!=[] : Element.create()
         pbar.update(1)
+        pbar.set_description_str("Creating Tapered Group...")
+        if Section.TaperedGroup.data !=[] : Section.TaperedGroup.create()
+        pbar.update(1)
         pbar.set_description_str("Creating Node Local Axis...")
         if NodeLocalAxis.skew!=[] : NodeLocalAxis.create()
         pbar.update(1)
@@ -298,9 +336,6 @@ class Model:
         pbar.set_description_str("Creating Tendon...")
         Tendon.create()
         pbar.update(1)
-        pbar.set_description_str("Creating Tapered Group...")
-        if Section.TaperedGroup.data !=[] : Section.TaperedGroup.create()
-        pbar.update(1)
         pbar.set_description_str("Creating Construction Stages...")
         CS.create()
         pbar.update(1)
@@ -312,11 +347,6 @@ class Model:
         pbar.update(1)
         pbar.set_description_str(Fore.GREEN+"Model creation complete"+Style.RESET_ALL)
         
-
-
-
-
-
     @staticmethod
     def clear():
         Material.clearAll()
@@ -332,8 +362,6 @@ class Model:
         Tendon.clear()
         Section.TaperedGroup.clear()
         LoadCombination.clear()
-
-
 
     @staticmethod
     def type(strc_type=0,mass_type=1,gravity:float=0,mass_dir=1):
@@ -390,7 +418,6 @@ class Model:
             else:
                 print('⚠️  File extension is missing')
                 
-
     @staticmethod
     def saveAs(location=""):
         """Saves the model at location provided   
@@ -408,7 +435,6 @@ class Model:
         else:
             print('⚠️  File extension is missing')
         
-
     @staticmethod
     def new():
         """Creates a new model"""
@@ -456,7 +482,6 @@ class Model:
         else:
             print('⚠️  Location data in exportMCT is missing file extension')
 
-    
     @staticmethod
     def importJSON(location=""):
         """Import JSON data file in MIDAS CIVIL NX
@@ -517,6 +542,106 @@ class Model:
 
 
 
+    class Select:
 
+        @staticmethod
+        def Line(point1:tuple = (0,0,0) , point2:tuple=(1,0,0) , output:_SelectOutput='NODE_ID',radius:float=0.001) -> list:
+            output_list = []
+            x1 = min(point1[0]-radius,point2[0]-radius)
+            x2 = max(point1[0]+radius,point2[0]+radius)
+            y1 = min(point1[1]-radius,point2[1]-radius)
+            y2 = max(point1[1]+radius,point2[1]+radius)
+            z1 = min(point1[2]-radius,point2[2]-radius)
+            z2 = max(point1[2]+radius,point2[2]+radius)
+
+            direction = np.subtract(point2,point1)
+
+            bELEM = False
+            bID = True
+            
+            if output == 'ELEM_ID': 
+                gridStr = list(Element.Grid.keys())
+                grid_complete = Element.Grid
+                bELEM,bID = True,True
+            elif output == 'ELEM': 
+                gridStr = list(Element.Grid.keys())
+                grid_complete = Element.Grid
+                bELEM,bID = True,False
+            elif output == 'NODE': 
+                gridStr = list(Node.Grid.keys())
+                grid_complete = Node.Grid
+                bID = False
+            else:
+                gridStr = list(Node.Grid.keys())
+                grid_complete = Node.Grid
+            
+
+            for i in np.arange(int(x1),int(x2)+1,1):
+                for j in np.arange(int(y1),int(y2)+1,1):
+                    for k in np.arange(int(z1),int(z2)+1,1):
+                        cgridStr = f"{i},{j},{k}"
+
+                        if cgridStr in gridStr:
+
+                            for elm in grid_complete[cgridStr]:
+                                point = elm.CENTER if bELEM else elm.LOC
+
+                                if x1 <= point[0] <= x2 and y1 <= point[1] <= y2 and z1 <= point[2] <= z2 :
+                                    diff = np.subtract(point, point1)
+                                    cross = np.cross(diff, direction)
+                                    dist = np.linalg.norm(cross) / np.linalg.norm(direction)
+                                    if dist<radius:
+                                        output_list.append(elm.ID if bID else elm)
+            
+            
+            return output_list
+        
+        @staticmethod
+        def Box(point1:tuple = (0,0,0) , point2:tuple=(1,0,0) , output:_SelectOutput='NODE_ID') -> list:
+            output_list = []
+
+            tol:float=0.001
+            x1 = min(point1[0]-tol,point2[0]-tol)
+            x2 = max(point1[0]+tol,point2[0]+tol)
+            y1 = min(point1[1]-tol,point2[1]-tol)
+            y2 = max(point1[1]+tol,point2[1]+tol)
+            z1 = min(point1[2]-tol,point2[2]-tol)
+            z2 = max(point1[2]+tol,point2[2]+tol)
+
+            bELEM = False
+            bID = True
+            
+            if output == 'ELEM_ID': 
+                gridStr = list(Element.Grid.keys())
+                grid_complete = Element.Grid
+                bELEM,bID = True,True
+            elif output == 'ELEM': 
+                gridStr = list(Element.Grid.keys())
+                grid_complete = Element.Grid
+                bELEM,bID = True,False
+            elif output == 'NODE': 
+                gridStr = list(Node.Grid.keys())
+                grid_complete = Node.Grid
+                bID = False
+            else:
+                gridStr = list(Node.Grid.keys())
+                grid_complete = Node.Grid
+            
+
+            for i in np.arange(int(x1),int(x2)+1,1):
+                for j in np.arange(int(y1),int(y2)+1,1):
+                    for k in np.arange(int(z1),int(z2)+1,1):
+                        cgridStr = f"{i},{j},{k}"
+
+                        if cgridStr in gridStr:
+
+                            for elm in grid_complete[cgridStr]:
+                                point = elm.CENTER if bELEM else elm.LOC
+
+                                if x1 <= point[0] <= x2 and y1 <= point[1] <= y2 and z1 <= point[2] <= z2 :
+                                    output_list.append(elm.ID if bID else elm)
+            
+            
+            return output_list
 
 

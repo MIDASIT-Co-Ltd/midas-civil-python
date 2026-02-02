@@ -11,6 +11,11 @@ from ._material import Material
 from ._section import Section
 _meshType = Literal['Quad','Tri']
 
+
+def _cell(point): #SIZE OF GRID - string format
+    # return str(f"{int(point.X//size)},{int(point.Y//size)},{int(point.Z//size)}")
+    return str(f"{int(point[0])},{int(point[1])},{int(point[2])}")
+
 def _createSurface(points,mSize,tagID):
     import gmsh
     final_points, num_points = _dividePoints(points,mSize)
@@ -277,6 +282,13 @@ def _ADD(self):
             if id > Element.maxID:
                 Element.maxID = id
         Element.__elemDIC__[str(self.ID)] = self
+        cell_loc = _cell(self.CENTER)
+        
+        if cell_loc in Element.Grid:
+            Element.Grid[cell_loc].append(self)
+        else:
+            Element.Grid[cell_loc]=[]
+            Element.Grid[cell_loc].append(self)
         
         # ------------  Group assignment -----------------------
         if self._GROUP == "" :
@@ -422,6 +434,7 @@ class Element():
     ids:list[int] = []
     maxID:int = 0
     __elemDIC__ = {}
+    Grid ={}    # Node object in cube grid
 
     
     lastLoc = (0,0,0) #Last Location created using Beam element
