@@ -133,9 +133,26 @@ class Node:
             json["Assign"][i.ID]={"X":i.X,"Y":i.Y,"Z":i.Z}
         return json
     
-    @staticmethod
-    def create():
-        MidasAPI("PUT","/db/NODE",Node.json())
+    @classmethod
+    def create(cls):
+        __maxNos__ = 40_000  #40_000 nodes can be sent in a single request
+        __numItem__ = len(cls.nodes)
+
+        __nTime__ = int(__numItem__/__maxNos__)+1
+
+        if __nTime__ == 1:
+            MidasAPI("PUT","/db/NODE",Node.json())
+        else:
+            __remainItem__ = __numItem__
+            for n in range(__nTime__):
+                json = {"Assign":{}}
+                __nNode_c__ = min(__maxNos__,__remainItem__)
+                for q in range(__nNode_c__):
+                    i=cls.nodes[n*__maxNos__+q]
+                    json["Assign"][i.ID]={"X":i.X,"Y":i.Y,"Z":i.Z}
+                MidasAPI("PUT","/db/NODE",json)
+                __remainItem__ -= __maxNos__
+
         
     @staticmethod
     def get():

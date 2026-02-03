@@ -453,6 +453,24 @@ class Element():
     def create(cls):
         if cls.elements:
             MidasAPI("PUT", "/db/ELEM", Element.json())
+            __maxNos__ = 20_000  #20_000 elements can be sent in a single request
+            __numItem__ = len(cls.elements)
+            __nTime__ = int(__numItem__/__maxNos__)+1
+
+            if __nTime__ == 1:
+                MidasAPI("PUT", "/db/ELEM", Element.json())
+            else:
+                __remainItem__ = __numItem__
+                for n in range(__nTime__):
+                    json = {"Assign":{}}
+                    __nElem_c__ = min(__maxNos__,__remainItem__)
+                    for q in range(__nElem_c__):
+                        elem=cls.elements[n*__maxNos__+q]
+                        js = _Obj2JS(elem)
+                        json["Assign"][elem.ID] = js
+                    MidasAPI("PUT","/db/ELEM",json)
+                    __remainItem__ -= __maxNos__
+        
 
     @staticmethod
     def get():

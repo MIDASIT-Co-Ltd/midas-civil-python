@@ -33,7 +33,7 @@ _dbMapping = {
     "ELEM" : "Element",
     "MATL" : "Material",
     "SECT" : "Section",
-    "THK" : "Thickness",
+    "THIK" : "Thickness",
     "ELNK" : "Elastic Link",
     "RIGD" : "Rigid Link",
     "SKEW" : "Node Local Axis",
@@ -266,10 +266,11 @@ class Model:
 
 
     @staticmethod
-    def maxID(dbNAME:_dbNames = 'NODE' , fast:bool=True) -> int :
+    def maxID(dbNAME:_dbNames = 'NODE' , fast:bool=False) -> int :
         ''' 
         Returns maximum ID of a DB in CIVIL NX
         dbNAME - 'NODE' , 'ELEM' , 'THIK' , 'SECT' 
+        fast - 'NODE' , 'ELEM' , 'THIK' , 'SECT' , 'MATL'
         If no data exist, 0 is returned
         '''
 

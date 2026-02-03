@@ -613,24 +613,24 @@ def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList):
     pbar.set_description_str("Getting existing Node data...")
     Node.clear()
     # Node.sync()
-    Node.ids=[Model.maxID('NODE')]
+    Node.ids=[Model.maxID('NODE',True)]
     
     pbar.update(1)
     pbar.set_description_str("Getting existing Element data...")
     Element.clear()
     # Element.ids = [Model.maxID('ELEM')]
-    Element.maxID = Model.maxID('ELEM')
+    Element.maxID = Model.maxID('ELEM',True)
 
     pbar.update(1)
     pbar.set_description_str("Getting existing Thickness data...")
     Thickness.clear()
-    Thickness.ids = [Model.maxID('THIK')]
+    Thickness.ids = [Model.maxID('THIK',True)]
 
     if bRigdLnk:
         pbar.update(1)
         pbar.set_description_str("Getting existing Rigid Link data...")
         Boundary.RigidLink.clear()
-        Boundary.RigidLink.ids = [Model.maxID('RIGD')]
+        Boundary.RigidLink.ids = [Model.maxID('RIGD',False)]
 
 
     pbar.update(1)
