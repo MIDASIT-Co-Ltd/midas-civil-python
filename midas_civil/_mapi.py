@@ -25,7 +25,7 @@ class NX:
     debug_response = False
     onlyNode = False
     visualiser = False
-    projStatus = {}
+    projStatus = {} # Handles the fast MAX ID -> Name will be changed
 
     def saveJSON(jsonData,fileLocation = "jsData.json"):
         import json
