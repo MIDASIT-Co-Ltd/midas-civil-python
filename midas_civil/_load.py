@@ -88,12 +88,10 @@ class Load_Case:
     
     @staticmethod
     def sync():
-        Load_Case.maxID = 0
-        Load_Case.maxNO = 0
+        Load_Case.clear()
         a = Load_Case.get()
         if a != {'message': ''}:
             if list(a['STLD'].keys()) != []:
-                Load_Case.cases = []
                 for j in a['STLD'].keys():
                     lc = Load_Case(a['STLD'][j]['TYPE'], a['STLD'][j]['NAME'])
                     lcID = int(j)

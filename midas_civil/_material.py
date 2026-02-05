@@ -19,6 +19,8 @@ class Material:
         if id!= 0 and id not in Material.ids: self.ID = id
 
         self.DATA = data
+        self.NAME = data["NAME"]
+        self.TYPE = data["TYPE"]
 
         Material.mats.append(self)
         Material.ids.append(self.ID)
@@ -52,11 +54,10 @@ class Material:
 
     @staticmethod
     def sync():
+        Material.clear()
         a = Material.get()
         if a != {'message': ''}:
             if list(a['MATL'].keys()) != []:
-                Material.mats = []
-                Material.ids=[]
                 for j in a['MATL'].keys():
                     Material(a['MATL'][j], int(j))
 

@@ -131,6 +131,7 @@ class LoadCombination:
     
     @classmethod
     def sync(cls, classification = "All"):
+        LoadCombination.clear()
         json = LoadCombination.get(classification)
         if json != {}:
             keys = list(json.keys())
