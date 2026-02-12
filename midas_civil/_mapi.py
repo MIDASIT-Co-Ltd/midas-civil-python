@@ -27,11 +27,48 @@ class NX:
     visualiser = False
     projStatus = {} # Handles the fast MAX ID -> Name will be changed
 
+    # Function for quick saving of JSON
     def saveJSON(jsonData,fileLocation = "jsData.json"):
         import json
         with open(fileLocation, "w", encoding="utf-8") as f:
             json.dump(jsonData, f, indent=4, ensure_ascii=False)
-    
+
+    # Function to quickly print text in a box , width -> CENTER Align
+    def print_box(text:str="HELLO WORLD",width:int=None,pad:int=1,text_col=Fore.WHITE,border_col=Fore.LIGHTWHITE_EX):
+        col_border = border_col
+        col_text = text_col
+
+        padding = pad
+
+        lines = text.splitlines()
+
+        length = max([len(line) for line in lines])
+
+        if width:
+            length = max(length,width)
+        leng = length+2*padding
+
+
+        print(col_border+"╭","─"*leng,"╮",sep="")
+        for line in lines:
+            if width:
+                gap = (leng-len(line))//2
+                print("│"," "*gap,col_text+line," "*(leng-len(line)-gap),col_border+"│",sep="")
+            else:
+                print("│"," "*padding,col_text+line," "*(leng-padding-len(line)),col_border+"│",sep="")
+        print("╰","─"*leng,"╯"+Style.RESET_ALL,sep="")
+
+
+
+        # if two:
+        #     print(col_border+"╭","─"*(leng+4),"╮",sep="")
+        #     print(col_border+"│ ╭","─"*leng,"╮ │",sep="")
+        #     for line in lines:
+        #         print("│ │"," "*padding,col_text+line," "*(leng-padding-len(line)),col_border+"│ │",sep="")
+        #     print("│ ╰","─"*leng,"╯ │",sep="")
+        #     print("╰","─"*(leng+4),"╯"+Style.RESET_ALL,sep="")
+        # else:
+        
 
 class MAPI_COUNTRY:
     

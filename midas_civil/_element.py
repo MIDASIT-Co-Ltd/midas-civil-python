@@ -375,7 +375,13 @@ def _Obj2JS(obj):
         # Gap (stype=2) - has NON_LEN parameter
         elif obj.STYPE == 2:
             if hasattr(obj, 'NON_LEN'): js["NON_LEN"] = obj.NON_LEN
-            
+
+    elif obj.TYPE == 'WALL': # Wall
+            js["WALL"] = obj.WID
+            js["W_TYPE"] = obj.WTYPE
+            js["W_CON"] = 0
+
+
     return js
 
 def _JS2Obj(id, js):
@@ -400,12 +406,18 @@ def _JS2Obj(id, js):
     tens = js.get('TENS')
     t_limit = js.get('T_LIMIT')
 
+    #Wall type
+    w_type = js.get('W_TYPE')
+    w_id = js.get('WALL')
+
     if elem_type == 'BEAM':
         Element.Beam(args['node'][0], args['node'][1], args['mat'], args['sect'], args['angle'], '', args['id'])
     elif elem_type == 'TRUSS':
         Element.Truss(args['node'][0], args['node'][1], args['mat'], args['sect'], args['angle'],'',  args['id'])
     elif elem_type == 'PLATE':
         Element.Plate(args['node'][:nNodes], args['stype'], args['mat'], args['sect'], args['angle'], '', args['id'])
+    elif elem_type == 'WALL':
+        Element.Wall(args['node'][:nNodes], args['stype'],w_type,w_id, args['mat'], args['sect'], '', args['id'])
     elif elem_type == 'TENSTR':
         Element.Tension(args['node'][0], args['node'][1], args['stype'], args['mat'], args['sect'], args['angle'], '', args['id'], non_len, cable_type, tens, t_limit)
     elif elem_type == 'COMPTR':
@@ -452,7 +464,6 @@ class Element():
     @classmethod
     def create(cls):
         if cls.elements:
-            MidasAPI("PUT", "/db/ELEM", Element.json())
             __maxNos__ = 20_000  #20_000 elements can be sent in a single request
             __numItem__ = len(cls.elements)
             __nTime__ = int(__numItem__/__maxNos__)+1
@@ -478,6 +489,8 @@ class Element():
 
     @staticmethod
     def sync():
+        if Node.nodes == []:
+            Node.sync()
         a = Element.get()
         if a and 'ELEM' in a and a['ELEM']:
             Element.clear()
@@ -498,6 +511,55 @@ class Element():
         # _quadShape.shapes = []
 
     # --- Element Type Subclasses ---
+    class Wall(_common):
+        def __init__(self, nodes: list, stype: int = 2, wtype:int = 0, wID:int = 1,mat: int = 1, sect: int = 1, group = "" , id: int = None):
+            """
+            Creates a PLATE element.
+            
+            Parameters:
+                nodes: List of node IDs [n1, n2, n3] for triangular or [n1, n2, n3, n4] for quadrilateral
+                stype: Element subtype (1=Membrane, 2=Plate) (default 2)
+                wtype: Wall type (0=Plate Base, 1=CRB-Pin , 2=CRB-Fixed) (default 0)
+                wID: Wall ID (default 1)
+                mat: Material property number (default 1)
+                sect: Section (thickness) property number (default 1)
+                angle: Material angle for orthotropic materials in degrees (default 0.0)
+                group: Structure group of the element (str or list; 'SG1' or ['SG1','SG2'])
+                id: Element ID (default None for auto-increment)
+            
+            Examples:
+                ```python
+                # Plate type Wall element
+                Element.Wall([1, 2, 3, 4], stype=2, mat=2, sect=1)
+  
+                ```
+            """
+            if id == None: id =0
+            self.ID = id
+            self.TYPE = 'WALL'
+            self.MATL = mat
+            self.SECT = sect
+            
+            self.STYPE = stype  #  1. Membrane or  2. Plate
+            self.WTYPE = wtype  #  0. Plate Base,  1. CRB-Pin ,  2. CRB-Fix
+            self.WID = wID  
+            self._GROUP = group
+
+
+            self.NODE = nodes
+            _n1 = nodeByID(nodes[0])
+            _n2 = nodeByID(nodes[1])
+            _n3 = nodeByID(nodes[2])
+            _n4 = nodeByID(nodes[3])
+            a1 , n1 = _triangleAREA(_n1,_n2,_n3)
+            a2 , n2 = _triangleAREA(_n3,_n4,_n1)
+            self.AREA = a1+a2
+            self.NORMAL = (n1+n2)/np.linalg.norm((n1+n2+0.000001))
+            self.CENTER = np.average([_n1.LOC,_n2.LOC,_n3.LOC,_n4.LOC],0)
+                
+
+            _ADD(self)
+
 
     class Beam(_common):
 
@@ -512,7 +574,7 @@ class Element():
                 sect: Section property number (default 1)
                 angle: Beta angle for section orientation in degrees (default 0.0)
                 group: Structure group of the element (str or list; 'SG1' or ['SG1','SG2'])
-                id: Element ID (default 0 for auto-increment)
+                id: Element ID (default None for auto-increment)
                 
             
             Examples:

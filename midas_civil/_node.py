@@ -19,7 +19,7 @@ def cell(point,size=1): #SIZE OF GRID - string format
 
 
 class _hNode:
-    ID,X,Y,Z,AXIS = 0,0,0,0,0
+    ID,X,Y,Z,AXIS,LOC = 0,0,0,0,0,0
 
 #5 Class to create nodes
 class Node:
@@ -137,7 +137,6 @@ class Node:
     def create(cls):
         __maxNos__ = 40_000  #40_000 nodes can be sent in a single request
         __numItem__ = len(cls.nodes)
-
         __nTime__ = int(__numItem__/__maxNos__)+1
 
         if __nTime__ == 1:

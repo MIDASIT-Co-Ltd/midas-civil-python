@@ -157,13 +157,47 @@ class Section:
 
 
     @staticmethod
-    def sync():
+    def sync(bDBSectParams = False, bSectionProperty= False):
         a = Section.get()
         if a != {'message': ''}:
             Section.sect = []
             Section.ids=[]
             for sect_id in a['SECT'].keys():
                 _JS2OBJ(sect_id,a['SECT'][sect_id])
+        
+        if bDBSectParams:
+            jsRes = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Table",
+                    "TABLE_TYPE": "SECTIONDB/USER"
+                }
+            }
+        
+            dicParams = {}
+            resp = MidasAPI('POST','/post/TABLE',jsRes)
+            for q in resp['SS_Table']['DATA']:
+                dicParams[q[1]] = [float(q[11+j]) for j in range(10)]
+        
+            for sec in Section.sect:
+                if sec.TYPE=='DBUSER':
+                    if sec.DATATYPE==1:
+                        sec.PARAMS = dicParams[str(sec.ID)]     # Add additional PARAMS property to DB Section
+                        # Section.DBUSER(f"{sec.NAME}_DB2User",sec.SHAPE,dicParams[str(sec.ID)],sec.OFFSET,sec.USESHEAR,sec.USE7DOF,sec.ID)
+        
+        if bSectionProperty:
+            jsRes = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Table",
+                    "TABLE_TYPE": "SECTIONALL"
+                }
+            }
+            dicParams = {}
+            resp = MidasAPI('POST','/post/TABLE',jsRes)
+            for q in resp['SS_Table']['DATA']:
+                dicParams[q[1]] = [float(q[5+j]) for j in range(6)]
+            for sec in Section.sect:
+                sec.AREA, sec.ASY ,sec.ASZ ,sec.IXX ,sec.IYY ,sec.IZZ , = dicParams[str(sec.ID)]
+
 
 
 #---------------------------------     S E C T I O N S    ---------------------------------------------

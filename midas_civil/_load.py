@@ -9,6 +9,9 @@ _beamLoadDir = Literal['LX','LY','LZ','GX','GY','GZ']
 _beamLoadType = Literal['CONLOAD','CONMOMENT','UNILOAD','UNIMOMENT']
 _lineDistType = Literal['Abs','Rel']
 _swDir= Literal['X','Y','Z','VECTOR']
+_LCType = Literal["USER", "D", "DC", "DW", "DD", "EP", "EANN", "EANC", "EAMN", "EAMC", "EPNN", "EPNC", "EPMN", "EPMC", "EH", "EV", "ES", "EL", "LS", "LSC", 
+            "L", "LC", "LP", "IL", "ILP", "CF", "BRK", "BK", "CRL", "PS", "B", "WP", "FP", "SF", "WPR", "W", "WL", "STL", "CR", "SH", "T", "TPG", "CO",
+            "CT", "CV", "E", "FR", "IP", "CS", "ER", "RS", "GE", "LR", "S", "R", "LF", "RF", "GD", "SHV", "DRL", "WA", "WT", "EVT", "EEP", "EX", "I", "EE"]
 # -----  Extend for list of nodes/elems -----
 
 def _ADD_NodalLoad(self):
@@ -34,7 +37,24 @@ def _ADD_BeamLoad(self):
             Load.Beam(eID,self.LCN,self.LDGR,self.VALUE,self.DIRECTION,self.D,self.P,self.CMD,self.TYPE,self.USE_ECCEN,self.USE_PROJECTION,
                       self.ECCEN_DIR,self.ECCEN_TYPE,self.IECC,self.JECC,self.USE_H,self.I_H,self.J_H,self.ID)
 
+def _ADD_LoadCase(self):
+    Load_Case.maxID = max(max(self.ID),Load_Case.maxID)
+    Load_Case.maxNO = max(max(self.NO),Load_Case.maxNO)
+    for i in range(len(self.ID)):
+        Load_Case.cases.append(_LoadCase(self.TYPE,self.NAME[i],self.ID[i],self.NO[i]))
+        
 
+
+# class _hLC:
+#     ID, NAME, TYPE , NO= 0,0,0,0
+
+class _LoadCase:
+    def __init__(self, type, name , id , no):
+        self.TYPE = type
+        self.NAME = name
+        self.ID = id
+        self.NO = no
+        self.DESC = ""
 
 #11 Class to define Load Cases:
 class Load_Case:
@@ -42,11 +62,11 @@ class Load_Case:
     \nSample: Load_Case("USER", "Case 1", "Case 2", ..., "Case n")"""
     maxID = 0
     maxNO = 0
-    cases = []
+    cases:list[_LoadCase] = []
     types = ["USER", "D", "DC", "DW", "DD", "EP", "EANN", "EANC", "EAMN", "EAMC", "EPNN", "EPNC", "EPMN", "EPMC", "EH", "EV", "ES", "EL", "LS", "LSC", 
             "L", "LC", "LP", "IL", "ILP", "CF", "BRK", "BK", "CRL", "PS", "B", "WP", "FP", "SF", "WPR", "W", "WL", "STL", "CR", "SH", "T", "TPG", "CO",
             "CT", "CV", "E", "FR", "IP", "CS", "ER", "RS", "GE", "LR", "S", "R", "LF", "RF", "GD", "SHV", "DRL", "WA", "WT", "EVT", "EEP", "EX", "I", "EE"]
-    def __init__(self, type, *name):
+    def __init__(self, type:_LCType, *name):
         self.TYPE = type
         self.NAME = name
         self.ID = []
@@ -58,9 +78,7 @@ class Load_Case:
             if Load_Case.cases != []: 
                 self.ID.append(Load_Case.maxID + i + 1)
                 self.NO.append(Load_Case.maxNO + i + 1)
-        Load_Case.cases.append(self)
-        Load_Case.maxID = max(max(self.ID),Load_Case.maxID)
-        Load_Case.maxNO = max(max(self.NO),Load_Case.maxNO)
+        _ADD_LoadCase(self)
     
     @classmethod
     def json(cls):
@@ -68,11 +86,12 @@ class Load_Case:
         json = {"Assign":{}}
         for i in cls.cases:
             if i.TYPE in cls.types:
-                for j in i.ID:
-                    json['Assign'][j] = {
-                        "NO": i.NO[i.ID.index(j)],
-                        "NAME": i.NAME[i.ID.index(j)],
-                        "TYPE": i.TYPE}
+                json['Assign'][i.ID] = {
+                    "NO": i.NO,
+                    "NAME": i.NAME,
+                    "TYPE": i.TYPE,
+                    "DESC" : i.DESC  
+                    }
             else:
                 ng.append(i.TYPE)
         if ng != []: print(f"These load case types are incorrect: {ng}.\nPlease check API Manual.")
