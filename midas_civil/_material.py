@@ -53,13 +53,32 @@ class Material:
         Material.ids=[]
 
     @staticmethod
-    def sync():
+    def sync(bMaterialParam=False):
         Material.clear()
         a = Material.get()
         if a != {'message': ''}:
             if list(a['MATL'].keys()) != []:
                 for j in a['MATL'].keys():
                     Material(a['MATL'][j], int(j))
+        if bMaterialParam:
+            jsMat = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Mat_Prop",
+                    "TABLE_TYPE": "MATERIAL"
+                }
+            }
+
+            sectPropJS = MidasAPI('POST',"/post/TABLE",jsMat)["SS_Mat_Prop"]["DATA"]
+
+            for mat in sectPropJS:
+                _id = int(mat[1])
+
+                _matObj = Material.mats[Material.ids.index(_id)]
+                _matObj.E = float(mat[8])
+                _matObj.V = float(mat[9])
+                _matObj.ALPHA = float(mat[10])
+                _matObj.W = float(mat[11])
+                _matObj.D = float(_matObj.DATA["DAMP_RAT"])
 
         # ----------------------------------  ALL FUNCTIONS  ---------------------------------------------------
     

@@ -182,7 +182,7 @@ class _SS_DB_SECTION(_common):
         self.SECT_NAME = Sect_Name
     
     def __str__(self):
-         return f'  >  ID = {self.ID}   |  USER DEFINED STANDARD SECTION \nJSON = {self.toJSON()}\n'
+         return f'  >  ID = {self.ID}   |  STANDARD CODAL SECTION \nJSON = {self.toJSON()}\n'
 
 
     def toJSON(sect):

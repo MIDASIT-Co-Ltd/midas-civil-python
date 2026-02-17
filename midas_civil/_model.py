@@ -275,12 +275,12 @@ class Model:
         '''
 
         if fast:
-            if NX.projStatus == {}:
-                resp = MidasAPI('GET','/ope/PROJECTSTATUS')
-                NX.projStatus = resp["PROJECTSTATUS"]["DATA"]
-                NX.projStatus += resp["PROJECTSTATUS"]["DATA_LOAD"]
+            
+            resp = MidasAPI('GET','/ope/PROJECTSTATUS')
+            NX.modelIDs = resp["PROJECTSTATUS"]["DATA"]
+            NX.modelIDs += resp["PROJECTSTATUS"]["DATA_LOAD"]
 
-            for data in NX.projStatus:
+            for data in NX.modelIDs:
                 if data[0].lower() == _dbMapping[dbNAME].lower() :
                     _d2 = 0
                     try: _d2 = int(data[2])

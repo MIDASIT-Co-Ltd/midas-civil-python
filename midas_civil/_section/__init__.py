@@ -8,6 +8,7 @@ from ._TapdbSecSS import _SS_TAPERED_DBUSER
 from ._Tap_CompSteelSS import _SS_TAP_COMP_STEEL_TUB_TYPE1
 
 from ._tapPSC12CellSS import _SS_TAP_PSC_12CELL
+from ._tapPSCValue import _SS_TAP_PSC_Value
 
 from midas_civil import MidasAPI
 from typing import Literal
@@ -15,6 +16,7 @@ from typing import Literal
 _dbsection = Literal["L","C","H","T","B","P","2L","2C","SB","SR","OCT"]
 _variation = Literal["LINEAR","POLY"]
 _symplane = Literal["i","j"]
+_Section = Literal["Section"]
 
 class _helperSECTION:
     ID, NAME, SHAPE, TYPE, OFFSET, USESHEAR, USE7DOF = 0,0,0,0,0,0,0
@@ -395,7 +397,51 @@ class Section:
             _SectionADD(sect_Obj)
             return sect_Obj
 
+        @staticmethod
+        def PSC_Value(Name:str,
+                    OuterPolygon_I:list,OuterPolygon_J:list,
+                    InnerPolygon_I:list=[],InnerPolygon_J:list=[],
+                    Offset:Offset=Offset.CC(),useShear:bool=True,use7Dof:bool=False,id:int=None):
+             
+            args = locals()
+            sect_Obj = _SS_TAP_PSC_Value(**args)
+            
+            _SectionADD(sect_Obj)
+            return sect_Obj
         
+        @staticmethod
+        def bySHAPE(Name:str,Sect_I:_Section,Sect_J:_Section,Offset=Offset(),useShear:bool=True,use7Dof:bool=False,id:int=None):
+            if not isinstance(Sect_I, type(Sect_J)):
+                print(f"  ⚠️   Section of I and J end does not match for '{Name}' section")
+                return False
+
+            if isinstance(Sect_I,_SS_DBUSER):
+                if Sect_I.SHAPE == Sect_J.SHAPE:
+                    sect_Obj = _SS_TAPERED_DBUSER(Name,Sect_I.SHAPE,Sect_I.PARAMS,Sect_J.PARAMS,Offset,useShear,use7Dof,id)
+                else:
+                    print(f"  ⚠️   Section of I and J end does not match for '{Name}' section")
+                    return False
+            elif isinstance(Sect_I,_SS_PSC_12CELL):
+                sect_Obj = _SS_TAP_PSC_12CELL(Name,Sect_I.SHAPE,
+                                              [Sect_I.JO1,Sect_I.JO2,Sect_I.JO3,Sect_I.JI1,Sect_I.JI2,Sect_I.JI3,Sect_I.JI4,Sect_I.JI5],
+                                                Sect_I.HO1,Sect_I.HO2,Sect_I.HO21,Sect_I.HO22,Sect_I.HO3,Sect_I.HO31,
+                                                Sect_I.BO1,Sect_I.BO11,Sect_I.BO12,Sect_I.BO2,Sect_I.BO21,Sect_I.BO3,
+                                                Sect_I.HI1,Sect_I.HI2,Sect_I.HI21,Sect_I.HI22,Sect_I.HI3,Sect_I.HI31,Sect_I.HI4,Sect_I.HI41,Sect_I.HI42,Sect_I.HI5,
+                                                Sect_I.BI1,Sect_I.BI11,Sect_I.BI12,Sect_I.BI21,Sect_I.BI3,Sect_I.BI31,Sect_I.BI32,Sect_I.BI4,
+
+                                                Sect_J.HO1,Sect_J.HO2,Sect_J.HO21,Sect_J.HO22,Sect_J.HO3,Sect_J.HO31,
+                                                Sect_J.BO1,Sect_J.BO11,Sect_J.BO12,Sect_J.BO2,Sect_J.BO21,Sect_J.BO3,
+                                                Sect_J.HI1,Sect_J.HI2,Sect_J.HI21,Sect_J.HI22,Sect_J.HI3,Sect_J.HI31,Sect_J.HI4,Sect_J.HI41,Sect_J.HI42,Sect_J.HI5,
+                                                Sect_J.BI1,Sect_J.BI11,Sect_J.BI12,Sect_J.BI21,Sect_J.BI3,Sect_J.BI31,Sect_J.BI32,Sect_J.BI4,
+                                                Offset,useShear,use7Dof,id
+                                              )
+            elif isinstance(Sect_I,_SS_PSC_Value):
+                sect_Obj = _SS_TAP_PSC_Value(Name,Sect_I.OUTER_POLYGON,Sect_J.OUTER_POLYGON,Sect_I.INNER_POLYGON,Sect_J.INNER_POLYGON,Offset,useShear,use7Dof,id)
+
+
+            _SectionADD(sect_Obj)
+            return sect_Obj
+
         
 
 #---------------------------------     T A P E R E D   G R O U P    ---------------------------------------------

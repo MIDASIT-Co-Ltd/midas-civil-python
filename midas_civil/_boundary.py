@@ -5,6 +5,21 @@ from ._group import Group
 from typing import Union
 
 
+class _Support:
+    NODE,CONST,GROUP,ID = 0,0,0,0
+
+class _ElasticLink:
+    (I_NODE,J_NODE,GROUP_NAME,LINK_TYPE,ANGLE,SDx,SDy,SDz,SRx,SRy,SRz,bSHEAR,DR_Y,DR_Z,Direction,Function_ID,Distance_Ratio,ID) = (0,) * 18
+
+class _RigidLink:
+    (ID,M_NODE,S_NODE,GROUP_NAME,DOF) = (0,)*5
+
+class _MLFC:
+    (NAME,TYPE,SYMM,DATA,X,Y,ID) = (0,)*7
+
+class _PointSpring:
+    (NAME,TYPE,SYMM,DATA,X,Y,ID) = (0,)*7
+
 
 def convList(item):
         if type(item)!=list:
@@ -66,7 +81,7 @@ class Boundary:
     class Support:
         """Create Support Object in Python \n\nNode ID, Constraint, Boundary Group.  Sample: Support(3, "1110000") or Support(3, "pin").  \nValid inputs for DOF are 1s and 0s or "pin", "fix", "free" (no capital letters).  
         \nIf more than 7 characters are entered, then only first 7 characters will be considered to define constraint."""
-        sups = []
+        sups:list[_Support] = []
         def __init__(self, nodeID:int, constraint:str, group:str = ""):
             if not isinstance(constraint, str): constraint = str(constraint)
             if constraint == "pin": constraint = "111"
@@ -146,7 +161,7 @@ class Boundary:
     class ElasticLink:
 
         # list to store all link instances
-        links = []
+        links:list[_ElasticLink] = []
         
         def __init__(self, 
                     i_node: int, 
@@ -431,7 +446,7 @@ class Boundary:
     #Class to define Rigid  Links:
     class RigidLink:
 
-        links = []
+        links:list[_RigidLink] = []
         ids = [0]
         
         def __init__(self, 
@@ -529,7 +544,7 @@ class Boundary:
             Example:
                 RigidLink.sync()
             """
-            cls.links = []
+            cls.clear()
             a = cls.get()
             if a != {'message': ''}:
                 for i in a['RIGD'].keys():
@@ -555,11 +570,12 @@ class Boundary:
                 ElasticLink.delete()
             """
             cls.links = []
+            cls.ids = [0]
     #---------------------------------------------------------------------------------------------------------------
 
     class MLFC:
 
-        func = []
+        func:list[_MLFC] = []
         _id = []
 
         def __init__(self, name:str, type:str='FORCE', symm:bool=True, data:list=[[0,0],[1,1]], id:int=None):

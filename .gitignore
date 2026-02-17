@@ -10,3 +10,4 @@ gitDEPLOY.py
 
 # Compiled Python bytecode
 *.py[cod]
+example_*.py
