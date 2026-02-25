@@ -514,14 +514,14 @@ def Mesh_SHAPE(shape:Section,meshSize=0.1):
 def getCGdata():
     js = {
         "Argument": {
-            "TABLE_NAME": "SUMIT_CG",
+            "TABLE_NAME": "SCG",
             "TABLE_TYPE": "SECTIONALL",
             "COMPONENTS" : ["ID","Cyp","Cym","Czp","Czm"]
             }
         }
     cg_points = MidasAPI('POST','/post/TABLE',js)
     L2P.CG_data = {}
-    for data in cg_points['SUMIT_CG']['DATA']:
+    for data in cg_points['SCG']['DATA']:
         L2P.CG_data[data[1]] = {"Y1" : float(data[3]) , "Z1" : float(data[4]) , "Y2" : float(data[2]) , "Z2" : float(data[5])}
     # print(L2P.CG_data)
 

@@ -116,12 +116,13 @@ class Group:
             """Generates the json file for all defined structure groups."""
             json = {"Assign":{}}
             for i in cls.Groups:
-                json["Assign"][i.ID] = {
-                    "NAME": i.NAME,
-                    "P_TYPE": 0,
-                    "N_LIST": i.NLIST,
-                    "E_LIST": i.ELIST
-                }
+                if i.NAME[0] != '*':
+                    json["Assign"][i.ID] = {
+                        "NAME": i.NAME,
+                        "P_TYPE": 0,
+                        "N_LIST": i.NLIST,
+                        "E_LIST": i.ELIST
+                    }
             return json
         
         @classmethod

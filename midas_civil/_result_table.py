@@ -50,12 +50,18 @@ def _JSToDF_ResTable(js_json,excelLoc,sheetName,cellLoc="A1"):
 
     res_df = pl.DataFrame(res_json) # Final DF
 
+    res_type_df = res_df.with_columns([
+        pl.selectors.matches("Index|Elem|Node").cast(pl.Int64),
+        pl.selectors.matches("Shear|Torsion|Moment|F|M|D|R").cast(pl.Float64),
+        pl.selectors.matches("Load|Part").cast(pl.String),
+    ])
+
 
     # EXPORTING FILE STARTS HERE................
     if excelLoc:
-        _write_df_to_existing_excel(res_df,(excelLoc,sheetName, cellLoc))
+        _write_df_to_existing_excel(res_type_df,(excelLoc,sheetName, cellLoc))
 
-    return(res_df)
+    return(res_type_df)
 
 
 def _Head_Data_2_DF_JSON(head,data):

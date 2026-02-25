@@ -137,13 +137,24 @@ class utils:
         def __init__(self,points,type: _alignType = 'cubic'):
             ''' 
             **POINTS** -> Points on the alignment [[x,y] , [x,y] , [x,y] ....]   
+                          Points on the alignment [[x,y,z] , [x,y,z] , [x,y,z] ....]   
             **TYPE** -> Type of interpolating curve
                     cubic , akima , makima , pchip
             '''
             from scipy.interpolate import CubicSpline , Akima1DInterpolator , PchipInterpolator
+            _b3D = False
 
             _pt_x = [pt[0] for pt in points]
             _pt_y = [pt[1] for pt in points]
+
+            try: 
+                _pt_z = [pt[2] for pt in points]
+                _b3D = True
+            except:
+                _b3D = False
+                _pt_z = [0 for pt in points]
+
+
 
             # _alignment = splrep(_pt_x, _pt_y)
             if type == 'akima':
@@ -155,6 +166,11 @@ class utils:
             else :
                 _alignment = CubicSpline(_pt_x, _pt_y)
 
+
+            _alignmentXZ = Akima1DInterpolator(_pt_x, _pt_z,method='makima')
+
+
+
             # _alignSlope = Akima1DInterpolator(_pt_x, _pt_y,method='akima') # Used for slope calculation
 
             _n=100
@@ -162,6 +178,8 @@ class utils:
             _x_fine = np.linspace(_pt_x[0],_pt_x[-1],_n)
 
             _y_fine = _alignment(_x_fine)
+
+            _z_fine = _alignmentXZ(_x_fine)
 
             _dx = np.diff(_x_fine)
             _dy = np.diff(_y_fine)
@@ -181,8 +199,16 @@ class utils:
             self.CUMLENGTH = _cumLength
             self.PT_X = _pt_x
             self.PT_Y = _pt_y
+
             self.X_FINE = _x_fine
             self.Y_FINE = _y_fine
+
+            self.is3D = _b3D
+            self.PT_Z = _pt_z
+            self.Z_FINE = _z_fine
+            self.ALIGNMENT_XZ = _alignmentXZ
+
+
             self.U_FINE = _u_fine
 
         def getPoint(self,distance):
@@ -261,19 +287,21 @@ class utils:
                 Node.sync()
                 if bElement: Element.sync()
 
-            ptsXY = [(nd.X , nd.Y , nd.ID ) for nd in Node.nodes]
+            ptsXYZ = [(nd.X , nd.Y , nd.Z , nd.ID ) for nd in Node.nodes]
             dist_range = 0.25*initial_align.TOTALLENGTH    # 0.1 * total length
 
             dist_array = [dist_range*0.5-i*dist_range/50 for i in range(51)]    # 50 divisions
 
-            finalXY = []
-            for pt in ptsXY:
+            finalXYZ = []
+            for pt in ptsXYZ:
                 ptx = pt[0]
                 pty = pt[1]
+                ptz = pt[2]
 
                 if ptx < initial_align.PT_X[0]:
                     x_onLine1 = initial_align.PT_X[0]
                     y_onLine1 = initial_align.PT_Y[0]
+                    z_onLine1 = initial_align.PT_Z[0]
                     slope_onLine1 = initial_align.ALIGNMENT(x_onLine1,1)
                     angle_onLine1 = np.atan(slope_onLine1)
 
@@ -282,6 +310,7 @@ class utils:
 
                     x_onLine2 = final_align.PT_X[0]
                     y_onLine2 = final_align.PT_Y[0]
+                    z_onLine2 = final_align.PT_Z[0]
                     slope_onLine2 = final_align.ALIGNMENT(x_onLine2,1)
                     angle_onLine2 = np.atan(slope_onLine2)
 
@@ -290,11 +319,12 @@ class utils:
                     y_off = np.sin(totalAngle)
                     angle = np.degrees(angle_onLine2-angle_onLine1)
 
-                    finalXY.append([x_onLine2-x_off*dist,y_onLine2-y_off*dist,angle]) 
+                    finalXYZ.append([x_onLine2-x_off*dist,y_onLine2-y_off*dist,ptz+z_onLine2-z_onLine1,angle]) 
 
                 elif ptx > initial_align.PT_X[-1]:
                     x_onLine1 = initial_align.PT_X[-1]
                     y_onLine1 = initial_align.PT_Y[-1]
+                    z_onLine1 = initial_align.PT_Z[-1]
                     slope_onLine1 = initial_align.ALIGNMENT(x_onLine1,1)
                     angle_onLine1 = np.atan(slope_onLine1)
 
@@ -304,6 +334,7 @@ class utils:
 
                     x_onLine2 = final_align.PT_X[-1]
                     y_onLine2 = final_align.PT_Y[-1]
+                    z_onLine2 = final_align.PT_Z[-1]
                     slope_onLine2 = final_align.ALIGNMENT(x_onLine2,1)
                     angle_onLine2 = np.atan(slope_onLine2)
                     
@@ -313,23 +344,26 @@ class utils:
                     y_off = np.sin(totalAngle)
                     angle = np.degrees(angle_onLine2-angle_onLine1)
 
-                    finalXY.append([x_onLine2+x_off*dist,y_onLine2+y_off*dist,angle]) 
+                    finalXYZ.append([x_onLine2+x_off*dist,y_onLine2+y_off*dist,ptz+z_onLine2-z_onLine1,angle]) 
 
                 else:
                     x_onLine1 = np.add(ptx,dist_array)
                     y_onLine1 = initial_align.ALIGNMENT(x_onLine1)
+                    z_onLine1 = initial_align.ALIGNMENT_XZ(x_onLine1)
 
                     sqDist = np.sum((np.array([ptx,pty]) - np.array(list(zip(x_onLine1,y_onLine1)))) ** 2, axis=1)
                     min_index = np.argmin(sqDist)
 
                     x_ref = x_onLine1[min_index]
                     y_ref = y_onLine1[min_index]
+                    z_ref = z_onLine1[min_index]
                     dist_ref = sqrt(sqDist[min_index])
 
                     final_u = np.interp(x_ref,initial_align.X_FINE,initial_align.U_FINE)
                     off = np.sign(pty-y_ref)*dist_ref
                     x2_interp = np.interp(final_u,final_align.U_FINE,final_align.X_FINE)
                     y2_interp = final_align.ALIGNMENT(x2_interp)  
+                    z2_interp = final_align.ALIGNMENT_XZ(x2_interp)  
 
                     slope = final_align.ALIGNMENT(x2_interp,1) # Tan theta
                     norm = sqrt(1+slope*slope)
@@ -338,10 +372,10 @@ class utils:
 
                     angle = np.degrees(np.atan(slope))
 
-                    finalXY.append([x2_interp+x_off*off,y2_interp+y_off*off,angle])
+                    finalXYZ.append([x2_interp+x_off*off,y2_interp+y_off*off,ptz+z2_interp-z_ref,angle])
 
             for i,nod in enumerate(Node.nodes):
-                nod.X , nod.Y , nod.TEMP_ANG = float(finalXY[i][0]),float(finalXY[i][1]),float(finalXY[i][2])
+                nod.X , nod.Y , nod.Z , nod.TEMP_ANG = float(finalXYZ[i][0]),float(finalXYZ[i][1]),float(finalXYZ[i][2]),float(finalXYZ[i][3])
 
             if bUpdateModel: Node.create()
 

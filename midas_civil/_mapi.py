@@ -32,9 +32,10 @@ class NX:
         import json
         with open(fileLocation, "w", encoding="utf-8") as f:
             json.dump(jsonData, f, indent=4, ensure_ascii=False)
+        return True
 
     # Function to quickly print text in a box , width -> CENTER Align
-    def print_box(text:str="HELLO WORLD",width:int=None,pad:int=1,text_col=Fore.WHITE,border_col=Fore.LIGHTWHITE_EX):
+    def print_box(text:str="HELLO WORLD",width:int=82,pad:int=1,text_col=Fore.WHITE,border_col=Fore.LIGHTWHITE_EX):
         col_border = border_col
         col_text = text_col
 
@@ -59,7 +60,7 @@ class NX:
         print("╰","─"*leng,"╯"+Style.RESET_ALL,sep="")
 
 
-
+        return True
         # if two:
         #     print(col_border+"╭","─"*(leng+4),"╮",sep="")
         #     print(col_border+"│ ╭","─"*leng,"╮ │",sep="")
@@ -239,7 +240,14 @@ def MidasAPI(method:str, command:str, body:dict={})->dict:
             print(f"│  Make sure the MAPI Key in python code is matching with the MAPI key in Civil NX.  │")
             print('╰────────────────────────────────────────────────────────────────────────────────────╯\n'+Style.RESET_ALL)
             sys.exit(0)
-    
+        elif response.status_code == 401:
+            print(Fore.RED +'\n╭─ 💀   ─────────────────────────────────────────────────────────────────────────────╮')
+            print(f"│  MAPI KEY entered is invalid.                                                      │")
+            print(f"│  Please consider refreshing MAPI-Key in CIVIL NX and resending the request.        │")
+            print('╰────────────────────────────────────────────────────────────────────────────────────╯\n'+Style.RESET_ALL)
+            sys.exit(0)
+        
+                            
 
 
     return response.json()
@@ -260,8 +268,9 @@ def _setUNIT(unitJS):
 
 
 def _checkUSER():
-    try:
-        resp =  MidasAPI('GET','/config/ver',{})['VER']
+    response =  MidasAPI('GET','/config/ver',{})
+    if 'VER' in response:
+        resp = response['VER']
 
         # print(f"{' '*15}Connected to {resp['NAME']}")
         # print(f"{' '*15}USER : {resp['USER']}          COMPANY : {resp['COMPANY']}")
@@ -282,5 +291,3 @@ def _checkUSER():
 
         # print('─'*86)
 
-    except:
-        pass
