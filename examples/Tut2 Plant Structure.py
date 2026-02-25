@@ -107,14 +107,14 @@ Boundary.Support(bottomNodeIDs,'fix')
 
 Load.SW('Self Weight')
 
-topElementIDs = Model.Select.Box([0,0,bay_height],[no_bays*bay_length,bay_width,bay_height],'ELEM_ID')
-Load.Beam(topElementIDs,'Floor Load','',direction='GZ',D=[0,0.25,0.75,1],P=[0,-3,-3,0])
+# topElementIDs = Model.Select.Box([0,0,bay_height],[no_bays*bay_length,bay_width,bay_height],'ELEM_ID')
+# Load.Beam(topElementIDs,'Floor Load','',direction='GZ',D=[0,0.25,0.75,1],P=[0,-3,-3,0])
 
-fronNodeIDs = Model.Select.Box([0,0,bay_height],[0,bay_width,bay_height])
-Load.Nodal(fronNodeIDs,'Wind Load X','',FX = 60)
+# fronNodeIDs = Model.Select.Box([0,0,bay_height],[0,bay_width,bay_height])
+# Load.Nodal(fronNodeIDs,'Wind Load X','',FX = 60)
 
-SideElementIDs = Model.Select.Box([0,0,bay_height],[no_bays*bay_length,0,0],'ELEM_ID')
-Load.Beam(SideElementIDs,'Wind Load Y','',10,'GY')
+# SideElementIDs = Model.Select.Box([0,0,bay_height],[no_bays*bay_length,0,0],'ELEM_ID')
+# Load.Beam(SideElementIDs,'Wind Load Y','',10,'GY')
 
 
 
