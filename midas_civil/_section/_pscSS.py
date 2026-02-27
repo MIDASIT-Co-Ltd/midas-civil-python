@@ -700,6 +700,9 @@ def _poly_dir(poly,rot='CCW'):
 class _SS_PSC_Value(_common):
     def __init__(self,Name:str,
                     OuterPolygon:list,InnerPolygon:list=[],
+                    T1=0.1,T2=0.1,BT=0.1,HT=0.1,
+                    Z1=0,Z2=0,Z3=0,
+                    thk_torsion =0,
                     Offset:Offset=Offset.CC(),useShear=True,use7Dof=False,id:int=0):
         
         '''
@@ -713,6 +716,17 @@ class _SS_PSC_Value(_common):
         self.NAME = Name
         self.SHAPE = 'VALUE'
         self.TYPE = 'PSC'
+
+        self.Z1 = Z1
+        self.Z2 = Z2
+        self.Z3 = Z3
+
+        self.T1 = T1
+        self.T2 = T2
+        self.BT = BT
+        self.HT = HT
+
+        self.THK_TORSION = thk_torsion
 
         self.OFFSET = Offset
         self.USESHEAR = bool(useShear)
@@ -751,7 +765,7 @@ class _SS_PSC_Value(_common):
                         "SHAPE": "VALU",
                         "SECT_I": {
                             "SECT_NAME": "",
-                            "vSIZE": [0.1, 0.1, 0.1, 0.1],
+                            "vSIZE": [sect.HT, sect.BT, sect.T1, sect.T2],
                             "OUTER_POLYGON": [
                                 {
                                     "VERTEX": [
@@ -762,9 +776,9 @@ class _SS_PSC_Value(_common):
                             ]
                         },
                         "SHEAR_CHK": True,
-                        "SHEAR_CHK_POS": [[0.1, 0, 0.1], [0, 0, 0]],
+                        "SHEAR_CHK_POS": [[sect.Z1, sect.Z2, sect.Z3], [0, 0, 0]],
                         "USE_AUTO_QY": [[True, True, True], [False, False, False]],
-                        "WEB_THICK": [0, 0],
+                        "WEB_THICK": [sect.THK_TORSION, 0],
                         "USE_WEB_THICK_SHEAR": [[True, True, True], [False, False, False]]
                     }
                 }
@@ -818,5 +832,9 @@ class _SS_PSC_Value(_common):
                 for pt in n_holes['VERTEX']:
                     h_pt.append([pt['X'],pt['Y']])
                 inner_pt.append(h_pt)
+        ht,bt,t1,t2 = js["SECT_BEFORE"]["SECT_I"]["vSIZE"]
+        z1,z2,z3 = js["SECT_BEFORE"]["SHEAR_CHK_POS"][0]
+        web_thk_torsion = js["SECT_BEFORE"]["WEB_THICK"][0]
 
-        return _SS_PSC_Value(name,outer_pt,inner_pt,offset,uShear,u7DOF,id)
+
+        return _SS_PSC_Value(name,outer_pt,inner_pt,t1,t2,bt,ht,z1,z2,z3,web_thk_torsion,offset,uShear,u7DOF,id)

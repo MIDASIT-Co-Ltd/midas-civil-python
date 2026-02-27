@@ -914,9 +914,19 @@ class Element():
 
             surface_Main = _createSurface(points,meshSize,1)
             if innerPoints: 
-                surface_Hole = _createSurface(innerPoints,meshSize,2)
-                surface_Final = gmsh.model.occ.cut([(2,1)], [(2,2)], removeObject=True, removeTool=True)
                 bHole = True
+                if not isinstance(innerPoints[0][0],(int,float)):
+                    # MULTIPLE HOLE
+                    _holes_tag = []
+                    for i,holePTs in enumerate(innerPoints):
+                        surface_Hole = _createSurface(holePTs,meshSize,2)
+                        surface_Final = gmsh.model.occ.cut([(2,1)], [(2,2)], removeObject=True, removeTool=True)
+                
+                else:
+                    # SINGLE HOLE
+                    surface_Hole = _createSurface(innerPoints,meshSize,2)
+                    surface_Final = gmsh.model.occ.cut([(2,1)], [(2,2)], removeObject=True, removeTool=True)
+                
 
 
             gmsh.model.occ.synchronize()
@@ -924,13 +934,13 @@ class Element():
             if meshType == 'Quad':
                 if not bHole:
                     gmsh.option.setNumber("Mesh.Algorithm", 11)      # WITHOUT HOLE
-                    gmsh.option.setNumber("Mesh.MeshSizeMin", 2*meshSize)
+                    gmsh.option.setNumber("Mesh.MeshSizeMin", 4*meshSize)
                 
                 else:
-                    gmsh.option.setNumber("Mesh.Algorithm", 1)      # WITH HOLE
-                    gmsh.option.setNumber("Mesh.RecombinationAlgorithm", 2)
+                    gmsh.option.setNumber("Mesh.Algorithm", 8)      # WITH HOLE
+                    # gmsh.option.setNumber("Mesh.RecombinationAlgorithm", 2)
                     gmsh.option.setNumber("Mesh.RecombineAll", 1)
-                    gmsh.option.setNumber("Mesh.MeshSizeMin", 2*meshSize)
+                    gmsh.option.setNumber("Mesh.MeshSizeMin", 4*meshSize)
             else:
                 gmsh.option.setNumber("Mesh.Algorithm", 1) 
                 gmsh.option.setNumber("Mesh.MeshSizeMin", 1.5*meshSize)

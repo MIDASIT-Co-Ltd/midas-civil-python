@@ -1,8 +1,14 @@
 from midas_civil import *
 
-bay_width = 7
+#--------------- C O N N E C T I O N ------------------
+
+MAPI_KEY('xxxxxxxxxxxxxx')
+MAPI_BASEURL.autoURL()
+
+#--------------- P A R A M E T E R S ------------------
+bay_width = 6
 bay_height = 3
-bay_length = 6
+bay_length = 4
 
 no_bays = 2
 

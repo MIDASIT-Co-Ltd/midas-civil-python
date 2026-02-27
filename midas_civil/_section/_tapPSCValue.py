@@ -29,6 +29,9 @@ class _SS_TAP_PSC_Value(_common):
     def __init__(self,Name:str,
                     OuterPolygon_I:list,OuterPolygon_J:list,
                     InnerPolygon_I:list=[],InnerPolygon_J:list=[],
+                    dgnParam_I:list=[0.1,0.1,0.1,0.1],dgnParam_J:list=[0.1,0.1,0.1,0.1],
+                    shearChkPos_I:list=[0,0,0], shearChkPos_J:list=[0,0,0],
+                    thk_torsion_I = 0 , thk_torsion_J = 0 , 
                     Offset:Offset=Offset.CC(),useShear=True,use7Dof=False,id:int=0):
         
         '''
@@ -36,6 +39,7 @@ class _SS_TAP_PSC_Value(_common):
                 [(0,0),(1,0),(1,1),(0,1)]
             Inner Polygon -> List of points ; Last input is different from first
                 Only one inner polygon
+            
         '''
         
         self.ID = id
@@ -53,6 +57,17 @@ class _SS_TAP_PSC_Value(_common):
 
         self.OUTER_POLYGON_J = _poly_dir(OuterPolygon_J)
         self.INNER_POLYGON_J = []
+
+        self.DGN_PARAM_I = dgnParam_I
+        self.DGN_PARAM_J = dgnParam_J
+
+        self.SHEAR_CHK_POS_I = shearChkPos_I
+        self.SHEAR_CHK_POS_J = shearChkPos_J
+
+        self.THK_TORSION_I = thk_torsion_I
+        self.THK_TORSION_J = thk_torsion_J
+
+
 
         temp_arr_I = [] 
         temp_arr_J = []
@@ -101,7 +116,7 @@ class _SS_TAP_PSC_Value(_common):
                     "SECT_BEFORE": {
                         "SHAPE": sect.SHAPE,
                         "SECT_I": {
-                            "vSIZE": [0.1, 0.1, 0.1, 0.1],
+                            "vSIZE": sect.DGN_PARAM_I,
                             "OUTER_POLYGON": [
                                 {
                                     "VERTEX": [
@@ -112,7 +127,7 @@ class _SS_TAP_PSC_Value(_common):
                             ]
                         },
                         "SECT_J": {
-                            "vSIZE": [0.1, 0.1, 0.1, 0.1],
+                            "vSIZE": sect.DGN_PARAM_J,
                             "OUTER_POLYGON": [
                                 {
                                     "VERTEX": [
@@ -125,10 +140,10 @@ class _SS_TAP_PSC_Value(_common):
                         "Y_VAR": 1,
                         "Z_VAR": 1,
                         "SHEAR_CHK": True,
-                        "SHEAR_CHK_POS": [[0.1, 0, 0.1], [0, 0, 0]],
-                        "USE_AUTO_QY": [[True, True, True], [False, False, False]],
-                        "WEB_THICK": [0, 0],
-                        "USE_WEB_THICK_SHEAR": [[True, True, True], [False, False, False]]
+                        "SHEAR_CHK_POS": [sect.SHEAR_CHK_POS_I, sect.SHEAR_CHK_POS_J],
+                        "USE_AUTO_QY": [[True, True, True], [True, True, True]],
+                        "WEB_THICK": [sect.THK_TORSION_I, sect.THK_TORSION_J],
+                        "USE_WEB_THICK_SHEAR": [[True, True, True], [True, True, True]]
                     }
                 }
         

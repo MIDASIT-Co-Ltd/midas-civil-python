@@ -287,6 +287,9 @@ class Section:
         @staticmethod
         def Value(Name:str,
                     OuterPolygon:list,InnerPolygon:list=[],
+                    T1:float=0.1,T2:float=0.1,BT:float=0.1,HT:float=0.1,
+                    Z1:float=0,Z2:float=0,Z3:float=0,
+                    thk_torsion:float =0,
                     Offset:Offset=Offset.CC(),useShear:bool=True,use7Dof:bool=False,id:int=None):
              
             args = locals()
@@ -401,7 +404,14 @@ class Section:
         def PSC_Value(Name:str,
                     OuterPolygon_I:list,OuterPolygon_J:list,
                     InnerPolygon_I:list=[],InnerPolygon_J:list=[],
+                    dgnParam_I:list=[0.1,0.1,0.1,0.1],dgnParam_J:list=[0.1,0.1,0.1,0.1],
+                    shearChkPos_I:list=[0,0,0], shearChkPos_J:list=[0,0,0],
+                    thk_torsion_I:float = 0 , thk_torsion_J:float = 0 , 
                     Offset:Offset=Offset.CC(),useShear:bool=True,use7Dof:bool=False,id:int=None):
+            '''
+            dgnParam = [ HT , BT , T1 , T2 ]
+            shearChkPos = [Z1 , Z2 , Z3]
+            '''
              
             args = locals()
             sect_Obj = _SS_TAP_PSC_Value(**args)

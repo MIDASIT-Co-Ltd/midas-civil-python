@@ -126,6 +126,7 @@ def _longestList(A,B):
 
 
 _alignType = Literal['cubic','akima','makima','pchip']
+_interpXZ = Literal['linear','quadratic','cubic']
 
 class utils:
     ''' Contains helper function and utilities'''
@@ -134,14 +135,16 @@ class utils:
         '''Defines alignment object passing through the points
         X -> monotonous increasing'''
         
-        def __init__(self,points,type: _alignType = 'cubic'):
+        def __init__(self,points,type: _alignType = 'cubic',xz_interp:_interpXZ = 'linear'):
             ''' 
             **POINTS** -> Points on the alignment [[x,y] , [x,y] , [x,y] ....]   
                           Points on the alignment [[x,y,z] , [x,y,z] , [x,y,z] ....]   
-            **TYPE** -> Type of interpolating curve
+            **TYPE** -> Type of interpolating curve in X,Y
+                    cubic , akima , makima , pchip
+            **XZ Interpolation** -> Type of interpolating curve in X,Z
                     cubic , akima , makima , pchip
             '''
-            from scipy.interpolate import CubicSpline , Akima1DInterpolator , PchipInterpolator
+            from scipy.interpolate import CubicSpline , Akima1DInterpolator , PchipInterpolator, interp1d
             _b3D = False
 
             _pt_x = [pt[0] for pt in points]
@@ -167,7 +170,8 @@ class utils:
                 _alignment = CubicSpline(_pt_x, _pt_y)
 
 
-            _alignmentXZ = Akima1DInterpolator(_pt_x, _pt_z,method='makima')
+            # _alignmentXZ = CubicSpline(_pt_x, _pt_z,)
+            _alignmentXZ = interp1d(_pt_x,_pt_z,kind=xz_interp,fill_value="extrapolate")
 
 
 
@@ -289,7 +293,6 @@ class utils:
 
             ptsXYZ = [(nd.X , nd.Y , nd.Z , nd.ID ) for nd in Node.nodes]
             dist_range = 0.25*initial_align.TOTALLENGTH    # 0.1 * total length
-
             dist_array = [dist_range*0.5-i*dist_range/50 for i in range(51)]    # 50 divisions
 
             finalXYZ = []
@@ -373,7 +376,7 @@ class utils:
                     angle = np.degrees(np.atan(slope))
 
                     finalXYZ.append([x2_interp+x_off*off,y2_interp+y_off*off,ptz+z2_interp-z_ref,angle])
-
+            
             for i,nod in enumerate(Node.nodes):
                 nod.X , nod.Y , nod.Z , nod.TEMP_ANG = float(finalXYZ[i][0]),float(finalXYZ[i][1]),float(finalXYZ[i][2]),float(finalXYZ[i][3])
 
