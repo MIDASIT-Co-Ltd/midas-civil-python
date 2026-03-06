@@ -3,6 +3,23 @@ from ._mapi import MidasAPI
 # from ._utils import *
 from ._load import Load_Case
 from ._group import Group
+from typing import Literal
+from __future__ import annotations
+
+_inputType = Literal["2D","3D"]
+_curveType = Literal["SPLINE","ROUND"]
+_transferLength = Literal["USER","AUTO"]
+_refAxis = Literal["ELEMENT","STRAIGHT","CURVE"]
+_insPoint = Literal["END-I","END-J"]
+_xAxisDirElem = Literal["I-J","J-I"]
+_xAxisDirStraight = Literal["X","Y","VECTOR"]
+_gradRotAxis = Literal["X","Y"]
+_curveDir = Literal["CW","CCW"]
+_tdnType = Literal["Internal - Pre","Internal - Post","External"]
+
+_prestressType = Literal['STRESS' , 'FORCE']
+_jackStep = Literal['BEGIN' , 'END' , 'BOTH']
+
 
 
 def _JStoObj_Relax(js):
@@ -470,7 +487,7 @@ class Tendon:
         properties =[]
         ids = []
 
-        def __init__(self,name,type,matID:int,tdn_area,duct_dia,relaxation,ext_mom_mag=0,anch_slip_begin=0,anch_slip_end=0,bond_type:bool=True,id=None):
+        def __init__(self,name:str,type:_tdnType,matID:int,tdn_area:float,duct_dia:float,relaxation,ext_mom_mag:float=0,anch_slip_begin:float=0,anch_slip_end:float=0,bond_type:bool=True,id:int=None):
             
             '''
             type = ['Internal (Pre-tension)' , 'Internal (Post-tenstion)' , 'External'] =>  1,2,3
@@ -485,12 +502,12 @@ class Tendon:
 
             self.NAME = name
 
-            if type == 2:
+            if type == "Internal - Post" or type == 2:
                 self.TYPE = 'INTERNAL'
                 self.TENS = 'POST'
-            elif type == 3:
+            elif type == "External" or type == 3:
                 self.TYPE = 'EXTERNAL'
-                self.TENS = 'PRE'
+                self.TENS = 'POST'
             else :
                 self.TYPE = 'INTERNAL'
                 self.TENS = 'PRE'
@@ -566,13 +583,13 @@ class Tendon:
         profiles =[]
         ids=[]
 
-        def __init__(self,name,tdn_prop,tdn_group=0,elem=[],inp_type='3D',curve_type = 'SPLINE',st_len_begin = 0 , st_len_end = 0,n_typical_tendon=0,
-                     trans_len_opt='USER', trans_len_begin = 0 , trans_len_end = 0, debon_len_begin=0 , debon_len_end=0,
-                     ref_axis = 'ELEMENT',
+        def __init__(self,name,tdn_prop,tdn_group=0,elem=[],inp_type:_inputType='3D',curve_type:_curveType = 'SPLINE',st_len_begin = 0 , st_len_end = 0,n_typical_tendon=0,
+                     trans_len_opt:_transferLength='USER', trans_len_begin = 0 , trans_len_end = 0, debon_len_begin=0 , debon_len_end=0,
+                     ref_axis:_refAxis = 'ELEMENT',
                      prof_xyz = [], prof_xy =[],prof_xz=[],
-                     prof_ins_point_end = 'END-I', prof_ins_point_elem = 0, x_axis_dir_element = 'I-J', x_axis_rot_ang = 0 , projection = True, offset_y = 0 , offset_z = 0,
-                     prof_ins_point =[0,0,0], x_axis_dir_straight = 'X' , x_axis_dir_vec = [0,0], grad_rot_axis = 'X', grad_rot_ang=0,
-                     radius_cen = [0,0], offset = 0, dir = 'CW',
+                     prof_ins_point_end:_insPoint = 'END-I', prof_ins_point_elem = 0, x_axis_dir_element:_xAxisDirElem = 'I-J', x_axis_rot_ang = 0 , projection = True, offset_y = 0 , offset_z = 0,
+                     prof_ins_point =[0,0,0], x_axis_dir_straight:_xAxisDirStraight = 'X' , x_axis_dir_vec = [0,0], grad_rot_axis:_gradRotAxis = 'X', grad_rot_ang=0,
+                     radius_cen = [0,0], offset = 0, dir:_curveDir = 'CW',
                      id=None):
             '''
                 TDN GROUP = Group ID
@@ -608,7 +625,21 @@ class Tendon:
                 self.bTP = True
             else: self.bTP = False
 
-            if trans_len_opt not in ['USER' , 'AUTO']: trans_len_opt = 'USER'
+            # TRANSFER LENGTH -> AUTO1(Internal Post-tension | External) and AUTO2(Internal Pre-tension )
+            if trans_len_opt not in ['USER', 'AUTO','AUTO1','AUTO2']: 
+                trans_len_opt = 'USER'
+            
+            # Correct Auto
+            if trans_len_opt == 'AUTO':
+                for tdProp in Tendon.Property.properties:
+                    if tdProp.ID == self.PROP :
+                        if tdProp.TENS == 'POST':
+                            trans_len_opt = "AUTO1"
+                        else: trans_len_opt = "AUTO2"
+                        break
+            if trans_len_opt == 'AUTO':
+                trans_len_opt == 'AUTO1'
+
             self.LENG_OPT = trans_len_opt
             self.BLEN = trans_len_begin
             self.ELEN =  trans_len_end
@@ -904,7 +935,7 @@ class Tendon:
         """
         loads = []
         ids = []
-        def __init__(self, profile_name, load_case, load_group = "", prestress_type = "STRESS", jack_step = "BEGIN", jack_begin = 0, jack_end=0, grouting_stage = 0, id = None):
+        def __init__(self, profile_name, load_case, load_group = "", prestress_type:_prestressType = "STRESS", jack_step:_jackStep = "BEGIN", jack_begin = 0, jack_end=0, grouting_stage = 0, id = None):
 
             if id == None: id = 0
             if id > -1 :

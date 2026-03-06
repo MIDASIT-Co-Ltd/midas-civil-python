@@ -50,8 +50,8 @@ class Model:
         """Checkes whether a model is analyzed or not and then performs analysis if required."""
         json_body = {
         "Argument": {
-            "HEIGHT" : 1,
-            "WIDTH" : 1,
+            "HEIGHT" : 2,
+            "WIDTH" : 2,
             "SET_MODE": "post"
         }
         }
