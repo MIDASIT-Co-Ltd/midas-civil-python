@@ -446,8 +446,12 @@ class Section:
                                                 Offset,useShear,use7Dof,id
                                               )
             elif isinstance(Sect_I,_SS_PSC_Value):
-                sect_Obj = _SS_TAP_PSC_Value(Name,Sect_I.OUTER_POLYGON,Sect_J.OUTER_POLYGON,Sect_I.INNER_POLYGON,Sect_J.INNER_POLYGON,Offset,useShear,use7Dof,id)
-
+                sect_Obj = _SS_TAP_PSC_Value(Name,Sect_I.OUTER_POLYGON,Sect_J.OUTER_POLYGON,
+                                             Sect_I.INNER_POLYGON,Sect_J.INNER_POLYGON,
+                                             [Sect_I.HT, Sect_I.BT, Sect_I.T1, Sect_I.T2],[Sect_J.HT, Sect_J.BT, Sect_J.T1, Sect_J.T2],
+                                             [Sect_I.Z1, Sect_I.Z2, Sect_I.Z3],[Sect_J.Z1, Sect_J.Z2, Sect_J.Z3],
+                                             Sect_I.THK_TORSION,Sect_J.THK_TORSION,
+                                             Offset,useShear,use7Dof,id)
 
             _SectionADD(sect_Obj)
             return sect_Obj
@@ -543,6 +547,28 @@ class Section:
         @classmethod
         def create(cls):
             MidasAPI("PUT", "/db/tsgr", cls.json())
+        
+        @classmethod
+        def autoGenerate(cls):
+            from midas_civil import Element
+            _tapSectElems = {}
+            _tapSectIDs = []
+            cls.clear()
+            #GET TAPERED SECTION IDS
+            for sec in Section.sect:
+                if sec.TYPE == 'TAPERED':
+                    _tapSectElems[sec.ID] = []
+                    _tapSectIDs.append(sec.ID)
+            
+            #GET ELEMS WITH TAPERED SECTIONS
+            for elm in Element.elements:
+                if elm.SECT in _tapSectIDs:
+                    _tapSectElems[elm.SECT].append(elm.ID)
+
+            #GENERATE TAPERED GROUP
+            for sectID in _tapSectIDs:
+                Section.TaperedGroup(f"TG_SecID{sectID}",_tapSectElems[sectID])
+
         
         @classmethod
         def get(cls):

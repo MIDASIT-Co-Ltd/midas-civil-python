@@ -317,6 +317,7 @@ class Model:
         if Element.elements!=[] : Element.create()
         pbar.update(1)
         pbar.set_description_str("Creating Tapered Group...")
+        if NX.autoTaperGroup: Section.TaperedGroup.autoGenerate()
         if Section.TaperedGroup.data !=[] : Section.TaperedGroup.create()
         pbar.update(1)
         pbar.set_description_str("Creating Node Local Axis...")

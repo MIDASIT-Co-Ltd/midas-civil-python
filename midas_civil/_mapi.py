@@ -25,9 +25,11 @@ class NX:
     debug_response = False
     onlyNode = False
     visualiser = False
-    modelIDs = {} # Handles the fast MAX ID -> Name will be changed
+    modelIDs = {} # Handles the fast MAX ID
+    autoTaperGroup = False
 
     # Function for quick saving of JSON
+    @staticmethod
     def saveJSON(jsonData,fileLocation = "jsData.json"):
         import json
         with open(fileLocation, "w", encoding="utf-8") as f:
@@ -35,7 +37,8 @@ class NX:
         return True
 
     # Function to quickly print text in a box , width -> CENTER Align
-    def print_box(text:str="HELLO WORLD",width:int=82,pad:int=1,text_col=Fore.WHITE,border_col=Fore.LIGHTWHITE_EX):
+    @staticmethod
+    def box_print(text:str="HELLO WORLD",width:int=82,pad:int=1,text_col=Fore.WHITE,border_col=Fore.LIGHTWHITE_EX):
         col_border = border_col
         col_text = text_col
 
@@ -59,16 +62,8 @@ class NX:
                 print("│"," "*padding,col_text+line," "*(leng-padding-len(line)),col_border+"│",sep="")
         print("╰","─"*leng,"╯"+Style.RESET_ALL,sep="")
 
-
         return True
-        # if two:
-        #     print(col_border+"╭","─"*(leng+4),"╮",sep="")
-        #     print(col_border+"│ ╭","─"*leng,"╮ │",sep="")
-        #     for line in lines:
-        #         print("│ │"," "*padding,col_text+line," "*(leng-padding-len(line)),col_border+"│ │",sep="")
-        #     print("│ ╰","─"*leng,"╯ │",sep="")
-        #     print("╰","─"*(leng+4),"╯"+Style.RESET_ALL,sep="")
-        # else:
+    
         
 
 class MAPI_COUNTRY:

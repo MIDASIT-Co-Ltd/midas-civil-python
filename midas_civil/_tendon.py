@@ -4,7 +4,6 @@ from ._mapi import MidasAPI
 from ._load import Load_Case
 from ._group import Group
 from typing import Literal
-from __future__ import annotations
 
 _inputType = Literal["2D","3D"]
 _curveType = Literal["SPLINE","ROUND"]
