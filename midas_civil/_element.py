@@ -1028,7 +1028,11 @@ class Element():
                 # INPUTS 2 or more structure groups to create rectangular plates between the nodes | No. of nodes should be same in the Str Group
             """
             Enter node id list to extrude along a vector
+            inpType ->  'XYZ' -> points = ((x,y,z),(x,y,z))
+                        'ID' -> points = (1,2,3,..) Node IDs
+                        'NODE' -> points = (Node objects,...)
             """
+            nDiv = int(nDiv)
             if id == None: id =0
             nID_A = []
             nID_B = []
@@ -1041,7 +1045,7 @@ class Element():
                     nID_A.append(Node(pt[0],pt[1],pt[2]).ID)
                     nID_B.append(Node(f_pt[i][0],f_pt[i][1],f_pt[i][2]).ID)
             if inpType == 'ID':
-                nID_A = points
+                nID_A = list(points)
                 pts_loc = [nodeByID(pt).LOC for pt in points]
 
                 f_pt = np.add(pts_loc,dir)
@@ -1165,6 +1169,7 @@ class Element():
         self._GROUP = group
         _n1 = nodeByID(i)
         _n2 = nodeByID(j)
+        self.CENTER = np.average([_n1.LOC,_n2.LOC],0)
         self.LENGTH = _nodeDIST(_n1,_n2)
         _dirVect = np.subtract(_n2.LOC,_n1.LOC)
         self.LOCALX = np.round(_dirVect/(np.linalg.norm(_dirVect)),4)
@@ -1240,6 +1245,7 @@ class Element():
             self._GROUP = group
             _n1 = nodeByID(i)
             _n2 = nodeByID(j)
+            self.CENTER = np.average([_n1.LOC,_n2.LOC],0)
             self.LENGTH = _nodeDIST(_n1,_n2)
             _dirVect = np.subtract(_n2.LOC,_n1.LOC)
             self.LOCALX = np.round(_dirVect/(np.linalg.norm(_dirVect)),4)
@@ -1300,6 +1306,10 @@ class Element():
             self.MATL = mat
             self.SECT = sect # Solid elements don't use section properties
             self.NODE = nodes
+
+            _nodesLoc = [nodeByID(nId).LOC for nId in nodes]
+            self.CENTER = np.average(_nodesLoc,0)
+
             self._GROUP = group
             _ADD(self)
 

@@ -1,17 +1,19 @@
 from midas_civil import *
 
-bay_width = 4
-bay_height = 6
-bay_length = 4
+bay_width = 32
+bay_height = 30
+bay_length = 26
 
-no_bays = 10
+no_bays = 4
 
 bay_len_div = 3
 bay_height_div = 3
 
-gap_truss = 0.75
+gap_truss = 3
 truss_div = 5
-truss_centre_height = 1
+truss_centre_height = 5
+
+Model.units('KIPS','FT')
 #--------------- M A T E R I A L ------------------
 Material.STEEL('Frame','ASTM(S)','A36')
 
@@ -27,10 +29,10 @@ Section.DB('L4x4x5/16','L','AISC','L4x4x5/16',id=7)
 
 #--------------- G E O M E T R Y ------------------
 for i in range(no_bays+1):
-    Element.Beam.SDL([i*bay_length,0,0],[0,0,1],bay_height-gap_truss,sect=1,angle=90)
-    Element.Beam.SDL([i*bay_length,0,bay_height-gap_truss],[0,0,1],gap_truss,sect=1,angle=90)
+    Element.Beam.SDL([i*bay_length,0,0],[0,0,1],bay_height-gap_truss,sect=1,angle=0)
+    Element.Beam.SDL([i*bay_length,0,bay_height-gap_truss],[0,0,1],gap_truss,sect=1,angle=0)
 
-    Element.Beam.SDL([i*bay_length,2*bay_width,0],[0,0,1],bay_height,bay_height_div,sect=1,angle=90)
+    Element.Beam.SDL([i*bay_length,2*bay_width,0],[0,0,1],bay_height,bay_height_div,sect=1,angle=0)
     Element.Beam.SDL([i*bay_length,0,bay_height],[0,1,0],bay_width,truss_div,sect=5,group='HorzPTrussL')
     Element.Beam.SDL([i*bay_length,2*bay_width,bay_height],[0,-1,0],bay_width,truss_div,sect=5,group='HorzPTrussR')
     Element.Beam.SE([i*bay_length,0,bay_height],[i*bay_length,bay_width,bay_height+truss_centre_height],truss_div,group='InclinePTrussL',sect=5)
@@ -89,6 +91,7 @@ BotSideTrussNodeIDs = nodesInGroup('BotSideTruss')
 MezOuterNodeIDs = nodesInGroup('MezOuter')
 MezInnerNodeIDs = nodesInGroup('MezInner')
 
+
 for i in range(len(MezOuterNodeIDs)):
     Element.Beam(MezOuterNodeIDs[i],MezInnerNodeIDs[i],sect=3)
 
@@ -107,15 +110,12 @@ Boundary.Support(bottomNodeIDs,'fix')
 
 Load.SW('Self Weight')
 
-# topElementIDs = Model.Select.Box([0,0,bay_height],[no_bays*bay_length,bay_width,bay_height],'ELEM_ID')
-# Load.Beam(topElementIDs,'Floor Load','',direction='GZ',D=[0,0.25,0.75,1],P=[0,-3,-3,0])
+fronNodeIDs = Model.Select.Box([0,0,0],[0,2*bay_width,bay_height+truss_centre_height])
+Load.Nodal(fronNodeIDs,'Wind Load Y','',FY = 5)
 
-# fronNodeIDs = Model.Select.Box([0,0,bay_height],[0,bay_width,bay_height])
-# Load.Nodal(fronNodeIDs,'Wind Load X','',FX = 60)
-
-# SideElementIDs = Model.Select.Box([0,0,bay_height],[no_bays*bay_length,0,0],'ELEM_ID')
-# Load.Beam(SideElementIDs,'Wind Load Y','',10,'GY')
-
+SideElements = Model.Select.Box([0,2*bay_width,0],[no_bays*bay_length,2*bay_width,bay_height],'ELEM')
+SideElementIDs = [elm.ID for elm in SideElements if elm.TYPE=='BEAM']
+Load.Beam(SideElementIDs,'Wind Load X','',0.1,'GX')
 
 
 #--------------- D A T A   T O   C I V I L   N X ------------------

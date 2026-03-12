@@ -2,8 +2,13 @@ from ._mapi import MidasAPI
 # from ._model import *
 from ._node import Node
 from ._group import Group
-from typing import Union
+from typing import Literal
 
+
+
+_PSType = Literal["LINEAR", "COMP", "TENS", "MULTI"]
+_PSDir = Literal["Dx+","Dx-","Dy+","Dy-","Dz+","Dz-","Vector"]
+_releaseType = Literal['Relative','Value']
 
 class _Support:
     NODE,CONST,GROUP,ID = 0,0,0,0
@@ -18,8 +23,10 @@ class _MLFC:
     (NAME,TYPE,SYMM,DATA,X,Y,ID) = (0,)*7
 
 class _PointSpring:
-    (NAME,TYPE,SYMM,DATA,X,Y,ID) = (0,)*7
+    (NODE,TYPE,GROUP_NAME,DIR,ID,SDR,F_S,DAMPING,Cr,STIFF,DV,FUNCTION) = (0,)*12
 
+class _BeamEndRelease:
+    (ID,ELEM_ID,GROUP_NAME,bVALUE,FLAG_I,VALUE_I,FLAG_J,VALUE_J) = (0,)*8
 
 def convList(item):
         if type(item)!=list:
@@ -48,6 +55,7 @@ class Boundary:
         if cls.RigidLink.links!=[]: cls.RigidLink.create()
         if cls.MLFC.func!=[]: cls.RigidLink.create()
         if cls.PointSpring.springs!=[]: cls.PointSpring.create()
+        if cls.BeamEndRelease.releases!=[]: cls.BeamEndRelease.create()
 
     
     @classmethod
@@ -688,16 +696,16 @@ class Boundary:
 
     class PointSpring:
         """Create Point Spring Object in Python"""
-        springs = []
+        springs:list[_PointSpring] = []
         
         def __init__(self, 
                     node: int,
-                    spring_type: str = "LINEAR",
+                    spring_type: _PSType = "LINEAR",
                     group: str = "",
                     stiffness: list = None,
                     fixed_option: list = None,
                     damping: list = None,
-                    direction: str = "Dx+",
+                    direction: _PSDir = "Dx+",
                     normal_vector: list = None,
                     function_id: int = 1,
                     id: int = None):
@@ -902,3 +910,137 @@ class Boundary:
             Deletes all point springs from the database and resets the class.
             """
             cls.springs = []
+
+    
+
+    class BeamEndRelease:
+
+        releases:list[_BeamEndRelease] = []
+        ids = [0]
+        
+        def __init__(self, 
+                    beamElemID: int, type:_releaseType = 'Relative' , 
+                    Fx_I:float=None,Fy_I:float=None,Fz_I:float=None,
+                    Mx_I:float=None,My_I:float=None,Mz_I:float=None,Mb_I:float=None,
+
+                    Fx_J:float=None,Fy_J:float=None,Fz_J:float=None,
+                    Mx_J:float=None,My_J:float=None,Mz_J:float=None,Mb_J:float=None,
+
+                    group: str = "", 
+                    id: int = None):
+            """
+            Beam End Release
+            """
+
+            # Check if group exists, create if not
+            if group != "":
+                chk = 0
+                a = [v['NAME'] for v in Group.Boundary.json()["Assign"].values()]
+                if group in a:
+                    chk = 1
+                if chk == 0:
+                    Group.Boundary(group)
+                    
+            
+            self.ELEM_ID = beamElemID
+            self.bVALUE = True if type=='Value' else False
+
+            _val_I = [Fx_I,Fy_I,Fz_I,Mx_I,My_I,Mz_I,Mb_I]
+            _val_J = [Fx_J,Fy_J,Fz_J,Mx_J,My_J,Mz_J,Mb_J]
+
+            # Flag generation----------
+            _flag_I = ""
+            for rel in _val_I:
+                _bool = "1" if rel!=None else "0"
+                _flag_I+=_bool
+                    
+            self.FLAG_I = _flag_I
+
+            _flag_J = ""
+            for rel in _val_J:
+                _bool = "1" if rel!=None else "0"
+                _flag_J+=_bool
+
+            self.FLAG_J = _flag_J
+
+            self.VALUE_I = [x if x!=None else 0 for x in _val_I]
+            self.VALUE_J = [x if x!=None else 0 for x in _val_J]
+
+            self.GROUP_NAME = group
+
+            # Auto-assign ID if not provided
+            if id is None:
+                self.ID = max(Boundary.RigidLink.ids) + 1
+            else:
+                self.ID = id
+                
+            # Add to static list
+            Boundary.BeamEndRelease.releases.append(self)
+            Boundary.BeamEndRelease.ids.append(self.ID)
+        
+
+        @classmethod
+        def json(cls):
+            json = {"Assign": {}}
+            for release in cls.releases:
+                if release.ELEM_ID not in list(json["Assign"].keys()):
+                    json["Assign"][release.ELEM_ID] = {"ITEMS": []}
+
+                json["Assign"][release.ELEM_ID]["ITEMS"].append({
+                    "ID": release.ID,
+                    "GROUP_NAME": release.GROUP_NAME,
+                    "bVALUE" : release.bVALUE,
+                    "FLAG_I" : release.FLAG_I,
+                    "VALUE_I" : release.VALUE_I,
+                    "FLAG_J" : release.FLAG_J,
+                    "VALUE_J" : release.VALUE_J,
+                })
+            return json
+        
+        @classmethod
+        def create(cls):
+            MidasAPI("PUT", "/db/FRLS", cls.json())
+        
+        @classmethod
+        def get(cls):
+
+            return MidasAPI("GET", "/db/FRLS")
+        
+        @classmethod
+        def sync(cls):
+            """
+            Updates the RigidLink class with data from the Midas API.
+            Example:
+                RigidLink.sync()
+            """
+            cls.clear()
+            a = cls.get()
+            if a != {'message': ''}:
+                for i in a['FRLS'].keys():
+                    for j in range(len(a['FRLS'][i]['ITEMS'])):
+                        itm = a['FRLS'][i]['ITEMS'][j]
+                        _relType = 'Value' if itm['bVALUE'] else 'Relative'
+                        _I_data = [None if itm['FLAG_I'][i]=='0' else itm['VALUE_I'][i] for i in range(7)]
+                        _J_data = [None if itm['FLAG_J'][i]=='0' else itm['VALUE_J'][i] for i in range(7)]
+                        Boundary.BeamEndRelease(int(i),_relType,*_I_data,*_J_data,itm['GROUP_NAME'],itm['ID'])
+        
+        @classmethod
+        def delete(cls):
+            """
+            Deletes all rigid links from the database and resets the class.
+            Example:
+                ElasticLink.delete()
+            """
+            cls.clear()
+            return MidasAPI("DELETE", "/db/FRLS")
+        
+        @classmethod
+        def clear(cls):
+            """
+            Deletes all rigid links from the database and resets the class.
+            Example:
+                ElasticLink.delete()
+            """
+            cls.releases = []
+            cls.ids = [0]
+    #---------------------------------------------------------------------------------------------------------------

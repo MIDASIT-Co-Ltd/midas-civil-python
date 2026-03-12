@@ -548,7 +548,8 @@ class Model:
 
         @staticmethod
         def Line(point1:tuple = (0,0,0) , point2:tuple=(1,0,0) , output:_SelectOutput='NODE_ID',radius:float=0.001) -> list:
-            output_list = []
+            final_output = []
+            output_list = []    #Tuple (dist, nodeID)
             x1 = min(point1[0]-radius,point2[0]-radius)
             x2 = max(point1[0]+radius,point2[0]+radius)
             y1 = min(point1[1]-radius,point2[1]-radius)
@@ -562,41 +563,44 @@ class Model:
             bID = True
             
             if output == 'ELEM_ID': 
-                gridStr = list(Element.Grid.keys())
+                gridStr = set(Element.Grid.keys())
                 grid_complete = Element.Grid
                 bELEM,bID = True,True
             elif output == 'ELEM': 
-                gridStr = list(Element.Grid.keys())
+                gridStr = set(Element.Grid.keys())
                 grid_complete = Element.Grid
                 bELEM,bID = True,False
             elif output == 'NODE': 
-                gridStr = list(Node.Grid.keys())
+                gridStr = set(Node.Grid.keys())
                 grid_complete = Node.Grid
                 bID = False
             else:
-                gridStr = list(Node.Grid.keys())
+                gridStr = set(Node.Grid.keys())
                 grid_complete = Node.Grid
             
-
+            possible_gridStr = set()
             for i in np.arange(int(x1),int(x2)+1,1):
                 for j in np.arange(int(y1),int(y2)+1,1):
                     for k in np.arange(int(z1),int(z2)+1,1):
-                        cgridStr = f"{i},{j},{k}"
-
-                        if cgridStr in gridStr:
-
-                            for elm in grid_complete[cgridStr]:
-                                point = elm.CENTER if bELEM else elm.LOC
-
-                                if x1 <= point[0] <= x2 and y1 <= point[1] <= y2 and z1 <= point[2] <= z2 :
-                                    diff = np.subtract(point, point1)
-                                    cross = np.cross(diff, direction)
-                                    dist = np.linalg.norm(cross) / np.linalg.norm(direction)
-                                    if dist<radius:
-                                        output_list.append(elm.ID if bID else elm)
+                        possible_gridStr.add(f"{i},{j},{k}")
             
+            common_gridStr = list(gridStr.intersection(possible_gridStr))
+
+            for eachAvailGrid in common_gridStr:
+                for elm in grid_complete[eachAvailGrid]:
+                    point = elm.CENTER if bELEM else elm.LOC
+
+                    if x1 <= point[0] <= x2 and y1 <= point[1] <= y2 and z1 <= point[2] <= z2 :
+                        diff = np.subtract(point, point1)
+                        cross = np.cross(diff, direction)
+                        along_dist = np.linalg.norm(diff)
+                        perp_dist = np.linalg.norm(cross) / np.linalg.norm(direction)
+                        if perp_dist<radius:
+                            output_list.append((along_dist,elm.ID if bID else elm))
             
-            return output_list
+            sorted_list = sorted(output_list)
+            final_output = [elm for dist,elm in sorted_list]
+            return final_output
         
         @staticmethod
         def Box(point1:tuple = (0,0,0) , point2:tuple=(1,0,0) , output:_SelectOutput='NODE_ID') -> list:
@@ -614,34 +618,36 @@ class Model:
             bID = True
             
             if output == 'ELEM_ID': 
-                gridStr = list(Element.Grid.keys())
+                gridStr = set(Element.Grid.keys())
                 grid_complete = Element.Grid
                 bELEM,bID = True,True
             elif output == 'ELEM': 
-                gridStr = list(Element.Grid.keys())
+                gridStr = set(Element.Grid.keys())
                 grid_complete = Element.Grid
                 bELEM,bID = True,False
             elif output == 'NODE': 
-                gridStr = list(Node.Grid.keys())
+                gridStr = set(Node.Grid.keys())
                 grid_complete = Node.Grid
                 bID = False
             else:
-                gridStr = list(Node.Grid.keys())
+                gridStr = set(Node.Grid.keys())
                 grid_complete = Node.Grid
             
 
+            possible_gridStr = set()
             for i in np.arange(int(x1),int(x2)+1,1):
                 for j in np.arange(int(y1),int(y2)+1,1):
                     for k in np.arange(int(z1),int(z2)+1,1):
-                        cgridStr = f"{i},{j},{k}"
+                        possible_gridStr.add(f"{i},{j},{k}")
+            
+            common_gridStr = list(gridStr.intersection(possible_gridStr))
 
-                        if cgridStr in gridStr:
+            for eachAvailGrid in common_gridStr:
+                for elm in grid_complete[eachAvailGrid]:
+                    point = elm.CENTER if bELEM else elm.LOC
 
-                            for elm in grid_complete[cgridStr]:
-                                point = elm.CENTER if bELEM else elm.LOC
-
-                                if x1 <= point[0] <= x2 and y1 <= point[1] <= y2 and z1 <= point[2] <= z2 :
-                                    output_list.append(elm.ID if bID else elm)
+                    if x1 <= point[0] <= x2 and y1 <= point[1] <= y2 and z1 <= point[2] <= z2 :
+                        output_list.append(elm.ID if bID else elm)
             
             
             return output_list
