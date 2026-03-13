@@ -9,6 +9,9 @@ from typing import Literal
 _PSType = Literal["LINEAR", "COMP", "TENS", "MULTI"]
 _PSDir = Literal["Dx+","Dx-","Dy+","Dy-","Dz+","Dz-","Vector"]
 _releaseType = Literal['Relative','Value']
+_eLinkType = Literal['GEN','RIGID','TENS','COMP','MULTI LINEAR','SADDLE','RAIL INTERACT']
+_eLinkDir = Literal["Dx", "Dy", "Dz", "Rx", "Ry", "Rz"]
+_MLFCType = Literal['FORCE','MOMENT']
 
 class _Support:
     NODE,CONST,GROUP,ID = 0,0,0,0
@@ -91,6 +94,9 @@ class Boundary:
         \nIf more than 7 characters are entered, then only first 7 characters will be considered to define constraint."""
         sups:list[_Support] = []
         def __init__(self, nodeID:int, constraint:str, group:str = ""):
+            '''
+            nodeID : int or list or Int
+            '''
             if not isinstance(constraint, str): constraint = str(constraint)
             if constraint == "pin": constraint = "111"
             if constraint == "fix": constraint = "1111111"
@@ -175,7 +181,7 @@ class Boundary:
                     i_node: int, 
                     j_node: int, 
                     group: str = "", 
-                    link_type: str = "GEN",
+                    link_type: _eLinkType = "GEN",
                     sdx: float = 0, 
                     sdy: float = 0, 
                     sdz: float = 0, 
@@ -186,7 +192,7 @@ class Boundary:
                     dr_y: float = 0.5, 
                     dr_z: float = 0.5, 
                     beta_angle: float = 0, 
-                    dir: str = "Dy", 
+                    dir: _eLinkDir = "Dy", 
                     func_id: int = 1, 
                     distance_ratio: float = 0,
                     id: int = None, ):
@@ -586,7 +592,7 @@ class Boundary:
         func:list[_MLFC] = []
         _id = []
 
-        def __init__(self, name:str, type:str='FORCE', symm:bool=True, data:list=[[0,0],[1,1]], id:int=None):
+        def __init__(self, name:str, type:_MLFCType='FORCE', symm:bool=True, data:list=[[0,0],[1,1]], id:int=None):
             """
             Force-Deformation Function constructor.
 

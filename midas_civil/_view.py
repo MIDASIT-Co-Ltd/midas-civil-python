@@ -111,6 +111,8 @@ class View:
         def __new__(self,horizontal, vertical):
             View.Angle.__horizontal__ = horizontal
             View.Angle.__vertical__ = vertical
+            View.Angle.__newH__ = True
+            View.Angle.__newV__ = True
             
         @classmethod
         def _json(cls):
@@ -867,7 +869,6 @@ class Image:
                 "Argument":{
                     "SET_MODE":"post",
                     "SET_HIDDEN":View.Hidden,
-                    "EXPORT_PATH":location,
                     "HEIGHT":img_h,
                     "WIDTH":img_w,
                     "RESULT_GRAPHIC": ResultGraphic

@@ -1,4 +1,8 @@
 from ._mapi import MidasAPI
+from typing import Literal
+
+_CompSecType = Literal['GENERAL','USER']
+
 
 class CS:
 
@@ -447,7 +451,7 @@ class CS:
         def __init__(self, 
                     activation_stage: str,
                     section_id: int,
-                    comp_type: str = "GENERAL",
+                    comp_type: _CompSecType = "GENERAL",
                     tapered_type: bool = False,
                     partinfo: list = None,
                     id: int = None):

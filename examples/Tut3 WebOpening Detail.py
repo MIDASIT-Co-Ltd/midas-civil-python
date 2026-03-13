@@ -1,8 +1,6 @@
 from midas_civil import *
 import math
 
-NX.debug_request = True
-
 circle_points = []
 radius = 0.5
 dx = 0.3    # Margin from circle to rect section
