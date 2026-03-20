@@ -4,6 +4,8 @@ from ._model import Model
 from typing import Literal
 from ._mapi import _getUNIT
 from ._mapi import _setUNIT
+from ._view import View, ResultGraphic
+from base64 import b64decode
 # js_file = open('JSON_Excel Parsing\\test.json','r')
 
 # print(js_file)
@@ -933,3 +935,47 @@ class Result :
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
             polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS)
             return polarDF
+        
+
+    @staticmethod
+    def IMAGE(ResultGraphic:ResultGraphic,location:str='',image_size:tuple = None,CS_StageName:str='',_bOutputImage=True):
+        ''' 
+        Capture Result Graphic in CIVIL NX   
+            Result Graphic - ResultGraphic JSON (ResultGraphic.BeamDiagram())
+            Location - image location
+            Image height and width
+            Construction stage Name (default = "") if desired
+        '''
+        if image_size==None: image_size=View.Image_Size
+        json_body = {
+                "Argument":{
+                    "SET_MODE":"post",
+                    "SET_HIDDEN":View.Hidden,
+                    "HEIGHT":image_size[1],
+                    "WIDTH":image_size[0],
+                    "RESULT_GRAPHIC": ResultGraphic
+                }
+                }
+        if View.Angle.__newH__ == True or View.Angle.__newV__ == True:
+            json_body['Argument']['ANGLE'] = View.Angle._json()
+
+        if View.Active.__default__ ==False:
+            json_body['Argument']['ACTIVE'] = View.Active._json()
+
+        if CS_StageName != '':
+            json_body['Argument']['STAGE_NAME'] = CS_StageName
+        
+        resp = MidasAPI('POST','/view/CAPTURE',json_body)
+
+        bs64_img = b64decode(resp["base64String"])
+        if location:
+            __img_file = open(location, 'wb')  # Open image file to save.
+            __img_file.write(bs64_img)  # Decode and write data.
+            __img_file.close()
+
+        if _bOutputImage:
+            from PIL import Image as ImagePIL
+            from io import BytesIO
+            # return bs64_img
+            return ImagePIL.open(BytesIO(bs64_img))
+        return resp

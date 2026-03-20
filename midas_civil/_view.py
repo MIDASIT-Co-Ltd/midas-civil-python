@@ -1,7 +1,3 @@
-from ._mapi import MidasAPI
-# from ._model import *
-# import base64
-from base64 import b64decode
 
 class View:
     '''
@@ -10,10 +6,14 @@ class View:
     **Hidden** - View.Hidden   
     **Active** - View.Active   
     **Angle** - View.Angle   
+    **Image_Size** - View.Image_Size
     '''
 
     Hidden:bool = False
     '''Toggle Hidden mode ie. 3D section display or line'''
+
+    Image_Size:tuple = (1280,720)
+    '''Width, Height of the captured image. Default, (1280,720)'''
 
     class __ActiveMeta__(type):
         @property
@@ -138,13 +138,18 @@ class ResultGraphic:
 
     class Contour:
         '''
-        **use** - ( True or False ) Shows contour in the Result Image
-        **num_Color** (default - 12) - Number of colors in Contours 6, 12, 18, 24
-        **color** (default - "rgb") - Color Table - "vrgb" | "rgb" | "rbg" | "gray scaled"  
+        **use** - ( True or False ) Shows contour in the Result Image   
+        **num_Color** (default - 12) - Number of colors in Contours 6, 12, 18, 24   
+        **color** (default - "rgb") - Color Table - "vrgb" | "rgb" | "rbg" | "gray scaled"    
         '''
         use = True
         num_color = 12
         color = "rgb"
+
+        def __new__(cls, use=True,num_color=12,color='rgb'):
+            cls.use = use
+            cls.num_color = num_color
+            cls.color = color
 
         @classmethod
         def _json(cls):
@@ -157,15 +162,21 @@ class ResultGraphic:
         
     class Legend:
         '''
-        **use** - ( True or False ) Shows Legend in the Result Image  
-        **position**  - Position of Legend - "left" | "right"  
-        **bExponent** - True -> Shows exponential values in legend  | False -> Shows fixed values in legend  
-        **num_decimal**  -  Number of decimal values shown in legend  
+        **use** - ( True or False ) Shows Legend in the Result Image   
+        **position**  - Position of Legend - "left" | "right"   
+        **bExponent** - True -> Shows exponential values in legend  | False -> Shows fixed values in legend   
+        **num_decimal**  -  Number of decimal values shown in legend   
         '''
         use = True
         position = "right"
         bExponent = False
         num_decimal = 2
+
+        def __new__(cls, use=True,position = 'right',bExponent=False,num_decimal=2):
+            cls.use = use
+            cls.position = position
+            cls.bExponent = bExponent
+            cls.num_decimal = num_decimal
 
         @classmethod
         def _json(cls):
@@ -179,15 +190,21 @@ class ResultGraphic:
         
     class Values:
         '''
-        **use** - ( True or False ) Shows result Values in the Result Image  
-        **orient_angle**  - Orientation angle of Values (0,15,30,45,60,75,90)
-        **bExpo** - True -> Shows exponential values in viewport  | False -> Shows fixed values in viewport  
-        **num_decimal**  -  Number of decimal values shown in viewport  
+        **use** - ( True or False ) Shows result Values in the Result Image   
+        **orient_angle**  - Orientation angle of Values (0,15,30,45,60,75,90)  
+        **bExpo** - True -> Shows exponential values in viewport  | False -> Shows fixed values in viewport   
+        **num_decimal**  -  Number of decimal values shown in viewport   
         '''
         use = False
         bExpo = False
         num_decimal = 2
         orient_angle = 0
+
+        def __new__(cls, use = False, bExpo = False, num_decimal = 2, orient_angle = 0):
+            cls.use = use
+            cls.bExpo = bExpo
+            cls.num_decimal = num_decimal
+            cls.orient_angle = orient_angle
 
         @classmethod
         def _json(cls):
@@ -212,6 +229,13 @@ class ResultGraphic:
         bRealDeform = False
         bRealDisp = False
         bRelativeDisp = False
+
+        def __new__(cls, use = False, scale = 1.0,bRealDeform = False, bRealDisp = False, bRelativeDisp = False):
+            cls.use = use
+            cls.scale = scale
+            cls.bRealDeform = bRealDeform
+            cls.bRealDisp = bRealDisp
+            cls.bRelativeDisp = bRelativeDisp
 
         @classmethod
         def _json(cls):
@@ -565,13 +589,13 @@ class ResultGraphic:
         return json_body
 
     @staticmethod
-    def VibrationModeShapes(mode_name:str, component:str="Md-XZ") -> dict:
+    def VibrationModeShapes(mode_name:str, component:str="Md-XYZ") -> dict:
         '''
         Generates JSON for Vibration Mode Shapes Result Graphic.
         
         Args:
-            mode_name (str): Mode Name (e.g., "Mode6").
-            component (str): Component Name ("Md-X", "Md-Y", "Md-Z", "Md-XY", "Md-YZ", "Md-XZ", "Md-XYZ"). Defaults to "Md-XZ".
+            mode_name (str): Mode Name (e.g., "Mode 6").
+            component (str): Component Name ("Md-X", "Md-Y", "Md-Z", "Md-XY", "Md-YZ", "Md-XZ", "Md-XYZ"). Defaults to "Md-XYZ".
         '''
         json_body = {
             "CURRENT_MODE": "VibrationModeShapes",
@@ -815,78 +839,78 @@ class ResultGraphic:
         return json_body
 
 
-class Image:
-    @staticmethod
-    def Capture(location,img_w = 1280 , img_h = 720,view='pre',CS_StageName:str=''):
-        ''' 
-        Capture the image in the viewport
-            Location - image location
-            Image height and width
-            View - 'pre' or 'post'
-            stage - CS name
-        '''
-        json_body = {
-                "Argument": {
-                    "SET_MODE":"pre",
-                    "SET_HIDDEN":View.Hidden,
-                    "HEIGHT": img_h,
-                    "WIDTH": img_w
-                }
-            }
+# class Image:
+#     @staticmethod
+#     def Capture(location,img_w = 1280 , img_h = 720,view='pre',CS_StageName:str=''):
+#         ''' 
+#         Capture the image in the viewport
+#             Location - image location
+#             Image height and width
+#             View - 'pre' or 'post'
+#             stage - CS name
+#         '''
+#         json_body = {
+#                 "Argument": {
+#                     "SET_MODE":"pre",
+#                     "SET_HIDDEN":View.Hidden,
+#                     "HEIGHT": img_h,
+#                     "WIDTH": img_w
+#                 }
+#             }
         
-        if View.Angle.__newH__ == True or View.Angle.__newV__ == True:
-            json_body['Argument']['ANGLE'] = View.Angle._json()
+#         if View.Angle.__newH__ == True or View.Angle.__newV__ == True:
+#             json_body['Argument']['ANGLE'] = View.Angle._json()
 
-        if View.Active.__default__ ==False:
-            json_body['Argument']['ACTIVE'] = View.Active._json()
+#         if View.Active.__default__ ==False:
+#             json_body['Argument']['ACTIVE'] = View.Active._json()
         
-        if view=='post':
-            json_body['Argument']['SET_MODE'] = 'post'
-        elif view=='pre':
-            json_body['Argument']['SET_MODE'] = 'pre'
+#         if view=='post':
+#             json_body['Argument']['SET_MODE'] = 'post'
+#         elif view=='pre':
+#             json_body['Argument']['SET_MODE'] = 'pre'
 
-        if CS_StageName != '':
-            json_body['Argument']['STAGE_NAME'] = CS_StageName
+#         if CS_StageName != '':
+#             json_body['Argument']['STAGE_NAME'] = CS_StageName
 
-        resp = MidasAPI('POST','/view/CAPTURE',json_body)
+#         resp = MidasAPI('POST','/view/CAPTURE',json_body)
 
-        bs64_img = resp["base64String"]
-        decode = open(location, 'wb')  # Open image file to save.
-        decode.write(b64decode(bs64_img))  # Decode and write data.
-        decode.close()
-        return resp
+#         bs64_img = resp["base64String"]
+#         decode = open(location, 'wb')  # Open image file to save.
+#         decode.write(b64decode(bs64_img))  # Decode and write data.
+#         decode.close()
+#         return resp
 
-    @staticmethod
-    def CaptureResults(ResultGraphic:dict,location:str,img_w:int = 1280 , img_h:int = 720,CS_StageName:str=''):
-        ''' 
-        Capture Result Graphic in CIVIL NX   
-            Result Graphic - ResultGraphic JSON (ResultGraphic.BeamDiagram())
-            Location - image location
-            Image height and width
-            Construction stage Name (default = "") if desired
-        '''
-        json_body = {
-                "Argument":{
-                    "SET_MODE":"post",
-                    "SET_HIDDEN":View.Hidden,
-                    "HEIGHT":img_h,
-                    "WIDTH":img_w,
-                    "RESULT_GRAPHIC": ResultGraphic
-                }
-                }
-        if View.Angle.__newH__ == True or View.Angle.__newV__ == True:
-            json_body['Argument']['ANGLE'] = View.Angle._json()
+#     @staticmethod
+#     def CaptureResults(ResultGraphic:dict,location:str,img_w:int = 1280 , img_h:int = 720,CS_StageName:str=''):
+        # ''' 
+        # Capture Result Graphic in CIVIL NX   
+        #     Result Graphic - ResultGraphic JSON (ResultGraphic.BeamDiagram())
+        #     Location - image location
+        #     Image height and width
+        #     Construction stage Name (default = "") if desired
+        # '''
+        # json_body = {
+        #         "Argument":{
+        #             "SET_MODE":"post",
+        #             "SET_HIDDEN":View.Hidden,
+        #             "HEIGHT":img_h,
+        #             "WIDTH":img_w,
+        #             "RESULT_GRAPHIC": ResultGraphic
+        #         }
+        #         }
+        # if View.Angle.__newH__ == True or View.Angle.__newV__ == True:
+        #     json_body['Argument']['ANGLE'] = View.Angle._json()
 
-        if View.Active.__default__ ==False:
-            json_body['Argument']['ACTIVE'] = View.Active._json()
+        # if View.Active.__default__ ==False:
+        #     json_body['Argument']['ACTIVE'] = View.Active._json()
 
-        if CS_StageName != '':
-            json_body['Argument']['STAGE_NAME'] = CS_StageName
+        # if CS_StageName != '':
+        #     json_body['Argument']['STAGE_NAME'] = CS_StageName
         
-        resp = MidasAPI('POST','/view/CAPTURE',json_body)
+        # resp = MidasAPI('POST','/view/CAPTURE',json_body)
 
-        bs64_img = resp["base64String"]
-        decode = open(location, 'wb')  # Open image file to save.
-        decode.write(b64decode(bs64_img))  # Decode and write data.
-        decode.close()
-        return resp
+        # bs64_img = resp["base64String"]
+        # decode = open(location, 'wb')  # Open image file to save.
+        # decode.write(b64decode(bs64_img))  # Decode and write data.
+        # decode.close()
+        # return resp

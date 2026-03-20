@@ -19,6 +19,8 @@ from ._movingload import MovingLoad
 from ._temperature import Temperature
 from ._construction import CS
 
+from ._view import View
+
 from collections import defaultdict
 from typing import Literal
 
@@ -41,8 +43,45 @@ _dbMapping = {
 
 }
 _SelectOutput = Literal['NODE_ID','NODE','ELEM_ID','ELEM']
+_SelectOutputElem = Literal['ELEM_ID','ELEM']
 
 class Model:
+
+    bounds = {
+        "X_min" : -1,
+        "X_max" : 1,
+        "Y_min" : -1,
+        "Y_max" : 1,
+        "Z_min" : -1,
+        "Z_max" : 1,
+    }
+
+    @staticmethod
+    def getBounds():
+        '''Get the bounds of the model'''
+        min_z = 0
+        max_z = 0
+        min_x = 0
+        max_x = 0
+        min_y = 0
+        max_y = 0
+        for nd in Node.nodes:
+            min_z = min(min_z,nd.Z)
+            max_z = max(max_z,nd.Z)
+            min_x = min(min_x,nd.X)
+            max_x = max(max_x,nd.X)
+            min_y = min(min_y,nd.Y)
+            max_y = max(max_y,nd.Y)
+        Model.bounds = {
+            "X_min" : min_x,
+            "X_max" : max_x,
+            "Y_min" : min_y,
+            "Y_max" : max_y,
+            "Z_min" : min_z,
+            "Z_max" : max_z,
+        }
+
+        return Model.bounds
 
     #4 Function to check analysis status & perform analysis if not analyzed
     @staticmethod
@@ -59,8 +98,7 @@ class Model:
 
         if 'message' in resp or 'error' in resp:
                 MidasAPI("POST","/doc/ANAL",{"Assign":{}})
-                return True
-        print(" ⚠️   Model ananlysed. Switching to post-processing mode.")
+        print(" 🔒   Model ananlysed. Switching to post-processing mode.")
 
     # @staticmethod
     # def merge_nodes(tolerance = 0):
@@ -443,6 +481,21 @@ class Model:
         MidasAPI("POST","/doc/NEW",{"Argument":{}})
 
     @staticmethod
+    def close():
+        """Closes the model"""
+        MidasAPI("POST","/doc/CLOSE",{"Argument":{}})
+
+    
+    @staticmethod
+    def saveStageAs(stageName="",filePath=""):
+        """Save Construction Stage as separate model"""
+        if filePath.endswith('.mcb') or filePath.endswith('.mcbz'):
+            MidasAPI("POST","/doc/STAGAS",{"Argument":{"EXPORT_PATH":str(filePath), "STAGE_STEP":str(stageName)}})
+        else:
+            print('⚠️  File extension is missing')
+        
+
+    @staticmethod
     def info(project_name="",revision="",user="",title="",comment =""):
         """Enter Project information"""
 
@@ -547,7 +600,7 @@ class Model:
     class Select:
 
         @staticmethod
-        def Line(point1:tuple = (0,0,0) , point2:tuple=(1,0,0) , output:_SelectOutput='NODE_ID',radius:float=0.001) -> list:
+        def Line(point1:tuple = (0,0,0) , point2:tuple=(1,0,0) , output:_SelectOutput='NODE_ID',radius:float=0.001) -> set:
             final_output = []
             output_list = []    #Tuple (dist, nodeID)
             x1 = min(point1[0]-radius,point2[0]-radius)
@@ -603,7 +656,79 @@ class Model:
             return final_output
         
         @staticmethod
-        def Box(point1:tuple = (0,0,0) , point2:tuple=(1,0,0) , output:_SelectOutput='NODE_ID') -> list:
+        def __Line_along__(alongAxis = 'X',point:tuple = (0,0,0), output:_SelectOutput='NODE_ID',radius:float=0.001) -> set:
+            Model.getBounds()
+            final_output = []
+            output_list = []    #Tuple (dist, nodeID)
+            x1 = point[0]-radius
+            x2 = point[0]+radius
+            y1 = point[1]-radius
+            y2 = point[1]+radius
+            z1 = point[2]-radius
+            z2 = point[2]+radius
+
+            if alongAxis == 'Y':
+                y1 = Model.bounds['Y_min']
+                y2 = Model.bounds['Y_max']
+            elif alongAxis == 'Z':
+                z1 = Model.bounds['Z_min']
+                z2 = Model.bounds['Z_max']
+            else:
+                x1 = Model.bounds['X_min']
+                x2 = Model.bounds['X_max']
+            bELEM = False
+            bID = True
+            
+            if output == 'ELEM_ID': 
+                gridStr = set(Element.Grid.keys())
+                grid_complete = Element.Grid
+                bELEM,bID = True,True
+            elif output == 'ELEM': 
+                gridStr = set(Element.Grid.keys())
+                grid_complete = Element.Grid
+                bELEM,bID = True,False
+            elif output == 'NODE': 
+                gridStr = set(Node.Grid.keys())
+                grid_complete = Node.Grid
+                bID = False
+            else:
+                gridStr = set(Node.Grid.keys())
+                grid_complete = Node.Grid
+            
+            possible_gridStr = set()
+            for i in np.arange(int(x1),int(x2)+1,1):
+                for j in np.arange(int(y1),int(y2)+1,1):
+                    for k in np.arange(int(z1),int(z2)+1,1):
+                        possible_gridStr.add(f"{i},{j},{k}")
+            
+            common_gridStr = list(gridStr.intersection(possible_gridStr))
+            for eachAvailGrid in common_gridStr:
+                for elm in grid_complete[eachAvailGrid]:
+                    point = elm.CENTER if bELEM else elm.LOC
+                    
+
+                    if x1 <= point[0] <= x2 and y1 <= point[1] <= y2 and z1 <= point[2] <= z2 :
+                        diff = [np.subtract(point, (x1,y1,z1))]
+                        along_dist = np.linalg.norm(diff)
+                        output_list.append((along_dist,elm.ID if bID else elm))
+            sorted_list = sorted(output_list)
+            final_output = [elm for dist,elm in sorted_list]
+            return final_output
+        
+        @staticmethod
+        def Line_alongX(point:tuple = (0,0,0), output:_SelectOutput='NODE_ID',radius:float=0.001) -> set:
+            return Model.Select.__Line_along__('X',point,output,radius)
+        @staticmethod
+        def Line_alongY(point:tuple = (0,0,0), output:_SelectOutput='NODE_ID',radius:float=0.001) -> set:
+            return Model.Select.__Line_along__('Y',point,output,radius)
+        @staticmethod
+        def Line_alongZ(point:tuple = (0,0,0), output:_SelectOutput='NODE_ID',radius:float=0.001) -> set:
+            return Model.Select.__Line_along__('Z',point,output,radius)
+        
+
+
+        @staticmethod
+        def Box(point1:tuple = (0,0,0) , point2:tuple=(1,0,0) , output:_SelectOutput='NODE_ID') -> set:
             output_list = []
 
             tol:float=0.001
@@ -650,6 +775,182 @@ class Model:
                         output_list.append(elm.ID if bID else elm)
             
             
+            return set(output_list)
+        
+        @staticmethod
+        def __Plane__(plane = 'XY' , point:tuple=(0,0,0) , output:_SelectOutput='NODE_ID') -> set:
+            output_list = []
+            Model.getBounds()
+
+            radius:float=0.001
+
+            x1 = Model.bounds['X_min']
+            x2 = Model.bounds['X_max']
+            y1 = Model.bounds['Y_min']
+            y2 = Model.bounds['Y_max']
+            z1 = Model.bounds['Z_min']
+            z2 = Model.bounds['Z_max']
+
+            if plane == 'YZ':
+                x1 = point[0]-radius
+                x2 = point[0]+radius
+            elif plane == 'XZ':
+                y1 = point[1]-radius
+                y2 = point[1]+radius
+            else:
+                z1 = point[2]-radius
+                z2 = point[2]+radius
+
+            bELEM = False
+            bID = True
+            
+            if output == 'ELEM_ID': 
+                gridStr = set(Element.Grid.keys())
+                grid_complete = Element.Grid
+                bELEM,bID = True,True
+            elif output == 'ELEM': 
+                gridStr = set(Element.Grid.keys())
+                grid_complete = Element.Grid
+                bELEM,bID = True,False
+            elif output == 'NODE': 
+                gridStr = set(Node.Grid.keys())
+                grid_complete = Node.Grid
+                bID = False
+            else:
+                gridStr = set(Node.Grid.keys())
+                grid_complete = Node.Grid
+            
+
+            possible_gridStr = set()
+            for i in np.arange(int(x1),int(x2)+1,1):
+                for j in np.arange(int(y1),int(y2)+1,1):
+                    for k in np.arange(int(z1),int(z2)+1,1):
+                        possible_gridStr.add(f"{i},{j},{k}")
+            
+            common_gridStr = list(gridStr.intersection(possible_gridStr))
+
+            for eachAvailGrid in common_gridStr:
+                for elm in grid_complete[eachAvailGrid]:
+                    point = elm.CENTER if bELEM else elm.LOC
+
+                    if x1 <= point[0] <= x2 and y1 <= point[1] <= y2 and z1 <= point[2] <= z2 :
+                        output_list.append(elm.ID if bID else elm)
+            
+            
+            return set(output_list)
+        
+        @staticmethod
+        def Plane_XY(point:tuple=(0,0,0) , output:_SelectOutput='NODE_ID') -> set:
+            return Model.Select.__Plane__('XY',point,output)
+        
+        @staticmethod
+        def Plane_YZ(point:tuple=(0,0,0) , output:_SelectOutput='NODE_ID') -> set:
+            return Model.Select.__Plane__('YZ',point,output)
+        
+        @staticmethod
+        def Plane_XZ(point:tuple=(0,0,0) , output:_SelectOutput='NODE_ID') -> set:
+            return Model.Select.__Plane__('XZ',point,output)
+
+        @staticmethod
+        def Element(type=None,matID=None,secID=None,output:_SelectOutputElem='ELEM_ID') -> set:
+            output_list = []
+            if output == 'ELEM_ID':
+                bID = True
+            else:
+                bID = False
+
+            _mat_list = []
+            _sec_list = []
+            _type_list = []
+
+            _temp_list = set()
+
+            bMat = True if matID!=None else False
+            bSec = True if secID!=None else False
+            bType = True if type!=None else False
+
+            from ._utils import _convItem2List
+            matID = _convItem2List(matID)
+            secID = _convItem2List(secID)
+            type = _convItem2List(type)
+
+            for elm in Element.elements:
+                if elm.SECT in secID:
+                    _sec_list.append(elm)
+                if elm.MATL in matID:
+                    _mat_list.append(elm)
+                if elm.TYPE in type:
+                    _type_list.append(elm)
+
+            bListAssigned = False
+            if bMat: 
+                _temp_list = set(_mat_list)
+                bListAssigned = True
+
+            if not bListAssigned:
+                if bSec: _temp_list = set(_sec_list)
+                elif bType: _temp_list = set(_type_list)
+
+            # print(_temp_list)
+
+            if bMat: _temp_list.intersection_update(set(_mat_list))
+            if bSec: _temp_list.intersection_update(set(_sec_list))
+            if bType: _temp_list.intersection_update(set(_type_list))
+
+            if bID:
+                output_list = {elm.ID for elm in _temp_list}
+            else: output_list = _temp_list
+                
             return output_list
 
 
+    @staticmethod
+    def IMAGE(location:str='',image_size:tuple = None , view:str='pre',CS_StageName:str='',_boutputImage:bool=True):
+        ''' 
+        Capture the image in the viewport
+            Location - image location
+            Image Size =  height and width of image captured
+            View - 'pre' or 'post'
+            stage - CS name
+        '''
+        from base64 import b64decode
+        if image_size==None: image_size=View.Image_Size
+        json_body = {
+                "Argument": {
+                    "SET_MODE":"pre",
+                    "SET_HIDDEN":View.Hidden,
+                    "HEIGHT": image_size[1],
+                    "WIDTH": image_size[0]
+                }
+            }
+        
+        if View.Angle.__newH__ == True or View.Angle.__newV__ == True:
+            json_body['Argument']['ANGLE'] = View.Angle._json()
+
+        if View.Active.__default__ ==False:
+            json_body['Argument']['ACTIVE'] = View.Active._json()
+        
+        if view=='post':
+            json_body['Argument']['SET_MODE'] = 'post'
+        elif view=='pre':
+            json_body['Argument']['SET_MODE'] = 'pre'
+
+        if CS_StageName != '':
+            json_body['Argument']['STAGE_NAME'] = CS_StageName
+
+        print(image_size)
+
+        resp = MidasAPI('POST','/view/CAPTURE',json_body)
+
+        bs64_img = b64decode(resp["base64String"])
+        if location:
+            __img_file = open(location, 'wb')  # Open image file to save.
+            __img_file.write(bs64_img)  # Decode and write data.
+            __img_file.close()
+
+        if _boutputImage:
+            from PIL import Image as ImagePIL
+            from io import BytesIO
+            # return bs64_img
+            return ImagePIL.open(BytesIO(bs64_img))
+        return resp

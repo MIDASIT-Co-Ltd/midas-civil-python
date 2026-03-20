@@ -17,14 +17,14 @@ _LCType = Literal["USER", "D", "DC", "DW", "DD", "EP", "EANN", "EANC", "EAMN", "
 def _ADD_NodalLoad(self):
     if isinstance(self.NODE,int):
         Load.Nodal.data.append(self)
-    elif isinstance(self.NODE,list):
+    elif isinstance(self.NODE,(list,tuple,set)):
         for nID in self.NODE:
             Load.Nodal(nID,self.LCN,self.LDGR,self.FX,self.FY,self.FZ,self.MX,self.MY,self.MZ,self.ID)
 
 def _ADD_PressureLoad(self):
     if isinstance(self.ELEM,int):
         Load.Pressure.data.append(self)
-    elif isinstance(self.ELEM,list):
+    elif isinstance(self.ELEM,(list,tuple,set)):
         for eID in self.ELEM:
             Load.Pressure(eID,self.LCN,self.LDGR,self.DIR,self.PRES,self.VECTOR,self.bPROJ,self.ID)
 
@@ -32,7 +32,7 @@ def _ADD_PressureLoad(self):
 def _ADD_BeamLoad(self):
     if isinstance(self.ELEMENT,int):
         Load.Beam.data.append(self)
-    elif isinstance(self.ELEMENT,list):
+    elif isinstance(self.ELEMENT,(list,tuple,set)):
         for eID in self.ELEMENT:
             Load.Beam(eID,self.LCN,self.LDGR,self.VALUE,self.DIRECTION,self.D,self.P,self.CMD,self.TYPE,self.USE_ECCEN,self.USE_PROJECTION,
                       self.ECCEN_DIR,self.ECCEN_TYPE,self.IECC,self.JECC,self.USE_H,self.I_H,self.J_H,self.ID)

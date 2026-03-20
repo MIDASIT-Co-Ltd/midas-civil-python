@@ -27,6 +27,7 @@ class NX:
     visualiser = False
     modelIDs = {} # Handles the fast MAX ID
     autoTaperGroup = False
+    PRODUCT = 'CIVIL'
 
     # Function for quick saving of JSON
     @staticmethod
@@ -38,7 +39,7 @@ class NX:
 
     # Function to quickly print text in a box , width -> CENTER Align
     @staticmethod
-    def box_print(text:str="HELLO WORLD",width:int=82,pad:int=1,text_col=Fore.WHITE,border_col=Fore.LIGHTWHITE_EX):
+    def box_print(text:str="HELLO WORLD",width:int=None,pad:int=1,text_col=Fore.WHITE,border_col=Fore.LIGHTWHITE_EX):
         col_border = border_col
         col_text = text_col
 
@@ -266,6 +267,11 @@ def _checkUSER():
     response =  MidasAPI('GET','/config/ver',{})
     if 'VER' in response:
         resp = response['VER']
+        _product = resp['NAME']
+        if 'CIVIL' in _product:
+            NX.PRODUCT = 'CIVIL'
+        elif 'GEN' in _product:
+            NX.PRODUCT = 'GEN'
 
         # print(f"{' '*15}Connected to {resp['NAME']}")
         # print(f"{' '*15}USER : {resp['USER']}          COMPANY : {resp['COMPANY']}")
@@ -282,6 +288,12 @@ def _checkUSER():
         tqdm.write(line1)
         tqdm.write(line2)
         tqdm.write('╰────────────────────────────────────────────────────────────────────────────────────╯\n'+Style.RESET_ALL)
+
+        if NX.PRODUCT !='CIVIL':
+            tqdm.write(Fore.YELLOW +'╭─ ⚠️   ──────────────────────────────────────────────────────────────────────────────╮')
+            tqdm.write(f"│  Warning: You are using midas_civil library to connect with GEN NX.                │")
+            tqdm.write(f"│  Some GEN NX specific options may not be avaialble. Kindly, use midas_gen library. │")
+            tqdm.write('╰────────────────────────────────────────────────────────────────────────────────────╯\n'+Style.RESET_ALL)
 
 
         # print('─'*86)

@@ -43,7 +43,7 @@ def convList(item):
 def _ADD_Support(self):
     if isinstance(self.NODE,int):
         Boundary.Support.sups.append(self)
-    elif isinstance(self.NODE,list):
+    elif isinstance(self.NODE,(list,tuple,set)):
         for nID in self.NODE:
             Boundary.Support(nID,self.CONST,self.GROUP)
 

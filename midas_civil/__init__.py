@@ -1,7 +1,7 @@
 import requests
 from colorama import Fore,Style
 from ._mapi import NX,MidasAPI,MAPI_KEY,MAPI_BASEURL,MAPI_COUNTRY,Midas_help
-_version_ = "1.5.6"
+_version_ = "1.5.7"
 
 
 print('\n╭────────────────────────────────────────────────────────────────────────────────────╮')
@@ -40,7 +40,7 @@ from ._thickness import Thickness
 from ._temperature import Temperature
 
 from ._tendon import Tendon
-from ._view import View,ResultGraphic,Image
+from ._view import View,ResultGraphic
 
 from ._movingload import MovingLoad
 from ._settlement import Settlement

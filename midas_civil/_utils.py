@@ -99,7 +99,7 @@ def zz_add_to_dict(dictionary, key, value):
 
 
 def _convItem2List(item):
-    if isinstance(item,(list,np.ndarray)):
+    if isinstance(item,(list,np.ndarray,tuple)):
         return item
     return [item]
 

@@ -91,7 +91,7 @@ def _JStoObj_Prop(id, js):
     
     Tendon.Property(name,type,matID,tdn_area,duct_dia,relax,ext_mo,an_s_b,an_s_e,bond_type,id)
 
-def _JStoObj_Profile(id,js):
+def _JStoObj_Profile(id,js:dict):
     tdn_id = id 
     name = js['NAME']
     tdnProperty = js['TDN_PROP']
@@ -112,8 +112,8 @@ def _JStoObj_Profile(id,js):
         n_typical_tendon = js['CNT']
 
     trans_len_opt = js['LENG_OPT']
-    trans_len_begin = js['BLEN']
-    trans_len_end = js['ELEN']
+    trans_len_begin = js.get('BLEN',0)
+    trans_len_end = js.get('ELEN',0)
 
     debon_len_begin = js['DeBondBLEN']
     debon_len_end = js['DeBondELEN']
@@ -121,8 +121,8 @@ def _JStoObj_Profile(id,js):
 
     #Variable initialise to remove errors
     prof_xyz = []  
-    prof_xy = []  
-    prof_xz = []  
+    prof_xyr = []  
+    prof_xzr = []  
     prof_ins_point_end = 'END-I'  
     prof_ins_point_elem = 0  
     x_axis_dir_element = 'I-J'  
@@ -152,16 +152,41 @@ def _JStoObj_Profile(id,js):
 
     #2D
     elif inp_type == '2D' :
-        prof_xy = []  
-        prof_xz = []  
+        prof_xyr = []  
+        prof_xzr = []  
         json_profileY_arr = js['PROFY']
         json_profileZ_arr = js['PROFZ']
 
+        _bRound = True if curve_type == 'ROUND' else False
+            
+
         for i in range(len(json_profileY_arr)):
-            prof_xy.append([json_profileY_arr[i]['PT'][0],json_profileY_arr[i]['PT'][1]])
+            if _bRound: 
+                _Rdata = json_profileY_arr[i]['RADIUS']
+                prof_xyr.append([json_profileY_arr[i]['PT'][0],json_profileY_arr[i]['PT'][1],_Rdata])
+            else:
+                _Rdata = json_profileY_arr[i]['R']
+                _bFix = json_profileY_arr[i]['bFIX']
+                if _bFix:
+                    prof_xyr.append([json_profileY_arr[i]['PT'][0],json_profileY_arr[i]['PT'][1],_Rdata])
+                else:
+                    prof_xyr.append([json_profileY_arr[i]['PT'][0],json_profileY_arr[i]['PT'][1]])
+
+
+            
+
         
         for i in range(len(json_profileZ_arr)):
-            prof_xz.append([json_profileZ_arr[i]['PT'][0],json_profileZ_arr[i]['PT'][1]])
+            if _bRound: 
+                _Rdata = json_profileZ_arr[i]['RADIUS']
+                prof_xzr.append([json_profileZ_arr[i]['PT'][0],json_profileZ_arr[i]['PT'][1],_Rdata])
+            else:
+                _Rdata = json_profileZ_arr[i]['R']
+                _bFix = json_profileZ_arr[i]['bFIX']
+                if _bFix:
+                    prof_xzr.append([json_profileZ_arr[i]['PT'][0],json_profileZ_arr[i]['PT'][1],_Rdata])
+                else:
+                    prof_xzr.append([json_profileZ_arr[i]['PT'][0],json_profileZ_arr[i]['PT'][1]])
 
 
     # ELEMENT
@@ -194,13 +219,147 @@ def _JStoObj_Profile(id,js):
         grad_rot_axis = js['GR_AXIS']  
         grad_rot_ang = js['GR_ANGLE']
 
-    
     Tendon.Profile(name,tdnProperty,tdn_group,elem,inp_type,curve_type,st_len_begin,st_len_end,n_typical_tendon,
                    trans_len_opt,trans_len_begin,trans_len_end,debon_len_begin,debon_len_end,ref_axis,
-                   prof_xyz,prof_xy,prof_xz,prof_ins_point,prof_ins_point_elem,x_axis_dir_element,x_axis_rot_ang,
+                   prof_xyz,prof_xyr,prof_xzr,prof_ins_point,prof_ins_point_elem,x_axis_dir_element,x_axis_rot_ang,
                    projection,offset_y,offset_z,prof_ins_point,x_axis_dir_straight,x_axis_dir_vec,grad_rot_axis,grad_rot_ang,radius_cen,offset,dir,tdn_id)
 
+def _ObjtoJS_Profile(self):
+    js =  {
+                'NAME' : self.NAME,
+                'TDN_PROP' : self.PROP,
+                'ELEM' : self.ELEM,
+                'BELENG' : self.BELENG,
+                'ELENG' : self.ELENG,
+                'CURVE' : self.CURVE,
+                'INPUT' : self.INPUT,
+                'TDN_GRUP' : self.GROUP,
+                "LENG_OPT": self.LENG_OPT,
+                "BLEN": self.BLEN,
+                "ELEN": self.ELEN,
+                "bTP": self.bTP,
+                "CNT": self.CNT,
+                "DeBondBLEN": self.DeBondBLEN,
+                "DeBondELEN": self.DeBondELEN,
+                "SHAPE": self.SHAPE
+            }
+    # --------------------------------   2D OR 3D (ROUND/SPLINE)--------------------------
+    if self.INPUT == '3D':
 
+        # -------- 3D  ------------
+        array_temp = []
+
+        # -------- 3D SPLINE & ROUND ------------
+        if self.CURVE == 'ROUND' :
+            for j in range(len(self.P_XYZ)):
+                array_temp.append({
+                        'PT' : [self.P_XYZ[j].X,self.P_XYZ[j].Y,self.P_XYZ[j].Z],
+                        'bFIX' : self.bFIX[j],
+                        'RADIUS' : self.RADIUS[j]
+                })
+        else:
+            for j in range(len(self.P_XYZ)):
+                array_temp.append({
+                        'PT' : [self.P_XYZ[j].X,self.P_XYZ[j].Y,self.P_XYZ[j].Z],
+                        'bFIX' : self.bFIX[j],
+                        'R' : self.R[j]
+                })
+        
+        
+        
+        
+        # --- 3D Main ----
+
+        json_prof = {
+                        "PROF":array_temp
+                    }
+
+    elif self.INPUT == '2D':
+
+        # -------- 2D  ------------
+        array_y_temp = []
+        array_z_temp = []
+
+        # -------- 2D  ------------
+        if self.CURVE == 'ROUND' :
+            for j in range(len(self.P_XY)):
+                    array_y_temp.append({
+                            'PT' : [self.P_XY[j].X,self.P_XY[j].Y],
+                            'bFIX' : self.bFIX_XY[j],
+                            'RADIUS' : self.R_XY[j]
+                    })
+
+            for j in range(len(self.P_XZ)):
+                    array_z_temp.append({
+                            'PT' : [self.P_XZ[j].X,self.P_XZ[j].Z],
+                            'bFIX' : self.bFIX_XZ[j],
+                            'RADIUS' : self.R_XZ[j]
+                })
+
+        else:
+            for j in range(len(self.P_XY)):
+                    array_y_temp.append({
+                            'PT' : [self.P_XY[j].X,self.P_XY[j].Y],
+                            'bFIX' : self.bFIX_XY[j],
+                            'R' : self.R_XY[j]
+                    })
+
+            for j in range(len(self.P_XZ)):
+                    array_z_temp.append({
+                            'PT' : [self.P_XZ[j].X,self.P_XZ[j].Z],
+                            'bFIX' : self.bFIX_XZ[j],
+                            'R' : self.R_XZ[j]
+                    })
+        
+        # --- 3D Main ----
+
+        json_prof = {
+                        "PROFY":array_y_temp,
+                        "PROFZ":array_z_temp
+                    }
+        
+    # -------------------------------------------     TYPE  (ELEMNENT , STRAIGHT , CURVE)   ------------------------------------
+
+    # ----- 3D Spline Element--------
+    if self.SHAPE == 'ELEMENT' :
+        json_shape={
+                                "INS_PT": self.INS_PT,
+                                "INS_ELEM": self.INS_ELEM,
+                                "AXIS_IJ": self.AXIS_IJ,
+                                "XAR_ANGLE": self.XAR_ANGLE,
+                                "bPJ": self.bPJ,
+                                "OFF_YZ": self.OFF_YZ,
+                                }
+        
+    # ----- 3D Spline Straight --------
+    elif self.SHAPE == 'STRAIGHT' :
+        json_shape={
+                                "IP" : self.IP,
+                                "AXIS" : self.AXIS,
+                                "VEC" : self.VEC,
+                                "XAR_ANGLE": self.XAR_ANGLE,
+                                "bPJ": self.bPJ,
+                                "GR_AXIS": self.GR_AXIS,
+                                "GR_ANGLE": self.GR_ANGLE,
+                                }
+        
+    # ----- 3D Spline Curve --------
+    elif self.SHAPE == 'CURVE' :
+        json_shape={
+                                "IP" : self.IP,
+                                "RC" : self.RC,
+                                "OFFSET" : self.OFFSET,
+                                "DIR" : self.DIR,
+                                "XAR_ANGLE": self.XAR_ANGLE,
+                                "bPJ": self.bPJ,
+                                "GR_AXIS": self.GR_AXIS,
+                                "GR_ANGLE": self.GR_ANGLE,
+                                }
+    
+    js.update(json_shape)
+    js.update(json_prof)
+
+    return js
 
 class _POINT_ : # Local class to store points
     def __init__(self,x,y,z):
@@ -585,7 +744,7 @@ class Tendon:
         def __init__(self,name,tdn_prop,tdn_group=0,elem=[],inp_type:_inputType='3D',curve_type:_curveType = 'SPLINE',st_len_begin = 0 , st_len_end = 0,n_typical_tendon=0,
                      trans_len_opt:_transferLength='USER', trans_len_begin = 0 , trans_len_end = 0, debon_len_begin=0 , debon_len_end=0,
                      ref_axis:_refAxis = 'ELEMENT',
-                     prof_xyz = [], prof_xy =[],prof_xz=[],
+                     prof_xyz = [], prof_xyr =[],prof_xzr=[],
                      prof_ins_point_end:_insPoint = 'END-I', prof_ins_point_elem = 0, x_axis_dir_element:_xAxisDirElem = 'I-J', x_axis_rot_ang = 0 , projection = True, offset_y = 0 , offset_z = 0,
                      prof_ins_point =[0,0,0], x_axis_dir_straight:_xAxisDirStraight = 'X' , x_axis_dir_vec = [0,0], grad_rot_axis:_gradRotAxis = 'X', grad_rot_ang=0,
                      radius_cen = [0,0], offset = 0, dir:_curveDir = 'CW',
@@ -714,25 +873,33 @@ class Tendon:
 
             
 
-            #----- 2D Profile Spline (only)-------------
+            #----- 2D Profile Spline + Round -------------
             xy_loc = []
             xz_loc = []
 
             bFix_y = []
             bFix_z = []
 
-            R_spline2d_Rz = []
-            R_spline2d_Ry = []
+            R_2d_Rz = []
+            R_2d_Ry = []
 
-            for point in prof_xy:
+            for point in prof_xyr:
                 xy_loc.append(_POINT_(point[0],point[1],0))
-                bFix_y.append(False) # Default not defining here
-                R_spline2d_Rz.append(0)
+                if len(point) > 2 and point[2]!=None:
+                    bFix_y.append(True)
+                    R_2d_Rz.append(point[2])
+                else:
+                    bFix_y.append(False) 
+                    R_2d_Rz.append(0)
 
-            for point in prof_xz:
+            for point in prof_xzr:
                 xz_loc.append(_POINT_(point[0],0,point[1]))
-                bFix_z.append(False) # Default not defining here
-                R_spline2d_Ry.append(0)
+                if len(point) > 2 and point[2]!=None:
+                    bFix_z.append(True) 
+                    R_2d_Ry.append(point[2])
+                else:
+                    bFix_z.append(False) 
+                    R_2d_Ry.append(0)
 
 
             self.P_XY = xy_loc
@@ -741,8 +908,8 @@ class Tendon:
             self.bFIX_XY = bFix_y
             self.bFIX_XZ = bFix_z
 
-            self.R_XY = R_spline2d_Rz
-            self.R_XZ = R_spline2d_Ry
+            self.R_XY = R_2d_Rz
+            self.R_XZ = R_2d_Ry
 
 
             Tendon.Profile.profiles.append(self)
@@ -774,132 +941,30 @@ class Tendon:
             json = {"Assign":{}}
 
             for self in cls.profiles:
-                json["Assign"][self.ID] = {
-                                    'NAME' : self.NAME,
-                                    'TDN_PROP' : self.PROP,
-                                    'ELEM' : self.ELEM,
-                                    'BELENG' : self.BELENG,
-                                    'ELENG' : self.ELENG,
-                                    'CURVE' : self.CURVE,
-                                    'INPUT' : self.INPUT,
-                                    'TDN_GRUP' : self.GROUP,
-                                    "LENG_OPT": self.LENG_OPT,
-                                    "BLEN": self.BLEN,
-                                    "ELEN": self.ELEN,
-                                    "bTP": self.bTP,
-                                    "CNT": self.CNT,
-                                    "DeBondBLEN": self.DeBondBLEN,
-                                    "DeBondELEN": self.DeBondELEN,
-                                    "SHAPE": self.SHAPE
-                                }
-                # --------------------------------   2D OR 3D (ROUND/SPLINE)--------------------------
-                if self.INPUT == '3D':
-
-                    # -------- 3D  ------------
-                    array_temp = []
-
-                    # -------- 3D SPLINE & ROUND ------------
-                    if self.CURVE == 'ROUND' :
-                        for j in range(len(self.P_XYZ)):
-                            array_temp.append({
-                                    'PT' : [self.P_XYZ[j].X,self.P_XYZ[j].Y,self.P_XYZ[j].Z],
-                                    'bFIX' : self.bFIX[j],
-                                    'RADIUS' : self.RADIUS[j]
-                            })
-                    else:
-                        for j in range(len(self.P_XYZ)):
-                            array_temp.append({
-                                    'PT' : [self.P_XYZ[j].X,self.P_XYZ[j].Y,self.P_XYZ[j].Z],
-                                    'bFIX' : self.bFIX[j],
-                                    'R' : self.R[j]
-                            })
-                    
-                    
-                    
-                    
-                    # --- 3D Main ----
-
-                    json_prof = {
-                                    "PROF":array_temp
-                                }
-
-                elif self.INPUT == '2D':
-
-                    # -------- 2D  ------------
-                    array_y_temp = []
-                    array_z_temp = []
-
-                    # -------- 2D ONLY SPLINE  NOT ROUND ❌ ------------
-
-                    for j in range(len(self.P_XY)):
-                            array_y_temp.append({
-                                    'PT' : [self.P_XY[j].X,self.P_XY[j].Y],
-                                    'bFIX' : self.bFIX_XY[j],
-                                    'R' : self.R_XY[j]
-                            })
-
-                    for j in range(len(self.P_XZ)):
-                            array_z_temp.append({
-                                    'PT' : [self.P_XZ[j].X,self.P_XZ[j].Z],
-                                    'bFIX' : self.bFIX_XZ[j],
-                                    'R' : self.R_XZ[j]
-                            })
-
-                    
-                    # --- 3D Main ----
-
-                    json_prof = {
-                                    "PROFY":array_y_temp,
-                                    "PROFZ":array_z_temp
-                                }
-                    
-                # -------------------------------------------     TYPE  (ELEMNENT , STRAIGHT , CURVE)   ------------------------------------
-
-                # ----- 3D Spline Element--------
-                if self.SHAPE == 'ELEMENT' :
-                    json_shape={
-                                            "INS_PT": self.INS_PT,
-                                            "INS_ELEM": self.INS_ELEM,
-                                            "AXIS_IJ": self.AXIS_IJ,
-                                            "XAR_ANGLE": self.XAR_ANGLE,
-                                            "bPJ": self.bPJ,
-                                            "OFF_YZ": self.OFF_YZ,
-                                            }
-                    
-                # ----- 3D Spline Straight --------
-                elif self.SHAPE == 'STRAIGHT' :
-                    json_shape={
-                                            "IP" : self.IP,
-                                            "AXIS" : self.AXIS,
-                                            "VEC" : self.VEC,
-                                            "XAR_ANGLE": self.XAR_ANGLE,
-                                            "bPJ": self.bPJ,
-                                            "GR_AXIS": self.GR_AXIS,
-                                            "GR_ANGLE": self.GR_ANGLE,
-                                            }
-                    
-                # ----- 3D Spline Curve --------
-                elif self.SHAPE == 'CURVE' :
-                    json_shape={
-                                            "IP" : self.IP,
-                                            "RC" : self.RC,
-                                            "OFFSET" : self.OFFSET,
-                                            "DIR" : self.DIR,
-                                            "XAR_ANGLE": self.XAR_ANGLE,
-                                            "bPJ": self.bPJ,
-                                            "GR_AXIS": self.GR_AXIS,
-                                            "GR_ANGLE": self.GR_ANGLE,
-                                            }
-                
-                json["Assign"][self.ID].update(json_shape)
-                json["Assign"][self.ID].update(json_prof)
+                json["Assign"][self.ID] = _ObjtoJS_Profile(self)
                         
             return json
         
 
         @classmethod
         def create(cls):
-            MidasAPI("PUT","/db/TDNA",cls.json())
+            __maxNos__ = 100  #500 profiles can be sent in a single request
+            __numItem__ = len(cls.profiles)
+            __nTime__ = int(__numItem__/__maxNos__)+1
+
+            if __nTime__ == 1:
+                MidasAPI("PUT","/db/TDNA",cls.json())
+            else:
+                __remainItem__ = __numItem__
+                for n in range(__nTime__):
+                    json = {"Assign":{}}
+                    __nElem_c__ = min(__maxNos__,__remainItem__)
+                    for q in range(__nElem_c__):
+                        elem=cls.profiles[n*__maxNos__+q]
+                        js = _ObjtoJS_Profile(elem)
+                        json["Assign"][elem.ID] = js
+                    MidasAPI("PUT","/db/TDNA",json)
+                    __remainItem__ -= __maxNos__
 
 
         @classmethod
