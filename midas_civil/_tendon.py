@@ -221,7 +221,7 @@ def _JStoObj_Profile(id,js:dict):
 
     Tendon.Profile(name,tdnProperty,tdn_group,elem,inp_type,curve_type,st_len_begin,st_len_end,n_typical_tendon,
                    trans_len_opt,trans_len_begin,trans_len_end,debon_len_begin,debon_len_end,ref_axis,
-                   prof_xyz,prof_xyr,prof_xzr,prof_ins_point,prof_ins_point_elem,x_axis_dir_element,x_axis_rot_ang,
+                   prof_xyz,prof_xyr,prof_xzr,prof_ins_point_end,prof_ins_point_elem,x_axis_dir_element,x_axis_rot_ang,
                    projection,offset_y,offset_z,prof_ins_point,x_axis_dir_straight,x_axis_dir_vec,grad_rot_axis,grad_rot_ang,radius_cen,offset,dir,tdn_id)
 
 def _ObjtoJS_Profile(self):
@@ -744,7 +744,7 @@ class Tendon:
         def __init__(self,name,tdn_prop,tdn_group=0,elem=[],inp_type:_inputType='3D',curve_type:_curveType = 'SPLINE',st_len_begin = 0 , st_len_end = 0,n_typical_tendon=0,
                      trans_len_opt:_transferLength='USER', trans_len_begin = 0 , trans_len_end = 0, debon_len_begin=0 , debon_len_end=0,
                      ref_axis:_refAxis = 'ELEMENT',
-                     prof_xyz = [], prof_xyr =[],prof_xzr=[],
+                     prof_xyzR = [], prof_xyR =[],prof_xzR=[],
                      prof_ins_point_end:_insPoint = 'END-I', prof_ins_point_elem = 0, x_axis_dir_element:_xAxisDirElem = 'I-J', x_axis_rot_ang = 0 , projection = True, offset_y = 0 , offset_z = 0,
                      prof_ins_point =[0,0,0], x_axis_dir_straight:_xAxisDirStraight = 'X' , x_axis_dir_vec = [0,0], grad_rot_axis:_gradRotAxis = 'X', grad_rot_ang=0,
                      radius_cen = [0,0], offset = 0, dir:_curveDir = 'CW',
@@ -857,13 +857,26 @@ class Tendon:
             R_spline3d = []
             R_round3d = []
 
-            for point in prof_xyz:
+            for point in prof_xyzR:
                 xyz_loc.append(_POINT_(point[0],point[1],point[2]))
-                bFix.append(False) # Default not defining here
-                if curve_type == 'SPLINE':
-                    R_spline3d.append([0,0])   # Default not defining here
+
+                if len(point) > 3 and point[3]!=None:
+                    bFix.append(True)
+                    if curve_type == 'SPLINE':
+                        if isinstance(point[3],(list,tuple)):
+                            R_spline3d.append(point[3])
+                        else:
+                            R_spline3d.append([point[3][0],0])
+                    else:
+                        R_round3d.append(point[3])
                 else:
-                    R_round3d.append(0)
+                    bFix.append(False) 
+                    if curve_type == 'SPLINE':
+                        R_spline3d.append([0,0])
+                    else:
+                        R_round3d.append(0)
+
+                
 
             self.P_XYZ = xyz_loc
 
@@ -883,7 +896,7 @@ class Tendon:
             R_2d_Rz = []
             R_2d_Ry = []
 
-            for point in prof_xyr:
+            for point in prof_xyR:
                 xy_loc.append(_POINT_(point[0],point[1],0))
                 if len(point) > 2 and point[2]!=None:
                     bFix_y.append(True)
@@ -892,7 +905,7 @@ class Tendon:
                     bFix_y.append(False) 
                     R_2d_Rz.append(0)
 
-            for point in prof_xzr:
+            for point in prof_xzR:
                 xz_loc.append(_POINT_(point[0],0,point[1]))
                 if len(point) > 2 and point[2]!=None:
                     bFix_z.append(True) 

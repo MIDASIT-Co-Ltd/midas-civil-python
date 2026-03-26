@@ -938,8 +938,6 @@ class Model:
         if CS_StageName != '':
             json_body['Argument']['STAGE_NAME'] = CS_StageName
 
-        print(image_size)
-
         resp = MidasAPI('POST','/view/CAPTURE',json_body)
 
         bs64_img = b64decode(resp["base64String"])

@@ -291,8 +291,8 @@ def _checkUSER():
 
         if NX.PRODUCT !='CIVIL':
             tqdm.write(Fore.YELLOW +'╭─ ⚠️   ──────────────────────────────────────────────────────────────────────────────╮')
-            tqdm.write(f"│  Warning: You are using midas_civil library to connect with GEN NX.                │")
-            tqdm.write(f"│  Some GEN NX specific options may not be avaialble. Kindly, use midas_gen library. │")
+            tqdm.write(f"│      Warning: You are using midas_civil library to connect with GEN NX.            │")
+            tqdm.write(f"│      Some GEN NX specific options may not be avaialble.                            │")
             tqdm.write('╰────────────────────────────────────────────────────────────────────────────────────╯\n'+Style.RESET_ALL)
 
 

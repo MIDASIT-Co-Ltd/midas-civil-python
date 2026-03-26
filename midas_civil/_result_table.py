@@ -936,6 +936,40 @@ class Result :
             polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS)
             return polarDF
         
+        @staticmethod
+        def Tendon_Loss(tdn_group="", cs_stage="",
+                                   options:TableOptions=None):
+            '''
+            Fetches Tendon Loss result tables.
+            
+            Args:
+                tdn_group (str): List of Element IDs or a Structure Group Name.
+                cs_stage (str): Construction Stage options.
+                options : Table options
+            '''
+            if options == None: options = TableOptions()
+            sheetName = options.EXCEL_SHEET_NAME or f"Tendon Loss - {tdn_group}"
+            
+            table_type = "TNDN_LOSS_FORCE"
+            
+            js_dat = {
+                "Argument": {
+                    "TABLE_NAME": "SS_Table",
+                    "TABLE_TYPE": table_type,
+                    "STYLES": options.Style,
+                    "ADDITIONAL": {
+                        "SET_TENDON_PARAMS": {
+                            "TENDON_GROUP": tdn_group,
+                            "STAGE": cs_stage
+                        }
+                    }
+                }
+            }
+
+            ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS)
+            return polarDF
+        
 
     @staticmethod
     def IMAGE(ResultGraphic:ResultGraphic,location:str='',image_size:tuple = None,CS_StageName:str='',_bOutputImage=True):

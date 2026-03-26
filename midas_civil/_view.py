@@ -28,7 +28,7 @@ class View:
     
     class Active(metaclass = __ActiveMeta__ ):
         
-        '''Sets Elements to be Active for View.Capture() or View.CaptureResults()
+        '''Sets Elements to be Active for Model.IMAGE() or Result.IMAGE()
 
         **Mode** - "All" , "Active" , "Identity"   
         **Node_List** - Node to be active when Mode is "Active"   
@@ -43,7 +43,7 @@ class View:
         ident_type = "Group"
         ident_list = []
 
-        def __init__(self,mode:str='All',node_list:list=[],elem_list:list=[],ident_type='Group',ident_list:list=[]):
+        def __init__(self,mode:str='Active',node_list:list=[],elem_list:list=[],ident_type='Group',ident_list:list=[]):
             '''Sets Elements to be Active for View.Capture() or View.CaptureResults()
 
             **Mode** - "All" , "Active" , "Identity"   
