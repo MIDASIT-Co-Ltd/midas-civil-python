@@ -3,11 +3,56 @@ from ._offsetSS import _common
 from math import sin,cos,pi
 
 class _SS_TAPERED_DBUSER(_common):
+    """Tapered user-defined standard section for MIDAS Civil NX.
 
-    """ Create Standard USER DEFINED sections"""
+    Represents a tapered section whose cross-section varies linearly from the
+    I-end (start) to the J-end (end) of a frame element. The shape type and
+    dimension parameters are shared across both ends; only the sizes differ.
 
-    def __init__(self,Name='',Shape='',params_I:list=[],params_J:list=[],Offset=Offset(),useShear=True,use7Dof=False,id:int=0):  
-        """ Shape = 'SB' 'SR' for rectangle \n For cylinder"""
+    Supported shapes (``Shape`` argument):
+        - ``'SB'`` : Solid rectangle — params ``[H, B]``
+        - ``'L'``  : Angle (L-section) — params ``[H, B, tw, tf]``
+        - ``'C'``  : Channel — params ``[H, B1, tw, tf1, B2, tf2]``
+        - ``'H'``  : H-beam / I-beam — params ``[H, B1, tw, tf1, B2, tf2, r1, r2]``
+        - ``'T'``  : T-section — params ``[H, B, tw, tf]``
+        - ``'B'``  : Box section — params ``[H, B, tw, tf1, C, tf2]``
+        - ``'P'``  : Pipe (hollow circle) — params ``[D, tw]``
+
+    Attributes:
+        ID (int): Section database ID assigned by MIDAS.
+        NAME (str): Section name.
+        TYPE (str): Always ``'TAPERED'``.
+        SHAPE (str): Shape code (see above).
+        PARAMS_I (list[float]): Dimension parameters at the I-end.
+        PARAMS_J (list[float]): Dimension parameters at the J-end.
+        OFFSET (Offset): Cross-section offset configuration.
+        USESHEAR (bool): Whether to include shear deformation.
+        USE7DOF (bool): Whether to include warping (7th DOF) effect.
+        DATATYPE (int): Internal MIDAS data-type identifier (always ``2``).
+    """
+
+    def __init__(self, Name='', Shape='', params_I: list = [], params_J: list = [],
+                 Offset=Offset(), useShear=True, use7Dof=False, id: int = 0):
+        """Initialise a tapered user-defined section.
+
+        Args:
+            Name (str): Section name as it will appear in the MIDAS model.
+            Shape (str): Shape code. One of ``'SB'``, ``'L'``, ``'C'``, ``'H'``,
+                ``'T'``, ``'B'``, or ``'P'``.
+            params_I (list[float]): Dimension parameters at the I-end of the
+                element. Order depends on the chosen shape (see class docstring).
+            params_J (list[float]): Dimension parameters at the J-end of the
+                element. Must use the same ordering as ``params_I``.
+            Offset (Offset): Section offset object controlling the reference
+                point and horizontal/vertical offsets. Defaults to centroid (CC).
+            useShear (bool): Include shear deformation in the analysis.
+                Defaults to ``True``.
+            use7Dof (bool): Include warping (7th DOF / torsional warping) effect.
+                Defaults to ``False``.
+            id (int): Section ID in the MIDAS database. Assigned automatically
+                when the section is pushed to the model; leave as ``0`` when
+                creating a new section.
+        """
         self.ID = id
         self.NAME = Name
         self.TYPE = 'TAPERED'
@@ -18,12 +63,19 @@ class _SS_TAPERED_DBUSER(_common):
         self.USESHEAR = useShear
         self.USE7DOF = use7Dof
         self.DATATYPE = 2
-    
+
     def __str__(self):
          return f'  >  ID = {self.ID}   |  USER DEFINED STANDARD SECTION \nJSON = {self.toJSON()}\n'
 
 
     def toJSON(sect):
+        """Serialise the section to the MIDAS Civil NX API JSON format.
+
+        Returns:
+            dict: A dictionary ready to be sent to the ``/db/sect`` endpoint,
+            containing the section type, name, shape, I/J parameters, offset
+            settings, and analysis flags.
+        """
         js =  {
                 "SECTTYPE": sect.TYPE,
                 "SECT_NAME": sect.NAME,
@@ -42,16 +94,56 @@ class _SS_TAPERED_DBUSER(_common):
         js['SECT_BEFORE']['USE_SHEAR_DEFORM'] = sect.USESHEAR
         js['SECT_BEFORE']['USE_WARPING_EFFECT'] = sect.USE7DOF
         return js
-    
+
     @staticmethod
-    def _objectify(id,name,type,shape,offset,uShear,u7DOF,js):
-        return _SS_TAPERED_DBUSER(name,shape,js['SECT_BEFORE']['SECT_I']['vSIZE'],js['SECT_BEFORE']['SECT_J']['vSIZE'],offset,uShear,u7DOF,id)
-    
-    def _centerLine(shape,end,*args):
-        if end: 
+    def _objectify(id, name, type, shape, offset, uShear, u7DOF, js):
+        """Reconstruct a ``_SS_TAPERED_DBUSER`` instance from raw API JSON.
+
+        Args:
+            id (int): Section database ID.
+            name (str): Section name.
+            type (str): Section type string (unused; always ``'TAPERED'``).
+            shape (str): Shape code.
+            offset (Offset): Offset object.
+            uShear (bool): Shear deformation flag.
+            u7DOF (bool): Warping effect flag.
+            js (dict): Raw JSON dictionary from the ``/db/sect`` endpoint,
+                containing ``SECT_BEFORE.SECT_I.vSIZE`` and
+                ``SECT_BEFORE.SECT_J.vSIZE``.
+
+        Returns:
+            _SS_TAPERED_DBUSER: Reconstructed section object.
+        """
+        return _SS_TAPERED_DBUSER(name, shape, js['SECT_BEFORE']['SECT_I']['vSIZE'], js['SECT_BEFORE']['SECT_J']['vSIZE'], offset, uShear, u7DOF, id)
+
+    def _centerLine(shape, end, *args):
+        """Compute the wireframe geometry used to render the section outline.
+
+        Selects either the I-end or J-end parameters and returns the geometric
+        primitives required to draw a thin-wall centerline representation of
+        the cross-section.
+
+        Args:
+            shape: The section object (used as ``self``).
+            end (bool): ``True`` to use J-end parameters; ``False`` for I-end.
+            *args: Reserved for future use.
+
+        Returns:
+            tuple:
+                - **sect_shape** (list[list[float]]): Node coordinates
+                  ``[y, z]`` of the section outline.
+                - **sect_thk** (list[float]): Wall thickness at each segment.
+                - **sect_thk_off** (list[float]): Thickness offset for each
+                  segment (positive = outward from centreline).
+                - **sect_cg** (tuple): Three reference points
+                  ``(top-left, centroid, bottom-right)`` each as ``[y, z]``.
+                - **sect_lin_con** (list[list[int]]): 1-based node connectivity
+                  pairs ``[start, end]`` defining each wall segment.
+        """
+        if end:
             shape.PARAMS = shape.PARAMS_J
             # print(' J end taken')
-        else: 
+        else:
             # print(' I end taken')
             shape.PARAMS = shape.PARAMS_I
 

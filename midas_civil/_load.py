@@ -705,7 +705,254 @@ class Load:
                         rmY=item_data.get('rmY'),
                         rmZ=item_data.get('rmZ')
                     )
+    
+    class FloorLoadDefine:
+        data = []
 
+        def __init__(self, name: str, items: list, desc: str = "", id: int = None):
+            """Define Floor Load Type with load case items.
+        
+            Parameters:
+                name (str): Floor Load Type Name.
+                items (list): List of floor load items. Each item can be:
+                            [load_case, value]  -- Sub Beam Weight defaults to False
+                            [load_case, value, sub_beam_weight]
+                desc (str, optional): Description. Defaults to "".
+                id (int, optional): ID. Auto-assigned if not provided.
+
+            Example:
+                Load.FloorLoadDefine("Floor_example", [
+                    ["DC", 10, True],
+                    ["DW", 20]
+                ])
+            """
+
+            self.NAME = name
+            self.DESC = desc
+
+            # Parse items — each entry is [load_case, value] or [load_case, value, sub_beam_weight]
+            parsed_items = []
+            for entry in items:
+                if len(entry) == 2:
+                    lc_name, floor_load = entry
+                    sub_beam_weight = False
+                elif len(entry) == 3:
+                    lc_name, floor_load, sub_beam_weight = entry
+                else:
+                    raise ValueError(
+                        f"Each item must have 2 or 3 elements: [load_case, value] or "
+                        f"[load_case, value, sub_beam_weight]. Got: {entry}"
+                    )
+                parsed_items.append({
+                    "LCNAME": lc_name,
+                    "FLOOR_LOAD": floor_load,
+                    "OPT_SUB_BEAM_WEIGHT": sub_beam_weight
+                })
+
+            self.ITEMS = parsed_items
+
+            if id is None:
+                self.ID = len(Load.FloorLoadDefine.data) + 1
+            else:
+                self.ID = id
+
+            Load.FloorLoadDefine.data.append(self)
+
+        @classmethod
+        def json(cls):
+            json = {"Assign": {}}
+            for i in cls.data:
+                json["Assign"][i.ID] = {
+                    "NAME": i.NAME,
+                    "DESC": i.DESC,
+                    "ITEM": i.ITEMS
+                }
+            return json
+
+        @classmethod
+        def create(cls):
+            MidasAPI("PUT", "/db/FBLD", cls.json())
+
+        @classmethod
+        def get(cls):
+            return MidasAPI("GET", "/db/FBLD")
+
+        @classmethod
+        def delete(cls):
+            cls.clear()
+            return MidasAPI("DELETE", "/db/FBLD")
+
+        @classmethod
+        def clear(cls):
+            cls.data = []
+
+        @classmethod
+        def sync(cls):
+            cls.clear()
+            a = cls.get()
+            if a != {'message': ''}:
+                for key in a['FBLD'].keys():
+                    entry = a['FBLD'][key]
+                    raw_items = entry.get('ITEM', [])
+
+                    # Reconstruct items list in [load_case, value, sub_beam_weight] form
+                    items = [
+                        [
+                            it['LCNAME'],
+                            it['FLOOR_LOAD'],
+                            it.get('OPT_SUB_BEAM_WEIGHT', False)
+                        ]
+                        for it in raw_items
+                    ]
+
+                    Load.FloorLoadDefine(
+                        name=entry['NAME'],
+                        items=items,
+                        desc=entry.get('DESC', ''),
+                        id=int(key)
+                    )
+    
+    class FloorLoadAssign:
+        data = []
+
+        def __init__(self, floor_load_name: str, distribution_type: int = 2,
+                     direction: str = "GZ", node_list: list = [],
+                     group: str = "", load_angle: int = 0,
+                     sub_beam_no: int = 0, sub_beam_angle: int = 0,
+                     unit_selfweight: int = 0, bProjection: bool = False,
+                     exclude_inner_elem_area: bool = False,
+                     allow_polygon_type_unit_area: bool = False,
+                     id=None):
+
+            """Assign Floor Load to nodes.
+
+            Parameters:
+                floor_load_name (str): Floor Load Type Name. Required.
+                distribution_type (int): Distribution type. 1=One Way, 2=Two Way,
+                                        3=Polygon-Centroid, 4=Polygon-Length. Default: 2.
+                direction (str): Load direction. One of "LX","LY","LZ","GX","GY","GZ". Default: "GZ".
+                node_list (list): List of node IDs defining the loading area. Required.
+                group (str, optional): Load Group Name. Default: "".
+                load_angle (int, optional): Load Angle A1. Only used when distribution_type=1. Default: 0.
+                sub_beam_no (int, optional): Number of Sub Beams. Only used when distribution_type=1 or 2. Default: 0.
+                sub_beam_angle (int, optional): Sub-Beam Angle A2. Only used when distribution_type=1 or 2. Default: 0.
+                unit_selfweight (int, optional): Unit Self Weight. Only used when distribution_type=1 or 2. Default: 0.
+                opt_projection (bool, optional): Projection Boolean. Default: False.
+                exclude_inner_elem_area (bool, optional): Exclude Inner Element of Area.
+                                                        Only used when distribution_type=1 or 2. Default: False.
+                allow_polygon_type_unit_area (bool, optional): Allow Polygon Type Unit Area.
+                                                            Only used when distribution_type=2. Default: False.
+                id (int, optional): ID. Auto-assigned if not provided.
+
+            Example:
+                Load.FloorLoadAssign("Floor_example", 1, [508, 509, 511, 510])
+
+                Load.FloorLoadAssign("Floor_example", 2, [512, 516, 513, 514, 517, 515],
+                                    group="LoadGroup2", sub_beam_no=1, sub_beam_angle=90,
+                                    unit_selfweight=-15, opt_projection=False,
+                                    exclude_inner_elem_area=True,
+                                    allow_polygon_type_unit_area=True)
+
+                Load.FloorLoadAssign("Floor_example", 3, [512, 516, 513],
+                                    direction="GZ", group="LoadGroup2", opt_projection=True)
+            """
+
+            if distribution_type not in (1, 2, 3, 4):
+                distribution_type = 2
+            if direction not in ("LX", "LY", "LZ", "GX", "GY", "GZ"):
+                direction = "GZ"
+
+            self.FLOOR_LOAD_TYPE_NAME = floor_load_name
+            self.FLOOR_DIST_TYPE = distribution_type
+            self.DIR = direction
+            self.NODES = node_list
+            self.GROUP_NAME = group
+            self.LOAD_ANGLE = load_angle
+            self.SUB_BEAM_NUM = sub_beam_no
+            self.SUB_BEAM_ANGLE = sub_beam_angle
+            self.UNIT_SELF_WEIGHT = unit_selfweight
+            self.OPT_PROJECTION = bProjection
+            self.OPT_EXCLUDE_INNER_ELEM_AREA = exclude_inner_elem_area
+            self.OPT_ALLOW_POLYGON_TYPE_UNIT_AREA = allow_polygon_type_unit_area
+
+            if id is None:
+                self.ID = len(Load.FloorLoadAssign.data) + 1
+            else:
+                self.ID = id
+
+            Load.FloorLoadAssign.data.append(self)
+
+        @classmethod
+        def json(cls):
+            json = {"Assign": {}}
+            for i in cls.data:
+                entry = {
+                    "FLOOR_LOAD_TYPE_NAME": i.FLOOR_LOAD_TYPE_NAME,
+                    "FLOOR_DIST_TYPE": i.FLOOR_DIST_TYPE,
+                    "DIR": i.DIR,
+                    "OPT_PROJECTION": i.OPT_PROJECTION,
+                    "DESC": "",
+                    "GROUP_NAME": i.GROUP_NAME,
+                    "NODES": i.NODES
+                }
+
+                # Fields only for dist type 1 or 2
+                if i.FLOOR_DIST_TYPE in (1, 2):
+                    entry["SUB_BEAM_NUM"] = i.SUB_BEAM_NUM
+                    entry["SUB_BEAM_ANGLE"] = i.SUB_BEAM_ANGLE
+                    entry["UNIT_SELF_WEIGHT"] = i.UNIT_SELF_WEIGHT
+                    entry["OPT_EXCLUDE_INNER_ELEM_AREA"] = i.OPT_EXCLUDE_INNER_ELEM_AREA
+
+                # Load angle only for dist type 1
+                if i.FLOOR_DIST_TYPE == 1:
+                    entry["LOAD_ANGLE"] = i.LOAD_ANGLE
+
+                # Allow polygon type unit area only for dist type 2
+                if i.FLOOR_DIST_TYPE == 2:
+                    entry["OPT_ALLOW_POLYGON_TYPE_UNIT_AREA"] = i.OPT_ALLOW_POLYGON_TYPE_UNIT_AREA
+
+                json["Assign"][i.ID] = entry
+            return json
+
+        @classmethod
+        def create(cls):
+            MidasAPI("PUT", "/db/fbla", cls.json())
+
+        @classmethod
+        def get(cls):
+            return MidasAPI("GET", "/db/fbla")
+
+        @classmethod
+        def delete(cls):
+            cls.clear()
+            return MidasAPI("DELETE", "/db/fbla")
+
+        @classmethod
+        def clear(cls):
+            cls.data = []
+
+        @classmethod
+        def sync(cls):
+            cls.data = []
+            a = cls.get()
+            if a != {'message': ''}:
+                for i in a['FBLA'].keys():
+                    item = a['FBLA'][i]
+                    Load.FloorLoadAssign(
+                        floor_load_name=item['FLOOR_LOAD_TYPE_NAME'],
+                        distribution_type=item['FLOOR_DIST_TYPE'],
+                        direction=item.get('DIR', 'GZ'),
+                        node_list=item.get('NODES', []),
+                        group=item.get('GROUP_NAME', ''),
+                        load_angle=item.get('LOAD_ANGLE', 0),
+                        sub_beam_no=item.get('SUB_BEAM_NUM', 0),
+                        sub_beam_angle=item.get('SUB_BEAM_ANGLE', 0),
+                        unit_selfweight=item.get('UNIT_SELF_WEIGHT', 0),
+                        opt_projection=item.get('OPT_PROJECTION', False),
+                        exclude_inner_elem_area=item.get('OPT_EXCLUDE_INNER_ELEM_AREA', False),
+                        allow_polygon_type_unit_area=item.get('OPT_ALLOW_POLYGON_TYPE_UNIT_AREA', False),
+                        id=int(i)
+                    )
 #-----------------------------------------------------------Specified Displacement-------------------------------------------------
     class SpDisp:
         """Creates specified displacement loads and converts to JSON format.
@@ -889,9 +1136,7 @@ class Load:
                             Load.Beam(element=elem_IDS[i],load_case=load_case,load_group=load_group,D=[rel1,rel2],P=[p1,p2],direction=direction,
                                             typ = "UNILOAD", use_ecc = use_ecc, use_proj = use_proj,
                                             eccn_dir = eccn_dir, eccn_type = eccn_type, ieccn = ieccn, jeccn = jeccn, adnl_h = adnl_h, adnl_h_i = adnl_h_i, adnl_h_j = adnl_h_j,id = id)
-
-                        
-
+                      
     class Pressure:
         """ Assign Pressure load to plates faces.
         

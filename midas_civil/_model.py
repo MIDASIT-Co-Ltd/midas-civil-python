@@ -29,7 +29,7 @@ _lengthUnit = Literal["M", "CM", "MM", "FT", "IN"]
 _heatUnit = Literal["CAL", "KCAL", "J", "KJ", "BTU"]
 _tempUnit = Literal["C","F"]
 
-_dbNames = Literal['NODE','ELEM','MATL','SECT','RIGD','ELNK','THK']
+_dbNames = Literal['NODE','ELEM','MATL','SECT','RIGD','ELNK','THIK']
 _dbMapping = {
     "NODE" : "Node",
     "ELEM" : "Element",
@@ -46,6 +46,23 @@ _SelectOutput = Literal['NODE_ID','NODE','ELEM_ID','ELEM']
 _SelectOutputElem = Literal['ELEM_ID','ELEM']
 
 class Model:
+
+    @staticmethod
+    def gravity():
+        g_SI = 9.806
+
+        len_unit =NX.units['DIST']
+        len_multi = {
+            "M" : 1,
+            "CM" : 100,
+            "MM" : 1000,
+            "IN" : 39.3701,
+            "FT" : 3.28084
+        }
+        
+        len_multiplier = len_multi[len_unit]
+
+        return g_SI*len_multiplier
 
     bounds = {
         "X_min" : -1,
@@ -86,7 +103,7 @@ class Model:
     #4 Function to check analysis status & perform analysis if not analyzed
     @staticmethod
     def analyse():
-        """Checkes whether a model is analyzed or not and then performs analysis if required."""
+        """Checks whether a model is analyzed or not and then performs analysis if required."""
         json_body = {
         "Argument": {
             "HEIGHT" : 2,
@@ -98,7 +115,7 @@ class Model:
 
         if 'message' in resp or 'error' in resp:
                 MidasAPI("POST","/doc/ANAL",{"Assign":{}})
-        print(" 🔒   Model ananlysed. Switching to post-processing mode.")
+        print(" 🔒   Model analysed. Switching to post-processing mode.")
 
     # @staticmethod
     # def merge_nodes(tolerance = 0):
@@ -157,7 +174,7 @@ class Model:
         if force not in ["KN", "N", "KGF", "TONF", "LBF", "KIPS"]:
             force = "KN"
         if length not in ["M", "CM", "MM", "FT", "IN"]:
-            dist = "M"
+            length = "M"
         if heat not in ["CAL", "KCAL", "J", "KJ", "BTU"]:
             heat = "BTU"
         unit={"Assign":{
@@ -168,6 +185,12 @@ class Model:
                 "TEMPER":temp
             }
         }}
+        NX.units = {
+                "FORCE":force,
+                "DIST":length,
+                "HEAT":heat,
+                "TEMPER":temp
+            }
         MidasAPI("PUT","/db/UNIT",unit)
 
     # @staticmethod
@@ -402,6 +425,7 @@ class Model:
         Tendon.clear()
         Section.TaperedGroup.clear()
         LoadCombination.clear()
+        
 
     @staticmethod
     def type(strc_type=0,mass_type=1,gravity:float=0,mass_dir=1):

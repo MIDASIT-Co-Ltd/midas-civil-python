@@ -5,8 +5,11 @@ try:import winreg
 except: pass
 import time
 from tqdm import tqdm
+from typing import Literal
+
 # import polars as pl
 
+_httpMethod = Literal["PUT","POST","DELETE","GET"]
 
 
 def Midas_help():
@@ -28,6 +31,13 @@ class NX:
     modelIDs = {} # Handles the fast MAX ID
     autoTaperGroup = False
     PRODUCT = 'CIVIL'
+
+    units = {
+            "FORCE": "KN",
+            "DIST": "M",
+            "HEAT": "KJ",
+            "TEMPER": "C"
+        }
 
     # Function for quick saving of JSON
     @staticmethod
@@ -179,7 +189,7 @@ class MAPI_KEY:
 #---------------------------------------------------------------------------------------------------------------
 
 #2 midas API link code:
-def MidasAPI(method:str, command:str, body:dict={})->dict:
+def MidasAPI(method:_httpMethod, command:str, body:dict={})->dict:
     """Sends HTTP Request to MIDAS Civil NX
             Parameters:
                 Method: "PUT" , "POST" , "GET" or "DELETE"
@@ -217,6 +227,9 @@ def MidasAPI(method:str, command:str, body:dict={})->dict:
         response = requests.get(url=url, headers=headers)
     elif method == "DELETE":
         response = requests.delete(url=url, headers=headers)
+    else:
+        print(f"Invalid HTTP method entered {method}.")
+        return False
 
     end_time = time.perf_counter()
     elapsed_time = end_time - start_time

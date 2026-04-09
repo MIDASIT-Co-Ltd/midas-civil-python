@@ -1,7 +1,7 @@
 from ._mapi import MidasAPI
 from typing import Literal
 
-_CompSecType = Literal['GENERAL','USER']
+_CompSecType = Literal['GENERAL','USER','NORMAL']
 
 
 class CS:
@@ -45,7 +45,7 @@ class CS:
                 name: Name of Construction Stage
                 duration: Duration of Construction Stage in days (default 0)
                 s_group: Structure group name or list of group names (default None)
-                s_age: Age of structure group in days and Redistribution value(%) win case of Deactivation (default 0)
+                s_age: Age of structure group in days and Redistribution value(%) in case of Deactivation (default 0)
                 s_type: Structure activation type - "A" to activate, "D" to deactivate(default A)
                 b_group: Boundary group name or list of group names (default None)
                 b_pos: Boundary position type - "ORIGINAL" or "DEFORMED", or list (default DEFORMED)
@@ -459,7 +459,7 @@ class CS:
             Parameters:
                 activation_stage: Active Stage name (required)
                 section_id: Section ID (required)
-                comp_type: Composite Type - "GENERAL" or "USER" (default "GENERAL")
+                comp_type: Composite Type - "GENERAL" or "USER" or "NORMAL" (default "GENERAL")
                 tapered_type: Tapered Type - True or False (default False)
                 partinfo: List of part information lists (required)
                 id: The composite section ID (optional)

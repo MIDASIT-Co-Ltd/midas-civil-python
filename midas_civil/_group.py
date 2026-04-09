@@ -1,18 +1,20 @@
 
 from ._mapi import MidasAPI
-from ._utils import _convItem2List
+from ._utils import _convItem2List,sFlatten
+from colorama import Fore, Style
+
 # ----------- HELPER FUNCTION -----------
     # --------   RETRIEVE NODE / ELEMENT FROM STRUCTURE GROUP -------
 
 
 class _BGrup:
-        def __init__(self,id,name):
-            self.ID = id
-            self.NAME = name
+    def __init__(self,id,name):
+        self.ID = id
+        self.NAME = name
 class _LGrup:
-        def __init__(self,id,name):
-            self.ID = id
-            self.NAME = name
+    def __init__(self,id,name):
+        self.ID = id
+        self.NAME = name
 
 
     # --------   ADD ELEMENT TO STRUCTURE GROUP -------
@@ -87,17 +89,28 @@ class Group:
         def __init__(self, name:str, nlist:list=[],elist:list=[]):
             """"""
             self.NAME = name
-            if Group.Structure.Groups == []: self.ID=1
-            else: self.ID= max(Group.Structure.ids)+1
-            self.ELIST = elist
-            self.NLIST = nlist
-            Group.Structure.ids.append(self.ID)
-            Group.Structure.Groups.append(self)
-            Group.Structure._names.append(self.NAME)
+            
+
+            if name in Group.Structure._names:
+                print(Fore.YELLOW +f'    ⚠️   Group with name "{name}" already exist. Assigned Element and Node IDs are updated \n'+Style.RESET_ALL)
+                for grp in Group.Structure.Groups:
+                    if name == grp.NAME:
+                        grp.ELIST = grp.ELIST+(sFlatten(elist))
+                        grp.NLIST= grp.NLIST+(sFlatten(nlist))
+                        self = grp
+
+            else:
+                self.ELIST = sFlatten(elist)
+                self.NLIST = sFlatten(nlist)
+                if Group.Structure.Groups == []: self.ID=1
+                else: self.ID= max(Group.Structure.ids)+1
+                Group.Structure.ids.append(self.ID)
+                Group.Structure.Groups.append(self)
+                Group.Structure._names.append(self.NAME)
     
         @classmethod
         def update(cls, name,operation = "r", nlist = [],elist = [] ):
-            """Group name, element list, node list, operation ("add" or "replace").\n
+            """Group name, element list, node list, operation ("a" to add or "r" to replace).\n
             Sample:  update_SG("Girder", [1,2,...20],[],"replace")"""
             up = 0
             for i in cls.Groups:
@@ -109,21 +122,22 @@ class Group:
                     if operation == "a":
                         i.ELIST = i.ELIST + elist
                         i.NLIST = i.NLIST + nlist
+                    return i
             if up == 0: print(f"⚠️  Structure group {name} is not defined!")
         
         @classmethod
         def json(cls) -> dict:
             """Generates the json file for all defined structure groups."""
-            json = {"Assign":{}}
+            _json = {"Assign":{}}
             for i in cls.Groups:
                 if i.NAME[0] != '#':
-                    json["Assign"][i.ID] = {
+                    _json["Assign"][i.ID] = {
                         "NAME": i.NAME,
                         "P_TYPE": 0,
                         "N_LIST": i.NLIST,
                         "E_LIST": i.ELIST
                     }
-            return json
+            return _json
         
         @classmethod
         def create(cls):
@@ -204,7 +218,7 @@ class Group:
         
         @classmethod
         def json(cls) -> dict:
-            "Generates the json file for all defined structure groups."
+            "Generates the json file for all defined boundary groups."
             json = {"Assign":{}}
             for grp in cls.Groups:
                 json["Assign"][grp.ID] = {
@@ -259,7 +273,7 @@ class Group:
         
         @classmethod
         def json(cls) -> dict:
-            "Generates the json file for all defined structure groups."
+            "Generates the json file for all defined load groups."
             json = {"Assign":{}}
             for i in cls.Groups:
                 json["Assign"][i.ID] = {
@@ -314,7 +328,7 @@ class Group:
         
         @classmethod
         def json(cls) -> dict:
-            "Generates the json file for all defined structure groups."
+            "Generates the json file for all defined tendon groups."
             json = {"Assign":{}}
             for i in cls.Groups:
                 json["Assign"][i.ID] = {

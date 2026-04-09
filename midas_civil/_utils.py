@@ -36,7 +36,7 @@ from typing import Literal
 
 def sFlatten(list_of_list):
     # list_of_list = [list_of_list]
-    return [item for elem in list_of_list for item in (elem if isinstance(elem, (list,np.ndarray)) else [elem])]
+    return [item for elem in list_of_list for item in (elem if isinstance(elem, (list,np.ndarray,set,tuple)) else [elem])]
 
 # def getID_orig(element_list):
 #     """Return ID of Node and Element"""
@@ -76,7 +76,7 @@ def _getNodeID2(objects):
         if isinstance(objects[i], list):
             _getNodeID2(objects[i])  # Recursive call for sublist
         else:
-            objects[i] = objects[i].NODES
+            objects[i] = objects[i].NODE
 
 
 
@@ -394,7 +394,6 @@ class utils:
                 if bUpdateModel: MidasAPI("PUT","/db/ELEM",editedElemsJS)
 
             
-    
     @staticmethod
     def LineToPlate(nDiv:int = 10 , mSizeDiv:float = 0, bRigdLnk:bool=True , meshSize:float=0.5, elemList:list=None):
         '''

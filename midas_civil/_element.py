@@ -10,6 +10,7 @@ from typing import Literal
 from ._material import Material
 from ._section import Section
 _meshType = Literal['Quad','Tri']
+_extrudeInp = Literal['XYZ','ID','NODE']
 
 
 def _cell(point): #SIZE OF GRID - string format
@@ -507,6 +508,7 @@ class Element():
         Element.elements = []
         Element.ids = []
         Element.__elemDIC__={}
+        Element.maxID = 0
         # _curve.curves = []
         # _quadShape.shapes = []
 
@@ -514,10 +516,10 @@ class Element():
     class Wall(_common):
         def __init__(self, nodes: list, stype: int = 2, wtype:int = 0, wID:int = 1,mat: int = 1, sect: int = 1, group = "" , id: int = None):
             """
-            Creates a PLATE element.
+            Creates a WALL element.
             
             Parameters:
-                nodes: List of node IDs [n1, n2, n3] for triangular or [n1, n2, n3, n4] for quadrilateral
+                nodes: List of node IDs [n1, n2, n3, n4]
                 stype: Element subtype (1=Membrane, 2=Plate) (default 2)
                 wtype: Wall type (0=Plate Base, 1=CRB-Pin , 2=CRB-Fixed) (default 0)
                 wID: Wall ID (default 1)
@@ -677,72 +679,163 @@ class Element():
                 return beam_obj
         
         @staticmethod
-        def PLine(points_loc:list,n_div:int=0,deg:int=1,includePoint:bool=False,mat:int=1,sect:int=1,angle:float=0, group:str = "" , id: int = None,bLocalAxis:bool=False,div_axis:Literal['X','Y','Z','L']="L"):
-                '''
-                angle : float of list(float)
-                '''
-                if id == None: id =0
-                beam_nodes =[]
-                beam_obj = []
-                if n_div == 0 :
-                    i_loc = points_loc
-                else:
-                    i_loc = _interpolateAlignment(points_loc,n_div,deg,0,includePoint,div_axis)
+        def PLine(points_loc: list, n_div: int = 0, deg: int = 1, includePoint: bool = False,
+                  mat: int = 1, sect: int = 1, angle: float | list[float] = 0,
+                  group: str = "", id: int = None, bLocalAxis: bool = False,
+                  div_axis: Literal['X','Y','Z','L'] = "L"):
+            """Create beam elements along a polyline through multiple points.
 
-                num_points = len(i_loc)                
-                angle_intrp_finalY = _SInterp(angle,num_points-1) #Beta Angle to be applied to Elements So, n-1
+            Points are optionally interpolated along a spline of degree ``deg``
+            before elements are created. The beta angle is MAKIMA-interpolated
+            across elements when a list is supplied.
 
-                for i in i_loc:
-                    Enode=Node(i[0],i[1],i[2])
-                    beam_nodes.append(Enode.ID)
-                for i in range(len(i_loc)-1):
-                    if id == 0 : id_new = 0
-                    else: id_new = id+i
-                    beam_obj.append(Element.Beam(beam_nodes[i],beam_nodes[i+1],mat,sect,angle_intrp_finalY[i].item(),group,id_new,bLocalAxis))
-                
-                return beam_obj
+            Args:
+                points_loc (list[list[float]]): Control points ``[[x,y,z], ...]``
+                    defining the polyline path.
+                n_div (int): Number of divisions along the spline. ``0`` uses
+                    the raw points without interpolation.
+                deg (int): Spline degree for interpolation (1 = linear,
+                    2 = quadratic, 3 = cubic). Clamped to
+                    ``[1, len(points_loc)-1]``.
+                includePoint (bool): When ``True``, the original control points
+                    are forced into the interpolated output even if they fall
+                    between two division points.
+                mat (int): Material property number. Default ``1``.
+                sect (int): Section property number. Default ``1``.
+                angle (float | list[float]): Beta angle(s) in degrees for
+                    section orientation.
+
+                    - Single value → constant angle along all elements.
+                    - Two values ``[start, end]`` → linearly interpolated.
+                    - Three or more values → MAKIMA-interpolated; values are
+                      placed at equally spaced positions along the polyline,
+                      e.g. ``[0, 10, 0]`` means 0° at start, 10° at mid,
+                      0° at end.
+
+                group (str | list[str]): Structure group(s) to assign each
+                    element and its nodes to.
+                id (int | None): Starting element ID. Subsequent elements
+                    receive ``id+1``, ``id+2``, … Auto-assigned when ``None``.
+                bLocalAxis (bool): If ``True``, accumulates the local axis
+                    vectors onto the end nodes (used for skew angle display).
+                div_axis (Literal['X','Y','Z','L']): Axis along which equal
+                    spacing is measured during interpolation.
+                    ``'L'`` = arc length (default).
+
+            Returns:
+                list[Element.Beam]: Created beam element objects, in order
+                from start to end.
+
+            Example::
+
+                # Straight line, 5 divisions
+                Element.Beam.PLine([[0,0,0],[10,0,0]], n_div=5, mat=1, sect=2)
+
+                # Curved girder, angle varies from 0° to 30° to 0°
+                pts = [[0,0,0],[5,1,0],[10,0,0]]
+                Element.Beam.PLine(pts, n_div=10, deg=2, angle=[0, 30, 0])
+            """
+            if id == None: id = 0
+            beam_nodes = []
+            beam_obj = []
+            if n_div == 0:
+                i_loc = points_loc
+            else:
+                i_loc = _interpolateAlignment(points_loc, n_div, deg, 0, includePoint, div_axis)
+
+            num_points = len(i_loc)
+            angle_intrp_finalY = _SInterp(angle, num_points - 1)  # Beta Angle applied to Elements, so n-1
+
+            for i in i_loc:
+                Enode = Node(i[0], i[1], i[2])
+                beam_nodes.append(Enode.ID)
+            for i in range(len(i_loc) - 1):
+                if id == 0: id_new = 0
+                else: id_new = id + i
+                beam_obj.append(Element.Beam(beam_nodes[i], beam_nodes[i+1], mat, sect, angle_intrp_finalY[i].item(), group, id_new, bLocalAxis))
+
+            return beam_obj
         
         @staticmethod
-        def PLine2(points_loc:list,n_div:int=0,deg:int=1,includePoint:bool=False,mat:int=1,sect:int=1,angle:list[float]=0, group:str = "" , id: int = None,bLocalAxis:bool=False,div_axis:Literal['X','Y','Z','L']="L",yEcc:list[float]=0,zEcc:list[float]=0,bAngleInEcc:bool=True):
-                '''
-                Creates a polyline with Eccentricity considering the beta angle provided   
-                angle , yEcc , zEcc : float or list(float)   
-                        [0,10] -> Angle at start = 0 | Angle at end = 10   
-                        [0,10,0] -> Angle at start = 0 |  Angle at mid = 10  |  Angle at end = 0   
-                        Inbetween values are **MAKIMA 1D** interpolated. (not cubic)
-                '''
-                from ._utils import _matchArray
-                if id == None: id =0
-                beam_nodes =[]
-                beam_obj = []
-                if n_div == 0 :
-                    i_loc = points_loc
-                else:
-                    i_loc = _interpolateAlignment(points_loc,n_div,deg,0,includePoint,div_axis)
-                
-                
-                num_points = len(i_loc)                
-                if bAngleInEcc:
-                    angle_intrp_Ecc = _SInterp(angle,num_points)
-                else:
-                    angle_intrp_Ecc = _matchArray(i_loc,[0])
-                angle_intrp_finalY = _SInterp(angle,num_points-1) #Beta Angle to be applied to Elements So, n-1
-                
-                yEcc_intrp = _SInterp(yEcc,num_points)
-                zEcc_intrp = _SInterp(zEcc,num_points)
+        def PLine2(points_loc: list, n_div: int = 0, deg: int = 1, includePoint: bool = False,
+                   mat: int = 1, sect: int = 1, angle: float | list[float] = 0,
+                   group: str = "", id: int = None, bLocalAxis: bool = False,
+                   div_axis: Literal['X','Y','Z','L'] = "L",
+                   yEcc: float | list[float] = 0, zEcc: float | list[float] = 0,
+                   bAngleInEcc: bool = True):
+            """Create beam elements along a polyline with cross-section eccentricity offsets.
 
-                i_loc2 = _pointOffset(i_loc,yEcc_intrp,zEcc_intrp,angle_intrp_Ecc)
-                for i in i_loc2:
-                    Enode=Node(i[0],i[1],i[2])
-                    beam_nodes.append(Enode.ID)
-                
+            Extends :meth:`PLine` by offsetting node positions perpendicular to
+            the element axis before creating elements. Useful for modelling
+            elements whose centroid is eccentric to the reference line (e.g.
+            deck slabs offset from a spine beam).
 
-                for i in range(len(i_loc2)-1):
-                    if id == 0 : id_new = 0
-                    else: id_new = id+i
-                    beam_obj.append(Element.Beam(beam_nodes[i],beam_nodes[i+1],mat,sect,angle_intrp_finalY[i].item(),group,id_new,bLocalAxis))
-                
-                return beam_obj
+            Args:
+                points_loc (list[list[float]]): Control points ``[[x,y,z], ...]``.
+                n_div (int): Number of spline divisions. ``0`` = use raw points.
+                deg (int): Spline interpolation degree.
+                includePoint (bool): Force control points into the output.
+                mat (int): Material property number. Default ``1``.
+                sect (int): Section property number. Default ``1``.
+                angle (float | list[float]): Beta angle(s) in degrees.
+                    Accepts a single value, or a list of 2–N values that are
+                    MAKIMA-interpolated across the element count:
+
+                    - ``[0, 10]`` → 0° at start, 10° at end.
+                    - ``[0, 10, 0]`` → 0° at start, 10° at mid, 0° at end.
+
+                group (str | list[str]): Structure group(s) for elements/nodes.
+                id (int | None): Starting element ID. Auto-assigned when ``None``.
+                bLocalAxis (bool): Accumulate local axis vectors onto end nodes.
+                div_axis (Literal['X','Y','Z','L']): Equal-spacing axis for
+                    interpolation. ``'L'`` = arc length (default).
+                yEcc (float | list[float]): Eccentricity offset(s) in the local
+                    Y direction (horizontal). Same interpolation rules as ``angle``.
+                zEcc (float | list[float]): Eccentricity offset(s) in the local
+                    Z direction (vertical). Same interpolation rules as ``angle``.
+                bAngleInEcc (bool): If ``True``, the beta angle is applied when
+                    computing the offset direction so the eccentricity follows
+                    the rotated section axes. Default ``True``.
+
+            Returns:
+                list[Element.Beam]: Created beam element objects, in order.
+
+            Example::
+
+                pts = [[0,0,0],[10,0,0],[20,0,0]]
+                # Offset 0.5 m upward (Z) at mid-span, 0 at ends
+                Element.Beam.PLine2(pts, n_div=10, deg=2, zEcc=[0, 0.5, 0])
+            """
+            from ._utils import _matchArray
+            if id == None: id = 0
+            beam_nodes = []
+            beam_obj = []
+            if n_div == 0:
+                i_loc = points_loc
+            else:
+                i_loc = _interpolateAlignment(points_loc, n_div, deg, 0, includePoint, div_axis)
+
+            num_points = len(i_loc)
+            if bAngleInEcc:
+                angle_intrp_Ecc = _SInterp(angle, num_points)
+            else:
+                angle_intrp_Ecc = _matchArray(i_loc, [0])
+            angle_intrp_finalY = _SInterp(angle, num_points - 1)  # Beta Angle applied to Elements, so n-1
+
+            yEcc_intrp = _SInterp(yEcc, num_points)
+            zEcc_intrp = _SInterp(zEcc, num_points)
+
+            i_loc2 = _pointOffset(i_loc, yEcc_intrp, zEcc_intrp, angle_intrp_Ecc)
+            for i in i_loc2:
+                Enode = Node(i[0], i[1], i[2])
+                beam_nodes.append(Enode.ID)
+
+            for i in range(len(i_loc2) - 1):
+                if id == 0: id_new = 0
+                else: id_new = id + i
+                beam_obj.append(Element.Beam(beam_nodes[i], beam_nodes[i+1], mat, sect, angle_intrp_finalY[i].item(), group, id_new, bLocalAxis))
+
+            return beam_obj
 
     class Truss(_common):
         def __init__(self, i: int, j: int, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = None):
@@ -826,7 +919,7 @@ class Element():
             if isinstance(s_loc,Node):
                 s_loc = (s_loc.X,s_loc.Y,s_loc.Z)
             if isinstance(e_loc,Node):
-                s_loc = (e_loc.X,e_loc.Y,e_loc.Z)
+                e_loc = (e_loc.X,e_loc.Y,e_loc.Z)
 
             beam_nodes =[]
             beam_obj = []
@@ -906,7 +999,7 @@ class Element():
         @staticmethod
         def fromPoints(points: list, meshSize:float=1.0,meshType:_meshType='Tri', innerPoints:list=None,stype: int = 1, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = None): #CHANGE TO TUPLE
             # INPUTS POINTS and create a triangular/quad meshing with given mesh size  |  If meshSize = 0 , half of shortest length will be taken as mesh size
-        
+            id_new = None
             bHole = False
             import gmsh
             gmsh.initialize()
@@ -966,8 +1059,9 @@ class Element():
                 nID_list.append(Node(nd[0],nd[1],nd[2]).ID)
 
             plate_obj = []
-            for elmNd in elemNODE:
-                plate_obj.append(Element.Plate([nID_list[int(x)-1] for x in elmNd],stype,mat,sect,angle,group,id))
+            for i,elmNd in enumerate(elemNODE):
+                if id != None : id_new = id+i
+                plate_obj.append(Element.Plate([nID_list[int(x)-1] for x in elmNd],stype,mat,sect,angle,group,id_new))
 
             return plate_obj
         
@@ -978,7 +1072,7 @@ class Element():
             INPUTS 2 or more structure groups to create rectangular plates between the nodes  
             No. of nodes should be same in the Str Group
             """
-            if id == None: id =0
+            id_new = None
             n_groups = len(strGroups)
             if n_groups < 2 :
                 print("⚠️ No. of structure groups in Plate.loftGroups in less than 2")
@@ -1000,8 +1094,9 @@ class Element():
 
                 if nDiv == 1 :
                     for i in range(max_len-1):
+                        if id != None : id_new = id+i
                         pt_array = [nID_A[i],nID_B[i],nID_B[i+1],nID_A[i+1]]
-                        plate_obj.append(Element.Plate(pt_array,stype,mat,sect,angle,group,id))
+                        plate_obj.append(Element.Plate(pt_array,stype,mat,sect,angle,group,id_new))
                 if nDiv > 1 :
                     nID_dic = {}
                     for j in range(nDiv+1):
@@ -1015,16 +1110,18 @@ class Element():
 
                         for j in range(nDiv-1):
                             nID_dic[j+1].append(Node(int_points[j+1][0],int_points[j+1][1],int_points[j+1][2]).ID)
-                    
+                    j=0
                     for q in range(nDiv):
                         for i in range(max_len-1):
+                            if id != None : id_new = id+j
                             pt_array = [nID_dic[q][i],nID_dic[q+1][i],nID_dic[q+1][i+1],nID_dic[q][i+1]]
                             plate_obj.append(Element.Plate(pt_array,stype,mat,sect,angle,group,id))
+                            j+=1
 
             return plate_obj
         
         @staticmethod
-        def extrude(points: list,dir:list,nDiv:int=1,bClose:bool=False,inpType='XYZ', stype: int = 1, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = None): #CHANGE TO TUPLE
+        def extrude(points: list,dir:list,nDiv:int=1,bClose:bool=False,inpType:_extrudeInp='XYZ', stype: int = 1, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = None): #CHANGE TO TUPLE
                 # INPUTS 2 or more structure groups to create rectangular plates between the nodes | No. of nodes should be same in the Str Group
             """
             Enter node id list to extrude along a vector
@@ -1033,7 +1130,7 @@ class Element():
                         'NODE' -> points = (Node objects,...)
             """
             nDiv = int(nDiv)
-            if id == None: id =0
+            id_new = None
             nID_A = []
             nID_B = []
 
@@ -1072,8 +1169,9 @@ class Element():
             plate_obj = []
             if nDiv == 1 :
                 for i in range(max_len-1):
+                    if id != None : id_new = id+i
                     pt_array = [nID_A[i],nID_B[i],nID_B[i+1],nID_A[i+1]]
-                    plate_obj.append(Element.Plate(pt_array,stype,mat,sect,angle,group,id))
+                    plate_obj.append(Element.Plate(pt_array,stype,mat,sect,angle,group,id_new))
             if nDiv > 1 :
                 nID_dic = {}
                 for j in range(nDiv+1):
@@ -1087,11 +1185,13 @@ class Element():
 
                     for j in range(nDiv-1):
                         nID_dic[j+1].append(Node(int_points[j+1][0],int_points[j+1][1],int_points[j+1][2]).ID)
-                
+                j=0
                 for q in range(nDiv):
                     for i in range(max_len-1):
+                        if id != None : id_new = id+j
                         pt_array = [nID_dic[q][i],nID_dic[q+1][i],nID_dic[q+1][i+1],nID_dic[q][i+1]]
                         plate_obj.append(Element.Plate(pt_array,stype,mat,sect,angle,group,id))
+                        j+=1
 
             return plate_obj
             

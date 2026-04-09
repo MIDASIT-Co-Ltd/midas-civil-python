@@ -943,8 +943,8 @@ class Result :
             Fetches Tendon Loss result tables.
             
             Args:
-                tdn_group (str): List of Element IDs or a Structure Group Name.
-                cs_stage (str): Construction Stage options.
+                tdn_group (str): Tendon Name or a Tendon Group Name.
+                cs_stage (str): Construction Stage Name.
                 options : Table options
             '''
             if options == None: options = TableOptions()

@@ -1,6 +1,13 @@
 from ._mapi import MidasAPI
 # from ._model import *
 
+from typing import Literal
+
+# from ._model import *
+
+_classification = Literal["General", "Steel", "Concrete", "SRC", "Composite Steel Girder", "Seismic", "All"]
+_active = Literal["STRENGTH" , "SERVICE" , "INACTIVE" , "ACTIVE"]
+_type = Literal["Add","Envelope","ABS","SRSS"]
 
 #28 Class to generate load combinations
 class LoadCombination:
@@ -14,7 +21,7 @@ class LoadCombination:
             "Composite Steel Girder": "/db/LCOM-STLCOMP",
             "Seismic": "/db/LCOM-SEISMIC"
         }
-    def __init__(self, name, case, classification = "General", active = "ACTIVE", typ = "Add", id:int = None, desc = ""):
+    def __init__(self, name, case, classification:_classification = "General", active:_active = "ACTIVE", typ:_type = "Add", id:int = None, desc = ""):
         """Name, List of tuple of load cases & factors, classification, active, type. \n
         Sample: LoadCombination('LCB1', [('Dead Load(CS)',1.5), ('Temperature(ST)',0.9)], 'General', 'Active', 'Add')"""
         if id == None: id =0
