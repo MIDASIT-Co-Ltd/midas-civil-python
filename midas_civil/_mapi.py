@@ -26,6 +26,7 @@ class NX:
     debug_request = False
     debug_requestJSON = False
     debug_response = False
+    debug_log_path = None   # When set, raw HTTP responses are written here instead of the terminal
     onlyNode = False
     visualiser = False
     modelIDs = {} # Handles the fast MAX ID
@@ -239,7 +240,14 @@ def MidasAPI(method:_httpMethod, command:str, body:dict={})->dict:
     if NX.debug_requestJSON:
         tqdm.write(Fore.CYAN+">>  "+str(body)+Style.RESET_ALL)
     if NX.debug_response:
-        tqdm.write(Fore.GREEN+"<<  "+str(response.json())+Style.RESET_ALL)
+        if NX.debug_log_path:
+            import json as _json
+            with open(NX.debug_log_path, "a", encoding="utf-8") as _f:
+                _f.write(f">> {method} {command}\n")
+                _f.write(_json.dumps(response.json(), indent=2, ensure_ascii=False))
+                _f.write("\n\n")
+        else:
+            tqdm.write(Fore.GREEN+"<<  "+str(response.json())+Style.RESET_ALL)
 
     if MAPI_KEY.count == 0:
         MAPI_KEY.count = -1
