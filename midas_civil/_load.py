@@ -144,6 +144,9 @@ class Load:
         if cls.Nodal.data!=[]: cls.Nodal.create()
         if cls.Beam.data!=[]: cls.Beam.create()
         if cls.Pressure.data!=[]: cls.Pressure.create()
+        if cls.FloorLoadAssign.data!=[] : cls.FloorLoadAssign.create()
+        if cls.FloorLoadDefine.data!=[] : cls.FloorLoadDefine.create()
+        if cls.Misc.PreCompositeSection.loadCases !=[] : cls.Misc.PreCompositeSection.create()
     
     @classmethod
     def clear(cls):
@@ -152,6 +155,10 @@ class Load:
         cls.Nodal.clear()
         cls.Beam.clear()
         cls.Pressure.clear()
+        cls.FloorLoadAssign.clear()
+        cls.FloorLoadDefine.clear()
+        cls.Misc.PreCompositeSection.clear()
+        
 
     class SW:
         """Load Case Name, direction, Value, Load Group.\n
@@ -1247,3 +1254,59 @@ class Load:
                                 _defVector,_defProjOpt,
                                 a['PRES'][i]['ITEMS'][j]['ID'],
                                 )
+                            
+
+    class Misc:
+
+        class PreCompositeSection:
+
+            loadCases = set()
+
+            def __init__(self,*loadCase:str):
+                ''' Enter Load Cases to be added in Pre-Composite Section.
+
+                Example::
+
+                    Load.Misc.PreCompositeSection('Self Weight','SIDL','Load Case')
+                '''
+                for lCase in loadCase:
+                    Load.Misc.PreCompositeSection.loadCases.add(lCase)
+
+            
+            @classmethod
+            def json(cls):
+                jsDat = {
+                        "Assign": {
+                            "1": {
+                                "LCNAME_ITEM": []
+                            }
+                        }
+                    }
+                jsDat['Assign']['1']['LCNAME_ITEM'] = list(cls.loadCases)
+                
+                return jsDat
+            
+            @classmethod
+            def create(cls):
+                MidasAPI("PUT","/db/PLCB",cls.json())
+
+            @classmethod
+            def get(cls):
+                return MidasAPI("GET", "/db/PLCB")
+            
+            @classmethod
+            def delete(cls):
+                cls.clear()
+                return MidasAPI("DELETE", "/db/PLCB")
+            
+            @classmethod
+            def clear(cls):
+                cls.loadCases=set()
+
+            @classmethod
+            def sync(cls):
+                cls.loadCases = set()
+                a = cls.get()
+                if a != {'message': ''}:
+                    cls.loadCases = set(a['PLCB']["1"]["LCNAME_ITEM"])
+

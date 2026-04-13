@@ -61,6 +61,7 @@ class Node:
 
     nodes: list[_hNode] = []
     ids: list[int] = []
+    maxID:int = 0
     Grid = {}
     __nodeDic__ = {}
 
@@ -93,10 +94,8 @@ class Node:
         if id == None: id =0
         #----------------- ORIGINAL -----------------------
     
-        if Node.ids == []: 
-            node_count = 1
-        else:
-            node_count = max(Node.ids)+1
+
+        node_count = Node.maxID+1
         
         
         self.X = round(x,6)
@@ -106,6 +105,8 @@ class Node:
 
         if id == 0 : self.ID = node_count
         if id != 0 : self.ID = id
+
+        Node.maxID = max(node_count,id)
 
 
         #REPLACE - No merge check

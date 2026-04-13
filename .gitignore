@@ -11,4 +11,5 @@ gitDEPLOY.py
 
 # Compiled Python bytecode
 *.py[cod]
+*.bak
 example_*.py

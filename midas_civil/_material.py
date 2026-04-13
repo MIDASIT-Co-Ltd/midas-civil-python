@@ -10,8 +10,9 @@ class Material:
     ids = []
     _dic = {}
     def __init__(self,data,id=None):
+        """Base material constructor. Used internally by CONC, STEEL, and USER subclasses."""
         if id == None: id =0
-        if Material.ids == []: 
+        if Material.ids == []:
             count = 1
         else:
             count = max(Material.ids)+1
@@ -28,27 +29,32 @@ class Material:
     
     @classmethod
     def json(cls):
+        """Return all material definitions as a JSON-serializable dict for the API."""
         json = {"Assign":{}}
         for k in cls.mats:
             json["Assign"][k.ID]=k.DATA
         return json
-    
+
     @staticmethod
     def create_only():
+        """Push all locally defined materials to midas Civil NX (materials only, no time-dependent data)."""
         return MidasAPI("PUT","/db/MATL",Material.json())
-        
+
     @staticmethod
     def get():
+        """Fetch all materials currently defined in the midas Civil NX model."""
         return MidasAPI("GET","/db/MATL")
-    
-    
+
+
     @staticmethod
     def delete():
+        """Delete all materials from the model and clear the local cache."""
         MidasAPI("DELETE","/db/MATL")
         Material.clear()
 
     @staticmethod
     def clear():
+        """Clear the local material cache without touching the model."""
         Material.mats=[]
         Material.ids=[]
 

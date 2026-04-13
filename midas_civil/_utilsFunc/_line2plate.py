@@ -1,9 +1,10 @@
 # from midas_civil import *
-from midas_civil import MidasAPI,Node,Element,Boundary,Thickness,Section,Model
+from midas_civil import MidasAPI,Node,Element,Boundary,Thickness,Section,Model,NX
 from colorama import Fore,Style
 import numpy as np
 from math import hypot , sin , cos
 from tqdm import tqdm
+
 
 class L2P:
     first = 0
@@ -13,6 +14,10 @@ class L2P:
     sorted_nodes = []
     endNodes = []
     rgdID = 10
+    firstNodeCreate = True
+    lastCreateNodeIDs = []
+    lastTapSectPlate = ()
+    bFirstlastTapSectPlate = True
 
 # 1. -------------     Getting selected elements, sorting the nodes, deleting the middle node    -------------------
 # Takes in [[1,2] , [3,4] ,[2,3]] returns [1,2,3,4] 
@@ -202,7 +207,7 @@ def _createSectNodes(section_cordinates,plane_axis,plane_origin,beta_ang=0):
         Y = cord[1]*cos(beta_ang) + cord[0]*sin(beta_ang)
 
         ord = _orientPoint(plane_axis,plane_origin,[X,Y])    # Cord is 2D ; ord is 3D
-        node_ids.append(Node(ord[0],ord[1],ord[2]).ID)
+        node_ids.append(Node(ord[0],ord[1],ord[2],merge=False).ID)
 
     return node_ids
 
@@ -211,9 +216,16 @@ def _createSectNodes(section_cordinates,plane_axis,plane_origin,beta_ang=0):
 # CHECK AND CREATE THICKNESS WITH OFFSET
 # RETURNS LIST OF NODE IDS FOR START AND END X-SECTION
 def _createTapSectPlate(section_cordinates1,section_cordinates2,sect_lineCon,thk_plate,thk_plate_off,start_plane_axis,start_plane_origin,start_beta_angle,end_plane_axis,end_plane_origin,end_beta_angle,matID):
-
-    s_nodes = _createSectNodes(section_cordinates1,start_plane_axis,start_plane_origin,start_beta_angle)
-    e_nodes = _createSectNodes(section_cordinates2,end_plane_axis,end_plane_origin,end_beta_angle)
+    # print('createTapSection')
+    if L2P.firstNodeCreate:
+        L2P.firstNodeCreate = False
+        s_nodes = _createSectNodes(section_cordinates1,start_plane_axis,start_plane_origin,start_beta_angle)
+        e_nodes = _createSectNodes(section_cordinates2,end_plane_axis,end_plane_origin,end_beta_angle)
+    else:
+        s_nodes = L2P.lastCreateNodeIDs
+        e_nodes = _createSectNodes(section_cordinates2,end_plane_axis,end_plane_origin,end_beta_angle)
+    
+    L2P.lastCreateNodeIDs = e_nodes
 
     for i in range(len(sect_lineCon)):
 
@@ -249,8 +261,15 @@ def createTapPlateAlign(align_points,t_param,beta_angle,Section4Plate,rigid_LNK 
     for i in range(align_num_points-1):
         ti = t_param[i]
         tf = t_param[i+1]
-        shp1 , thk1 , thk_off1= getTapShape(ti,Section4Plate)
-        shp2, thk2, thk_off2 = getTapShape(tf,Section4Plate)
+        if L2P.bFirstlastTapSectPlate:
+            L2P.bFirstlastTapSectPlate = False
+            shp1 , thk1 , thk_off1= getTapShape(ti,Section4Plate)
+            shp2, thk2, thk_off2 = getTapShape(tf,Section4Plate)
+            L2P.lastTapSectPlate = shp2, thk2, thk_off2
+        else:
+            shp1 , thk1 , thk_off1= L2P.lastTapSectPlate
+            shp2, thk2, thk_off2 = getTapShape(tf,Section4Plate)
+
 
         thk_avg = np.multiply(np.add(thk1,thk2),0.5)
         thk_off_avg = np.multiply(np.add(thk_off1,thk_off2),0.5)
@@ -534,18 +553,6 @@ def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList):
     Model.units()
     
     pbar.update(1)
-    pbar.set_description_str("Deleting Elements and Nodes...")
-    sorted_node_list , align_points, align_beta_angle , elm_list, matID , align_sectID_list_sorted,k = delSelectElements(elemList) # Select elements
-
-    L2P.sorted_nodes = sorted_node_list
-    # NEW SMOOTH ALIGNMENT
-    fine_align_points = align_points
-    fine_beta_angle = align_beta_angle
-
-    fine_align_points, fine_beta_angle, fine_t_param, align_t_param = interpolateAlignment(align_points,align_beta_angle,nSeg,2,mSize)
-
-
-    pbar.update(1)
     pbar.set_description_str("Getting Section Data...")
     Section.sync()
 
@@ -578,6 +585,17 @@ def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList):
 
     getCGdata()
 
+    pbar.update(1)
+    pbar.set_description_str("Deleting Elements and Nodes...")
+    sorted_node_list , align_points, align_beta_angle , elm_list, matID , align_sectID_list_sorted,k = delSelectElements(elemList) # Select elements
+
+    L2P.sorted_nodes = sorted_node_list
+    # NEW SMOOTH ALIGNMENT
+    fine_align_points = align_points
+    fine_beta_angle = align_beta_angle
+
+    fine_align_points, fine_beta_angle, fine_t_param, align_t_param = interpolateAlignment(align_points,align_beta_angle,nSeg,2,mSize)
+
     sect_shape_arr = []
     sect_points_arr =[]
     cg_arr = []
@@ -606,25 +624,25 @@ def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList):
     # print(cg_arr)  
     # print('- . '*20)
     # print(sect_points_arr) 
-    # print('- . '*20)
-                
+    # print('- . '*20)        
  
     pbar.update(1)
     pbar.set_description_str("Getting existing Node data...")
     Node.clear()
     # Node.sync()
-    Node.ids=[Model.maxID('NODE',True)]
-    
-    pbar.update(1)
-    pbar.set_description_str("Getting existing Element data...")
-    Element.clear()
-    # Element.ids = [Model.maxID('ELEM')]
-    Element.maxID = Model.maxID('ELEM',True)
+    Node.maxID=Model.maxID('NODE',True)
 
     pbar.update(1)
-    pbar.set_description_str("Getting existing Thickness data...")
+    pbar.set_description_str("Getting existing Element and Thickness data...")
+    Element.clear()
     Thickness.clear()
-    Thickness.ids = [Model.maxID('THIK',True)]
+    # Element.ids = [Model.maxID('ELEM')]
+    
+    for data in NX.modelIDs:
+        if data[0] == 'Element' :
+            Element.maxID = int(data[2])+1
+        if data[0] == 'Thickness' :
+            Thickness.ids = [int(data[2])+1]
 
     if bRigdLnk:
         pbar.update(1)
@@ -632,7 +650,7 @@ def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList):
         Boundary.RigidLink.clear()
         Boundary.RigidLink.ids = [Model.maxID('RIGD',False)]
 
-
+ 
     pbar.update(1)
     pbar.set_description_str("Creating Shell data...")
     myTapShape = plateTapSection(sect_points_arr,cg_arr,align_t_param,lin,thk_arr,thk_off_arr)
