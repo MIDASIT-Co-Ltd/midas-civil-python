@@ -146,7 +146,7 @@ class Load:
         if cls.Pressure.data!=[]: cls.Pressure.create()
         if cls.FloorLoadAssign.data!=[] : cls.FloorLoadAssign.create()
         if cls.FloorLoadDefine.data!=[] : cls.FloorLoadDefine.create()
-        if cls.Misc.PreCompositeSection.loadCases !=[] : cls.Misc.PreCompositeSection.create()
+        if cls.Misc.PreCompositeSection.loadCases : cls.Misc.PreCompositeSection.create()
     
     @classmethod
     def clear(cls):
