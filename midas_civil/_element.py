@@ -680,7 +680,7 @@ class Element():
         
         @staticmethod
         def PLine(points_loc: list, n_div: int = 0, deg: int = 1, includePoint: bool = False,
-                  mat: int = 1, sect: int = 1, angle: float | list[float] = 0,
+                  mat: int = 1, sect: int = 1, angle: list[float] = 0,
                   group: str = "", id: int = None, bLocalAxis: bool = False,
                   div_axis: Literal['X','Y','Z','L'] = "L"):
             """Create beam elements along a polyline through multiple points.
@@ -758,10 +758,10 @@ class Element():
         
         @staticmethod
         def PLine2(points_loc: list, n_div: int = 0, deg: int = 1, includePoint: bool = False,
-                   mat: int = 1, sect: int = 1, angle: float | list[float] = 0,
+                   mat: int = 1, sect: int = 1, angle: list[float] = 0,
                    group: str = "", id: int = None, bLocalAxis: bool = False,
                    div_axis: Literal['X','Y','Z','L'] = "L",
-                   yEcc: float | list[float] = 0, zEcc: float | list[float] = 0,
+                   yEcc: list[float] = 0, zEcc: list[float] = 0,
                    bAngleInEcc: bool = True):
             """Create beam elements along a polyline with cross-section eccentricity offsets.
 

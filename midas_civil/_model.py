@@ -44,6 +44,7 @@ _dbMapping = {
 }
 _SelectOutput = Literal['NODE_ID','NODE','ELEM_ID','ELEM']
 _SelectOutputElem = Literal['ELEM_ID','ELEM']
+_getSelectOutput = Literal['ELEM_ID','NODE_ID']
 
 class Model:
 
@@ -192,138 +193,6 @@ class Model:
                 "TEMPER":temp
             }
         MidasAPI("PUT","/db/UNIT",unit)
-
-    # @staticmethod
-    # def select(crit_1 = "X", crit_2 = 0, crit_3 = 0, st = 'a', en = 'a', tolerance = 0):
-    #     """Get list of nodes/elements as required.\n
-    #     crit_1 (=> Along: "X", "Y", "Z". OR, IN: "XY", "YZ", "ZX". OR "USM"),\n
-    #     crit_2 (=> With Ordinate value: Y value, X value, X Value, Z value, X value, Y value. OR Material ID),\n
-    #     crit_3 (=> At Ordinate 2 value: Z value, Z value, Y value, 0, 0, 0. OR Section ID),\n
-    #     starting ordinate, end ordinate, tolerance, node dictionary, element dictionary.\n
-    #     Sample:  get_select("Y", 0, 2) for selecting all nodes and elements parallel Y axis with X ordinate as 0 and Z ordinate as 2."""
-    #     output = {'NODE':[], 'ELEM':[]}
-    #     ok = 0
-    #     no = Node.json()
-    #     el = Element.json()
-    #     if crit_1 == "USM":
-    #         materials = Material.json()
-    #         sections = Section.json()
-    #         elements = el
-    #         k = list(elements.keys())[0]
-    #         mat_nos = list((materials["Assign"].keys()))
-    #         sect_nos = list((sections["Assign"].keys()))
-    #         elem = {}
-    #         for m in mat_nos:
-    #             elem[int(m)] = {}
-    #             for s in sect_nos:
-    #                     elem[int(m)][int(s)] = []
-    #         for e in elements[k].keys(): elem[((elements[k][e]['MATL']))][((elements[k][e]['SECT']))].append(int(e))
-    #         output['ELEM'] = elem[crit_2][crit_3]
-    #         ok = 1
-    #     elif no != "" and el != "":
-    #         n_key = list(no.keys())[0]
-    #         e_key = list(el.keys())[0]
-    #         if n_key == "Assign": no["Assign"] = {str(key):value for key,value in no["Assign"].items()}
-    #         if e_key == "Assign": el["Assign"] = {str(key):value for key,value in el["Assign"].items()}
-    #         if crit_1 == "X": 
-    #             cr2 = "Y"
-    #             cr3 = "Z"
-    #             ok = 1
-    #         if crit_1 == "Y": 
-    #             cr2 = "X"
-    #             cr3 = "Z"
-    #             ok = 1
-    #         if crit_1 == "Z": 
-    #             cr2 = "X"
-    #             cr3 = "Y"
-    #             ok = 1
-    #         if crit_1 == "XY" or crit_1 == "YX":
-    #             cr2 = "Z"
-    #             ok = 1
-    #         if crit_1 == "YZ" or crit_1 == "ZY":
-    #             cr2 = "X"
-    #             ok = 1
-    #         if crit_1 == "ZX" or crit_1 == "XZ":
-    #             cr2 = "Y"
-    #             ok = 1
-    #         if len(crit_1) == 1 and ok == 1:
-    #             if st == 'a': st = min([v[crit_1] for v in no[n_key].values()])
-    #             if en == 'a': en = max([v[crit_1] for v in no[n_key].values()])
-    #             for n in no[n_key].keys():
-    #                 curr = no[n_key][n]
-    #                 if curr[cr2] >= crit_2 - tolerance and curr[cr2] <= crit_2 + tolerance:
-    #                     if curr[cr3] >= crit_3 - tolerance and curr[cr3] <= crit_3 + tolerance:
-    #                         if curr[crit_1] >= st and curr[crit_1] <= en: output['NODE'].append(int(n))
-    #             for e in el[e_key].keys():
-    #                 curr_0 = no[n_key][str(el[e_key][e]['NODE'][0])]
-    #                 curr_1 = no[n_key][str(el[e_key][e]['NODE'][1])]
-    #                 if curr_0[cr2] == curr_1[cr2] and curr_0[cr3] == curr_1[cr3]:
-    #                     if curr_0[cr2] >= crit_2 - tolerance and curr_0[cr2] <= crit_2 + tolerance:
-    #                         if curr_0[cr3] >= crit_3 - tolerance and curr_0[cr3] <= crit_3 + tolerance:
-    #                             if curr_1[cr2] >= crit_2 - tolerance and curr_1[cr2] <= crit_2 + tolerance:
-    #                                 if curr_1[cr3] >= crit_3 - tolerance and curr_1[cr3] <= crit_3 + tolerance:
-    #                                     if curr_0[crit_1] >= st and curr_0[crit_1] <= en and curr_1[crit_1] >= st and curr_1[crit_1] <= en:
-    #                                         output['ELEM'].append(int(e))
-    #         if len(crit_1) == 2 and ok == 1:
-    #             if st == 'a': st = min(min([v[crit_1[0]] for v in no[n_key].values()]), min([v[crit_1[1]] for v in no[n_key].values()]))
-    #             if en == 'a': en = max(max([v[crit_1[0]] for v in no[n_key].values()]), max([v[crit_1[1]] for v in no[n_key].values()]))
-    #             for n in no[n_key].keys():
-    #                 curr = no[n_key][n]
-    #                 if curr[cr2] >= crit_2 - tolerance and curr[cr2] <= crit_2 + tolerance:
-    #                     if curr[crit_1[0]] >= st and curr[crit_1[1]] >= st and curr[crit_1[0]] <= en and curr[crit_1[1]] <= en: output['NODE'].append(int(n))
-    #             for e in el[e_key].keys():
-    #                 curr_0 = no[n_key][str(el[e_key][e]['NODE'][0])]
-    #                 curr_1 = no[n_key][str(el[e_key][e]['NODE'][1])]
-    #                 if curr_0[cr2] == curr_1[cr2]:
-    #                     if curr_0[cr2] >= crit_2 - tolerance and curr_0[cr2] <= crit_2 + tolerance:
-    #                         if curr_1[cr2] >= crit_2 - tolerance and curr_1[cr2] <= crit_2 + tolerance:
-    #                             if curr_0[crit_1[0]] >= st and curr_0[crit_1[0]] <= en and curr_1[crit_1[0]] >= st and curr_1[crit_1[0]] <= en:
-    #                                 if curr_0[crit_1[1]] >= st and curr_0[crit_1[1]] <= en and curr_1[crit_1[1]] >= st and curr_1[crit_1[1]] <= en:
-    #                                     output['ELEM'].append(int(e))
-    #     if ok != 1: output = "Incorrect input.  Please check the syntax!"
-    #     return output
-
-
-    # @staticmethod
-    # def _create2(request = "update", set = 1, force = "KN", length = "M", heat = "BTU", temp = "C"):
-    #     """request["update" to update a model, "call" to get details of existing model], \nforce[Optional], length[Optional], heat[Optional], temp[Optional].  
-    #     \nSample: model() to update/create model. model("call") to get details of existing model and update classes.\n
-    #     set = 1 => Functions that don't need to call data from connected model file.\n
-    #     set = 2 => Functions that may need to call data from connected model file."""
-    #     Model.units(force, length, heat, temp)
-    #     if MAPI_KEY.data == []:  print(f"Enter the MAPI key using the MAPI_KEY command.")
-    #     if MAPI_KEY.data != []:
-    #         if set == 1:
-    #             if request == "update" or request == "create" or request == "PUT":
-    #                 if Node.json() != {"Assign":{}}: Node.create()
-    #                 if Element.json() != {"Assign":{}}: Element.create()
-    #                 if Section.json() != {"Assign":{}}: Section.create()
-    #                 if Group.json_BG() != {"Assign":{}}: Group.create_BG()
-    #                 if Group.json_LG() != {"Assign":{}}: Group.create_LG()
-    #                 if Group.json_TG() != {"Assign":{}}: Group.create_TG()
-    #                 if Material.json() != {"Assign":{}}: Material.create()
-    #             if request == "call" or request == "GET":
-    #                 Node.sync()
-    #                 Element.sync()
-    #                 Section.sync()
-    #                 Group.sync()
-    #                 Material.sync()
-    #         if set == 2:
-    #             if request == "update" or request == "create" or request == "PUT":
-    #                 if Node.json() != {"Assign":{}}: Node.create()
-    #                 if Element.json() != {"Assign":{}}: Element.create()
-    #                 if Section.json() != {"Assign":{}}: Section.create()
-    #                 if Group.json_BG() != {"Assign":{}}: Group.create_BG()
-    #                 if Group.json_LG() != {"Assign":{}}: Group.create_LG()
-    #                 if Group.json_TG() != {"Assign":{}}: Group.create_TG()
-    #                 if Material.json() != {"Assign":{}}: Material.create()
-    #                 if Group.json_SG() != {"Assign":{}}: Group.create_SG()
-    #             if request == "call" or request == "GET": 
-    #                 Node.update_class()
-    #                 Element.update_class()
-    #                 Section.update_class()
-    #                 Group.update_class()
-    #                 Material.update_class()
 
 
     @staticmethod
@@ -976,3 +845,15 @@ class Model:
             # return bs64_img
             return ImagePIL.open(BytesIO(bs64_img))
         return resp
+    
+    @staticmethod
+    def getSelected(item:_getSelectOutput = "ELEM_ID"):
+        resp = MidasAPI("GET","/view/SELECT")
+
+        if item == 'NODE_ID':
+            return resp["SELECT"]["NODE_LIST"]
+        elif item == 'ELEM_ID':
+            return resp["SELECT"]["ELEM_LIST"]
+        else:
+            print("No item is selected...")
+            return []
