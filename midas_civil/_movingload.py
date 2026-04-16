@@ -1,4 +1,3 @@
-
 from ._mapi import MidasAPI
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -91,8 +90,8 @@ class MovingLoad:
                 IF: float = 0,
                 Span: float = 0,
                 id: int = None,
-                lane_width: float = 0,
-                lane_opt_width: float = 0,
+                width: float = 0,
+                opt_width: float = 0,
                 Group_Name: str = "",
                 Moving_Direction: str = "BOTH",
                 Skew_start: float = 0,
@@ -109,8 +108,8 @@ class MovingLoad:
                     IF (float, optional): Impact Factor or Scale Factor, as defined by the selected design code. Defaults to 0.(For LRFD code Add Centerifugal force Input)
                     Span (float, optional): The span length of the lane, used by some codes for impact factor calculation. Defaults to 0.
                     id (int, optional): A unique integer ID for the lane. If None, it will be auto-assigned. Defaults to None.
-                    lane_width (float, optional): The width of the traffic lane. Key name "WIDTH". Defaults to 0.
-                    lane_opt_width (float, optional): The allowable width of the traffic lane for auto-positioning. Key name "ALLOW_WIDTH". Defaults to 0.
+                    width (float, optional): The width of the traffic lane. Key name "WIDTH". Defaults to 0.
+                    opt_width (float, optional): The allowable width of the traffic lane for auto-positioning. Key name "ALLOW_WIDTH". Defaults to 0.
                     Group_Name (str, optional): The group name for cross-beam load distribution. If provided, distribution is "CROSS". Defaults to "".
                     Moving_Direction (str, optional): The allowed direction of vehicle movement ("FORWARD", "BACKWARD", "BOTH"). Defaults to "BOTH".
                     Skew_start (float, optional): The skew angle of the bridge at the start of the lane (in degrees). Defaults to 0.
@@ -124,8 +123,8 @@ class MovingLoad:
                 self.IF = IF
                 self.Span = Span
                 self.id = len(MovingLoad.LineLane.lanes) + 1 if id is None else id
-                self.lane_width = lane_width
-                self.lane_opt_width = lane_opt_width
+                self.width = width
+                self.opt_width = opt_width
                 self.Group_Name = Group_Name
                 self.Moving_Direction = Moving_Direction
                 self.Skew_start = Skew_start
@@ -142,137 +141,137 @@ class MovingLoad:
             class India:
                 def __init__(self, Lane_name: str, Ecc: float, Wheel_space: float, elem_list: list[int], 
                             IF: float = 0, Span: float = 0, id: int = None,
-                            lane_width: float = 0, lane_opt_width: float = 0, Group_Name: str = "", Moving_Direction: str = "BOTH",
+                            width: float = 0, opt_width: float = 0, Group_Name: str = "", Moving_Direction: str = "BOTH",
                             Skew_start: float = 0, Skew_end: float = 0):
                     """Defines a traffic lane according to Indian standards."""
                     MovingLoad.LineLane("INDIA", Lane_name, Ecc, Wheel_space, elem_list,
-                                        IF, Span, id, lane_width, lane_opt_width, Group_Name, Moving_Direction, Skew_start, Skew_end)
+                                        IF, Span, id, width, opt_width, Group_Name, Moving_Direction, Skew_start, Skew_end)
 
             class China:
                 def __init__(self, Lane_name: str, Ecc: float, Wheel_space: float, elem_list: list[int], 
                             IF: float = 0, Span: float = 0, id: int = None,
-                            lane_opt_width: float = 0, Group_Name: str = "", Moving_Direction: str = "BOTH",
+                            opt_width: float = 0, Group_Name: str = "", Moving_Direction: str = "BOTH",
                             Skew_start: float = 0, Skew_end: float = 0):
                     """Defines a traffic lane according to Chinese standards."""
                     MovingLoad.LineLane("CHINA", Lane_name, Ecc, Wheel_space, elem_list,
-                                        IF, Span, id, 0, lane_opt_width, Group_Name, Moving_Direction, Skew_start, Skew_end)
+                                        IF, Span, id, 0, opt_width, Group_Name, Moving_Direction, Skew_start, Skew_end)
 
             class Korea:
                 def __init__(self, Lane_name: str, Ecc: float, Wheel_space: float, elem_list: list[int], 
-                            IF: float = 0, id: int = None, lane_opt_width: float = 0,
+                            IF: float = 0, id: int = None, opt_width: float = 0,
                             Group_Name: str = "", Moving_Direction: str = "BOTH",
                             Skew_start: float = 0, Skew_end: float = 0):
                     """Defines a traffic lane according to Korean standards."""
                     MovingLoad.LineLane("KOREA", Lane_name, Ecc, Wheel_space, elem_list,
-                                        IF, 0, id, 3, lane_opt_width, Group_Name, Moving_Direction, Skew_start, Skew_end)
+                                        IF, 0, id, 3, opt_width, Group_Name, Moving_Direction, Skew_start, Skew_end)
             
             class Taiwan:
                 def __init__(self, Lane_name: str, Ecc: float, Wheel_space: float, elem_list: list[int], 
-                            IF: float = 0, id: int = None, lane_opt_width: float = 0,
+                            IF: float = 0, id: int = None, opt_width: float = 0,
                             Group_Name: str = "", Moving_Direction: str = "BOTH",
                             Skew_start: float = 0, Skew_end: float = 0):
                     """Defines a traffic lane according to Taiwanese standards."""
                     MovingLoad.LineLane("TAIWAN", Lane_name, Ecc, Wheel_space, elem_list,
-                                        IF, 0, id, 3, lane_opt_width, Group_Name, Moving_Direction, Skew_start, Skew_end)
+                                        IF, 0, id, 3, opt_width, Group_Name, Moving_Direction, Skew_start, Skew_end)
 
             class AASHTOStandard:
                 def __init__(self, Lane_name: str, Ecc: float, Wheel_space: float, elem_list: list[int], 
-                            IF: float = 0, id: int = None, lane_opt_width: float = 0,
+                            IF: float = 0, id: int = None, opt_width: float = 0,
                             Group_Name: str = "", Moving_Direction: str = "BOTH",
                             Skew_start: float = 0, Skew_end: float = 0):
                     """Defines a traffic lane according to AASHTO Standard."""
                     MovingLoad.LineLane("AASHTO STANDARD", Lane_name, Ecc, Wheel_space, elem_list,
-                                        IF, 0, id, 3, lane_opt_width, Group_Name, Moving_Direction, Skew_start, Skew_end)
+                                        IF, 0, id, 3, opt_width, Group_Name, Moving_Direction, Skew_start, Skew_end)
 
             class AASHTOLRFD:
                 def __init__(self, Lane_name: str, Ecc: float, Wheel_space: float, elem_list: list[int], 
-                            centrifugal_force: float = 0, id: int = None, lane_opt_width: float = 0,
+                            centrifugal_force: float = 0, id: int = None, opt_width: float = 0,
                             Group_Name: str = "", Moving_Direction: str = "BOTH",
                             Skew_start: float = 0, Skew_end: float = 0):
                     """Defines a traffic lane according to AASHTO LRFD."""
                     MovingLoad.LineLane("AASHTO LRFD", Lane_name, Ecc, Wheel_space, elem_list,
-                                        centrifugal_force, 0, id, 3, lane_opt_width, Group_Name, Moving_Direction, Skew_start, Skew_end)
+                                        centrifugal_force, 0, id, 3, opt_width, Group_Name, Moving_Direction, Skew_start, Skew_end)
 
             class PENNDOT:
                 def __init__(self, Lane_name: str, Ecc: float, Wheel_space: float, elem_list: list[int], 
-                            id: int = None, lane_opt_width: float = 0,
+                            id: int = None, opt_width: float = 0,
                             Group_Name: str = "", Moving_Direction: str = "BOTH",
                             Skew_start: float = 0, Skew_end: float = 0):
                     """Defines a traffic lane according to AASHTO LRFD (PENNDOT)."""
                     MovingLoad.LineLane("AASHTO LRFD(PENDOT)", Lane_name, Ecc, Wheel_space, elem_list,
-                                        0, 0, id, 3, lane_opt_width, Group_Name, Moving_Direction, Skew_start, Skew_end)
+                                        0, 0, id, 3, opt_width, Group_Name, Moving_Direction, Skew_start, Skew_end)
 
             class Canada:
                 def __init__(self, Lane_name: str, Ecc: float, Wheel_space: float, elem_list: list[int], 
-                            id: int = None, lane_opt_width: float = 0,
+                            id: int = None, opt_width: float = 0,
                             Group_Name: str = "", Moving_Direction: str = "BOTH",
                             Skew_start: float = 0, Skew_end: float = 0):
                     """Defines a traffic lane according to Canadian standards."""
                     MovingLoad.LineLane("CANADA", Lane_name, Ecc, Wheel_space, elem_list,
-                                        0, 0, id, 3, lane_opt_width, Group_Name, Moving_Direction, Skew_start, Skew_end)
+                                        0, 0, id, 3, opt_width, Group_Name, Moving_Direction, Skew_start, Skew_end)
 
             class BS:
                 def __init__(self, Lane_name: str, Ecc: float, Wheel_space: float, elem_list: list[int], 
-                            id: int = None, lane_width: float = 0, lane_opt_width: float = 0,
+                            id: int = None, width: float = 0, opt_width: float = 0,
                             Group_Name: str = "", Moving_Direction: str = "BOTH",
                             Skew_start: float = 0, Skew_end: float = 0):
                     """Defines a traffic lane according to British Standards (BS)."""
                     MovingLoad.LineLane("BS", Lane_name, Ecc, Wheel_space, elem_list,
-                                        0, 0, id, lane_width, lane_opt_width, Group_Name, Moving_Direction, Skew_start, Skew_end)
+                                        0, 0, id, width, opt_width, Group_Name, Moving_Direction, Skew_start, Skew_end)
 
             class Eurocode:
                 def __init__(self, Lane_name: str, Ecc: float, Wheel_space: float, elem_list: list[int], 
-                            ecc_vertical_load: float = 0, id: int = None, lane_width: float = 0, lane_opt_width: float = 0,
+                            ecc_vertical_load: float = 0, id: int = None, width: float = 0, opt_width: float = 0,
                             Group_Name: str = "", Moving_Direction: str = "BOTH",
                             Skew_start: float = 0, Skew_end: float = 0):
                     """Defines a traffic lane according to Eurocode."""
                     MovingLoad.LineLane("EUROCODE", Lane_name, Ecc, Wheel_space, elem_list,
-                                        ecc_vertical_load, 0, id, lane_width, lane_opt_width, Group_Name, Moving_Direction, Skew_start, Skew_end)
+                                        ecc_vertical_load, 0, id, width, opt_width, Group_Name, Moving_Direction, Skew_start, Skew_end)
 
             class Australia:
                 def __init__(self, Lane_name: str, Ecc: float, Wheel_space: float, elem_list: list[int], 
-                            id: int = None, lane_width: float = 0, lane_opt_width: float = 0,
+                            id: int = None, width: float = 0, opt_width: float = 0,
                             Group_Name: str = "", Moving_Direction: str = "BOTH",
                             Skew_start: float = 0, Skew_end: float = 0):
                     """Defines a traffic lane according to Australian standards."""
                     MovingLoad.LineLane("AUSTRALIA", Lane_name, Ecc, Wheel_space, elem_list,
-                                        0, 0, id, lane_width, lane_opt_width, Group_Name, Moving_Direction, Skew_start, Skew_end)
+                                        0, 0, id, width, opt_width, Group_Name, Moving_Direction, Skew_start, Skew_end)
 
             class Poland:
                 def __init__(self, Lane_name: str, Ecc: float, Wheel_space: float, elem_list: list[int], 
-                            id: int = None, lane_width: float = 0, lane_opt_width: float = 0,
+                            id: int = None, width: float = 0, opt_width: float = 0,
                             Group_Name: str = "", Moving_Direction: str = "BOTH",
                             Skew_start: float = 0, Skew_end: float = 0):
                     """Defines a traffic lane according to Polish standards."""
                     MovingLoad.LineLane("POLAND", Lane_name, Ecc, Wheel_space, elem_list,
-                                        0, 0, id, lane_width, lane_opt_width, Group_Name, Moving_Direction, Skew_start, Skew_end)
+                                        0, 0, id, width, opt_width, Group_Name, Moving_Direction, Skew_start, Skew_end)
 
             class Russia:
                 def __init__(self, Lane_name: str, Ecc: float, Wheel_space: float, elem_list: list[int], 
-                            id: int = None, lane_width: float = 0, lane_opt_width: float = 0,
+                            id: int = None, width: float = 0, opt_width: float = 0,
                             Group_Name: str = "", Moving_Direction: str = "BOTH",
                             Skew_start: float = 0, Skew_end: float = 0):
                     """Defines a traffic lane according to Russian standards."""
                     MovingLoad.LineLane("RUSSIA", Lane_name, Ecc, Wheel_space, elem_list,
-                                        0, 0, id, lane_width, lane_opt_width, Group_Name, Moving_Direction, Skew_start, Skew_end)
+                                        0, 0, id, width, opt_width, Group_Name, Moving_Direction, Skew_start, Skew_end)
 
             class SouthAfrica:
                 def __init__(self, Lane_name: str, Ecc: float, Wheel_space: float, elem_list: list[int], 
-                            id: int = None, lane_width: float = 0, lane_opt_width: float = 0,
+                            id: int = None, width: float = 0, opt_width: float = 0,
                             Group_Name: str = "", Moving_Direction: str = "BOTH",
                             Skew_start: float = 0, Skew_end: float = 0):
                     """Defines a traffic lane according to South African standards."""
                     MovingLoad.LineLane("SOUTH AFRICA", Lane_name, Ecc, Wheel_space, elem_list,
-                                        0, 0, id, lane_width, lane_opt_width, Group_Name, Moving_Direction, Skew_start, Skew_end)
+                                        0, 0, id, width, opt_width, Group_Name, Moving_Direction, Skew_start, Skew_end)
 
             class KSCELSD15:
                 def __init__(self, Lane_name: str, Ecc: float, Wheel_space: float, elem_list: list[int], 
-                            id: int = None, lane_opt_width: float = 0,
+                            id: int = None, opt_width: float = 0,
                             Group_Name: str = "", Moving_Direction: str = "BOTH",
                             Skew_start: float = 0, Skew_end: float = 0):
                     """Defines a traffic lane according to KSCE-LSD15."""
                     MovingLoad.LineLane("KSCE-LSD15", Lane_name, Ecc, Wheel_space, elem_list,
-                                        0, 0, id, 3, lane_opt_width, Group_Name, Moving_Direction, Skew_start, Skew_end)
+                                        0, 0, id, 3, opt_width, Group_Name, Moving_Direction, Skew_start, Skew_end)
 
             @staticmethod
             def _get_lane_item_details(code, lane, is_start_span):
@@ -328,7 +327,7 @@ class MovingLoad:
                     # Use the user-provided list directly
                     E_list = lane.elem_list
                     Load_Dist = "CROSS" if lane.Group_Name else "LANE"
-                    opt_auto_lane = lane.lane_opt_width > 0
+                    opt_auto_lane = lane.opt_width > 0
 
                     common_data = {
                         "LL_NAME": lane.Lane_name,
@@ -338,9 +337,9 @@ class MovingLoad:
                         "SKEW_END": lane.Skew_end,
                         "MOVING": lane.Moving_Direction,
                         "WHEEL_SPACE": lane.Wheel_space,
-                        "WIDTH": lane.lane_width,
+                        "WIDTH": lane.width,
                         "OPT_AUTO_LANE": opt_auto_lane,
-                        "ALLOW_WIDTH": lane.lane_opt_width
+                        "ALLOW_WIDTH": lane.opt_width
                     }
                     
                     # Removing WIDTH input if code is CHINA
@@ -596,8 +595,8 @@ class MovingLoad:
                             IF=if_val,
                             Span=span_val,
                             id=int(lane_id),
-                            lane_width=width,
-                            lane_opt_width=opt_width,
+                            width=width,
+                            opt_width=opt_width,
                             Group_Name=group_name,
                             Moving_Direction=moving_dir,
                             Skew_start=skew_start,
