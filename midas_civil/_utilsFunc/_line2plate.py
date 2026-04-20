@@ -546,7 +546,7 @@ def getCGdata():
 
 def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList):
     # ORIGINAL ALIGNMENT
-    pbar = tqdm(total=15,desc="Converting Line to Plate ")
+    pbar = tqdm(total=14,desc="Converting Line to Plate ")
 
     pbar.update(1)
     pbar.set_description_str("Updating Units...")
@@ -679,6 +679,10 @@ def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList):
     L2P.sorted_nodes = []
     L2P.endNodes = []
     L2P.rgdID +=1
+    L2P.firstNodeCreate = True
+    L2P.lastCreateNodeIDs = []
+    L2P.lastTapSectPlate = ()
+    L2P.bFirstlastTapSectPlate = True
 
     pbar.update(1)
     pbar.set_description_str(Fore.GREEN+"Line to Plate conversion done"+Style.RESET_ALL)

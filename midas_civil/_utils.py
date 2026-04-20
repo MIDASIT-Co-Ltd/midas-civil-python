@@ -142,7 +142,7 @@ class utils:
             **TYPE** -> Type of interpolating curve in X,Y
                     cubic , akima , makima , pchip
             **XZ Interpolation** -> Type of interpolating curve in X,Z
-                    cubic , akima , makima , pchip
+                    linear , slinear , cubic
             '''
             from scipy.interpolate import CubicSpline , Akima1DInterpolator , PchipInterpolator, interp1d
             _b3D = False

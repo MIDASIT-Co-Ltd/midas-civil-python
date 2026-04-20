@@ -139,13 +139,13 @@ class Load:
 
     @classmethod
     def create(cls):
-        if Load_Case.cases!=[]: Load_Case.create()
-        if cls.SW.data!=[]: cls.SW.create()
-        if cls.Nodal.data!=[]: cls.Nodal.create()
-        if cls.Beam.data!=[]: cls.Beam.create()
-        if cls.Pressure.data!=[]: cls.Pressure.create()
-        if cls.FloorLoadAssign.data!=[] : cls.FloorLoadAssign.create()
-        if cls.FloorLoadDefine.data!=[] : cls.FloorLoadDefine.create()
+        if Load_Case.cases: Load_Case.create()
+        if cls.SW.data: cls.SW.create()
+        if cls.Nodal.data: cls.Nodal.create()
+        if cls.Beam.data: cls.Beam.create()
+        if cls.Pressure.data: cls.Pressure.create()
+        if cls.FloorLoadDefine.data : cls.FloorLoadDefine.create()
+        if cls.FloorLoadAssign.data : cls.FloorLoadAssign.create()
         if cls.Misc.PreCompositeSection.loadCases : cls.Misc.PreCompositeSection.create()
     
     @classmethod

@@ -3,6 +3,8 @@ from typing import Literal
 
 _CompSecType = Literal['GENERAL','USER','NORMAL']
 
+class _hStage:
+    NAME,DURATION,SV_RESULT,SV_STEP,Load_IN,N_LOAD_INC,ADD_STEP,STEP_INDEX,ID,NO = (0,0,0,0,0,0,0,0,0,0)
 
 class CS:
 
@@ -15,10 +17,10 @@ class CS:
         if CS.Camber.cambers!=[] : CS.Camber.create()
 
     class STAGE:
-        stages = []
-        _maxID_ = 0
-        _maxNO_ = 0
-        _isSync_ = False
+        stages:list[_hStage] = []
+        _maxID_:int = 0
+        _maxNO_:int = 0
+        _isSync_:bool = False
 
         def __init__(self, 
                     name: str,
@@ -81,11 +83,20 @@ class CS:
 
             self.NAME = name
             self.DURATION = duration
-            self.SV_Result = sv_result
-            self.SV_Step = sv_step
+            self.SV_RESULT = sv_result
+            self.SV_STEP = sv_step
             self.Load_IN = load_in
-            self.NL = nl
-            self.addstp = [] if addstp is None else addstp
+            self.N_LOAD_INC = nl
+            self.ADD_STEP = [] if addstp is None else addstp
+
+            #-----  STAGE INDEX for result extraction ----
+            self.STEP_INDEX = [2]
+            
+            if sv_result:
+                nStep = len(self.ADD_STEP)
+                self.STEP_INDEX = list(range(1,nStep+3,1))
+            if not sv_step:
+                self.STEP_INDEX = [self.STEP_INDEX[-1]]
             
             # Initialize group containers
             self.act_structure_groups = []  
@@ -264,19 +275,19 @@ class CS:
                 stage_data = {
                     "NAME": csa.NAME,
                     "DURATION": csa.DURATION,
-                    "bSV_RSLT": csa.SV_Result,
-                    "bSV_STEP": csa.SV_Step,
+                    "bSV_RSLT": csa.SV_RESULT,
+                    "bSV_STEP": csa.SV_STEP,
                     "bLOAD_STEP": csa.Load_IN,
                     "NO" : csa.NO
                 }
                 
                 # Add incremental steps if load step is enabled
                 if csa.Load_IN:
-                    stage_data["INCRE_STEP"] = csa.NL
+                    stage_data["INCRE_STEP"] = csa.N_LOAD_INC
                 
                 # Add additional steps if specified
-                if csa.addstp:
-                    stage_data["ADD_STEP"] = csa.addstp
+                if csa.ADD_STEP:
+                    stage_data["ADD_STEP"] = csa.ADD_STEP
                 else:
                     stage_data["ADD_STEP"] = []
                 
@@ -350,7 +361,7 @@ class CS:
         @classmethod
         def sync(cls):
             """Updates the CS class with data from the database"""
-            cls.stages = []
+            cls.clear()
             a = cls.get()
             if a != {'message': ''}:
                 if "STAG" in a:
@@ -439,9 +450,16 @@ class CS:
         
         @classmethod
         def delete(cls):
-            """Deletes all construction stages from the database and resets the class"""
-            cls.stages = []
+            """Deletes all construction stages from the database and CIVIL NX"""
+            cls.clear()
             return MidasAPI("DELETE", "/db/stag")
+        @classmethod
+        def clear(cls):
+            """Clears all construction stages from the database and resets the class"""
+            cls.stages = []
+            cls._maxID_ = 0
+            cls._maxNO_ = 0
+            cls._isSync_ = False
         
 #-----------------------------------------------------------Comp Section for CS--------------------------------------------------------------
 
