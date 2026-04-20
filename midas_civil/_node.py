@@ -249,6 +249,7 @@ class Node:
         Node.ids=[]
         Node.Grid={}
         Node.__nodeDic__ = {}
+        Node.maxID = 0
 
     @staticmethod
     def SE(s_loc: list, e_loc: list, n: int = 1, id: int = None, group: str = '', merge: bool = True):

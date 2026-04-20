@@ -1,4 +1,4 @@
-
+from ._mapi import MidasAPI
 class View:
     '''
     Contains option for Viewport display
@@ -123,7 +123,65 @@ class View:
 
             return json_body
 
+    class Display:
 
+        @staticmethod
+        def Load(loadCase="",loadType="ST",bNodal=False,bBeamLoad=False):
+            '''loadCase = 'Dead Load'
+            loadType = 'ST'
+            '''
+            
+            jsData = {
+                "Argument": {
+                    "LOAD": {
+                        "LOAD_VALUE": {
+                            "FORMAT": "Fixed",
+                            "PLACE": 1
+                        },
+                        "NODAL_BODY_FORCE": False,
+                        "NODAL_LOAD": bNodal,
+                        "SPECIFIED_DISPLACEMENT": False,
+                        "BEAM_LOAD": bBeamLoad,
+                        "PRESTRESS_LOAD": False,
+                        "PRETENSION_LOAD": False,
+                        "FLOOR_LOAD": False,
+                        "FLOOR_LOAD_NAME": False,
+                        "FLOOR_LOAD_AREA": False,
+                        "LOADING_AREA_PLANE": False,
+                        "FINISHING_MATERIAL_LOAD": False,
+                        "PRESSURE_LOAD": False,
+                        "AREA_PRESSURE_LOADS": False,
+                        "PLANE_LOAD": False,
+                        "PLANE_LOAD_NAME": False,
+                        "NODAL_TEMPERATURE": False,
+                        "ELEMENT_TEMPERATURE": False,
+                        "TEMPERATURE_GRADIENT": False,
+                        "BEAM_SECTION_TEMPERATURE": False,
+                        "TENDON_PRESTRESS": False,
+                        "WIND_LOAD": False,
+                        "AREA_WIND_PRESSURE": False,
+                        "AREA_WIND_PRESSURE_NAME": False,
+                        "BEAM_WIND_PRESSURE": False,
+                        "NODAL_WIND_PRESSURE": False,
+                        "FUNCTION_WIND_PRESSURE": False,
+                        "FUNCTION_WIND_PRESSURE_NAME": False,
+                        "SEISMIC_EARTH_PRESSURE": False,
+                        "STATIC_EARTH_PRESSRUE": False,
+                        "SEISMIC_LOAD": False,
+                        "DYNAMIC_NODAL_LOAD": False,
+                        "MULTIPLE_SUPPORT_EXCITATION": False,
+                        "MULTIPLE_SUPPORT_EXCITATION_FUNCTION_NAME": False,
+                        "DIR_X": False,
+                        "DIR_Y": False,
+                        "DIR_Z": False
+                    }
+                }
+            }
+            if loadCase: jsData["Argument"]["LOAD"]["CASE_SELECTION"]= {
+                                        "TYPE": loadType,
+                                        "NAME": loadCase
+                                    }
+            MidasAPI("POST","/view/DISPLAY",jsData)
 
 class ResultGraphic:
     '''
@@ -272,7 +330,7 @@ class ResultGraphic:
                     "TYPE":lcase_type,
                     "NAME":lcase_name,
                     "MINMAX" : lcase_minmax,
-                    "STEP_INDEX": 1,
+                    "STEP_INDEX": 2,
                     "OPT_MAXMIN_DIAGRAM": False
                 },
                 "COMPONENTS":{

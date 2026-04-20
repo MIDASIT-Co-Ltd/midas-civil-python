@@ -144,8 +144,8 @@ class Load:
         if cls.Nodal.data: cls.Nodal.create()
         if cls.Beam.data: cls.Beam.create()
         if cls.Pressure.data: cls.Pressure.create()
-        if cls.FloorLoadAssign.data : cls.FloorLoadAssign.create()
         if cls.FloorLoadDefine.data : cls.FloorLoadDefine.create()
+        if cls.FloorLoadAssign.data : cls.FloorLoadAssign.create()
         if cls.Misc.PreCompositeSection.loadCases : cls.Misc.PreCompositeSection.create()
     
     @classmethod

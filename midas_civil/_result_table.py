@@ -972,7 +972,7 @@ class Result :
         
 
     @staticmethod
-    def IMAGE(ResultGraphic:ResultGraphic,location:str='',image_size:tuple = None,CS_StageName:str='',_bOutputImage=True):
+    def IMAGE(ResultGraphic:ResultGraphic,location:str='',image_size:tuple = None,CS_StageName:str='',CS_StepIndex=2,_bOutputImage=True):
         ''' 
         Capture Result Graphic in CIVIL NX   
             Result Graphic - ResultGraphic JSON (ResultGraphic.BeamDiagram())
@@ -998,6 +998,8 @@ class Result :
 
         if CS_StageName != '':
             json_body['Argument']['STAGE_NAME'] = CS_StageName
+
+        json_body['Argument']['RESULT_GRAPHIC']['LOAD_CASE_COMB']['STEP_INDEX'] = CS_StepIndex
         
         resp = MidasAPI('POST','/view/CAPTURE',json_body)
 
