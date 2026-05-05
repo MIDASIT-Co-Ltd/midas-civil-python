@@ -1,4 +1,4 @@
-from ._mapi import MidasAPI
+from ._mapi import MidasAPI , NX
 # from ._model import *
 
 from typing import Literal
@@ -133,7 +133,10 @@ class LoadCombination:
                     for j in range(len(a)):
                         b += str(a[j]) + ","
                     if b != "": b = "/" + b[:-1]
+                    _current_dispWarning = NX.dispWarning
+                    NX.dispWarning = False
                     MidasAPI("DELETE", LoadCombination.com_map.get(i) + b)     #Delete existing combination if any
+                    NX.dispWarning = _current_dispWarning
                     MidasAPI("PUT", LoadCombination.com_map.get(i), json[i])   #Create new combination
     
     @classmethod

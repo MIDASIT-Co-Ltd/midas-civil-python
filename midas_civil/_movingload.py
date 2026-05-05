@@ -1479,4 +1479,392 @@ class MovingLoad:
 
 
 
-    #--------------------------------------Test---------------------------------------------
+        # COMMON WRAPPER FOR /DB/MVLD 
+        # ---------------------------------------------------------------------------------------------------------
+        
+        class GeneralCaseWrapper:
+            """
+            Internal base class to format standard General Load Cases (0), Permit Vehicles (1), 
+            and Auto Optimize Moving Loads (2) using nested lists for simplicity.
+            """
+            def __init__(self, code: str, name: str, case_type: int,
+                         sub_loads: list = None, comb_option: str = "COMB",
+                         lane_factor_type: int = 1, permit_vehicle_name: str = None, 
+                         ref_lane: str = None, permit_scale_factor: float = 1.0,
+                         optimize_lane_name: str = None, min_vehl_dist: float = None,
+                         min_num_vehicle: int = None, max_num_vehicle: int = None,
+                         optimize_items: list = None, asl_data: list = None,
+                         fatigue: bool = None, load_comb_type: int = None, load_model: int = None, 
+                         korea_lane_factors: dict = None, scale_factors: list = None,
+                         desc: str = "", id: int = None):
+                
+                if id is None:
+                    id = (max(c.id for c in MovingLoad.Case.cases) + 1) if MovingLoad.Case.cases else 1
+                    
+                params = {"LCNAME": name, "DESC": desc, "TYPE": case_type}
+                
+                # Map user-friendly comb_option values
+                mapped_comb_option = None
+                if comb_option is not None:
+                    comb_map = {
+                        "COMB": "COMBINED", "COMBINED": "COMBINED",
+                        "INDE": "INDEPENDENT", "INDEPENDENT": "INDEPENDENT"
+                    }
+                    mapped_comb_option = comb_map.get(str(comb_option).upper(), "COMBINED")
+
+                # Map user-friendly Vehicle Type values (VL/VC)
+                veh_type_map = {
+                    "VL": "VL", "LOAD": "VL", "VEHICLE LOAD": "VL",
+                    "VC": "VC", "CLASS": "VC", "VEHICLE CLASS": "VC"
+                }
+
+                # Format sub_loads from list representation to dict mappings
+                formatted_sub_loads = None
+                if sub_loads is not None:
+                    formatted_sub_loads = []
+                    for item in sub_loads:
+                        v_type = veh_type_map.get(str(item[0]).upper(), item[0])
+                        formatted_sub_loads.append({
+                            "VEHICLE_TYPE": v_type,
+                            "VEHICLE_NAME": item[1],
+                            "SCALE_FACTOR": item[2],
+                            "MIN_LOADED_LANE": item[3],
+                            "MAX_LOADED_LANE": item[4],
+                            "LANE_NAMES": item[5]
+                        })
+
+                # Format optimize_items from list to dict mappings
+                formatted_opt_items = None
+                if optimize_items is not None:
+                    formatted_opt_items = []
+                    for item in optimize_items:
+                        v_type = veh_type_map.get(str(item[0]).upper(), item[0])
+                        formatted_opt_items.append({
+                            "VEHICLE_TYPE": v_type,
+                            "VEHICLE_NAME": item[1],
+                            "SCALE_FACTOR": item[2]
+                        })
+
+                # Format ASL Data for Australia Heavy Load Platform
+                formatted_asl = None
+                if asl_data is not None:
+                    formatted_asl = {
+                        "MULTIPLE_FACTOR": asl_data[0],
+                        "VEHICLE_LOAD_NAME": asl_data[1],
+                        "VEHICLE_LOAD_NAME2": asl_data[2],
+                        "MIN_LOADED_LANE": asl_data[3],
+                        "MAX_LOADED_LANE": asl_data[4]
+                    }
+                    if len(asl_data) > 5 and asl_data[5] is not None:
+                        line_items = {
+                            "NA_LLAN_NAMES": asl_data[5],
+                            "STRAD_LLAN1_NAMES": [],
+                            "STRAD_LLAN2_NAMES": []
+                        }
+                        
+                        # Process STRAD lanes properly for lists within lists
+                        if len(asl_data) > 6 and asl_data[6] is not None:
+                            strad_data = asl_data[6]
+                            if isinstance(strad_data, list):
+                                
+                                if len(strad_data) > 0 and isinstance(strad_data[0], list):
+                                    line_items["STRAD_LLAN1_NAMES"] = strad_data[0]
+                                    if len(strad_data) > 1 and isinstance(strad_data[1], list):
+                                        line_items["STRAD_LLAN2_NAMES"] = strad_data[1]
+                                
+                                else:
+                                    line_items["STRAD_LLAN1_NAMES"] = strad_data
+
+                        formatted_asl["LINE_ITEMS"] = line_items
+
+                # Case 0: General Load
+                if case_type == 0:
+                    default_data = {}
+                    if scale_factors is not None: default_data["SCALE_FACTORS"] = scale_factors
+                    if mapped_comb_option is not None: default_data["COMB_OPTION"] = mapped_comb_option
+                    if lane_factor_type is not None: default_data["LANE_FACTOR_TYPE"] = lane_factor_type
+                    if formatted_sub_loads is not None: default_data["SUB_LOAD_DATAS"] = formatted_sub_loads
+                    if load_comb_type is not None: default_data["LOAD_COMB_TYPE"] = load_comb_type
+                    if fatigue is not None: default_data["FATIGUE"] = fatigue
+                    if load_model is not None: default_data["LOAD_MODEL"] = load_model
+                    
+                    if korea_lane_factors is not None:
+                        default_data.update(korea_lane_factors)
+                        
+                    params["DEFAULT"] = default_data
+                    if formatted_asl is not None: params["ASL"] = formatted_asl
+
+                # Case 1: Load Case for Permit Vehicle
+                elif case_type == 1:
+                    params["PERMIT_LOAD"] = {
+                        "VEHICLE_LOAD_NAME": permit_vehicle_name,
+                        "REF_LANE": ref_lane,
+                        "SCALE_FACTOR": permit_scale_factor
+                    }
+
+                # Case 2: Moving Load Optimization
+                elif case_type == 2:
+                    opt_data = {}
+                    if optimize_lane_name is not None: opt_data["LANE_NAME"] = optimize_lane_name
+                    if scale_factors is not None: opt_data["SCALE_FACTORS"] = scale_factors
+                    if min_vehl_dist is not None: opt_data["MIN_VEHL_DIST"] = min_vehl_dist
+                    if min_num_vehicle is not None: opt_data["MIN_NUM_VEHICLE"] = min_num_vehicle
+                    if max_num_vehicle is not None: opt_data["MAX_NUM_VEHICLE"] = max_num_vehicle
+                    if formatted_opt_items is not None: opt_data["OPTIMIZE_ITEMS"] = formatted_opt_items
+                    if load_model is not None: opt_data["LOAD_MODEL"] = load_model
+                    if fatigue is not None: opt_data["FATIGUE"] = fatigue
+                    
+                    params["AUTO_OPTIMIZE"] = opt_data
+                    if formatted_asl is not None: params["ASL"] = formatted_asl
+                    
+                MovingLoad.Case(code, id, params)
+
+        # ---------------------------------------------------------------------------------------------------------
+        # COUNTRY SPECIFIC
+        # ---------------------------------------------------------------------------------------------------------
+
+        class KSCELSD15(GeneralCaseWrapper):
+            def __init__(self, name: str, case_type: int,
+                         sub_loads: list = None, comb_option: str = "COMB",
+                         optimize_lane_name: str = None, min_vehl_dist: float = None,
+                         min_num_vehicle: int = None, max_num_vehicle: int = None, optimize_items: list = None, 
+                         scale_factors: list = None, desc: str = "", id: int = None):
+                """
+                Moving Load Case for KSCE-LSD15 code.
+                Supported Load Types (case_type):
+                - 0: General Load
+                - 2: Moving Load Optimization
+
+                [General Load - Type 0 Inputs]
+                - sub_loads: List of sub-load scenarios in the following list format:
+                  [ [vehicle_type("VL"/"LOAD" or "VC"/"CLASS"), vehicle_name, scale_factor, min_loaded_lane, max_loaded_lane, ["L1", "L2", ...]] ]
+                  Example: [ ["VL", "KL-510TRK", 1.0, 1, 3, ["L1", "L2", "L3"]] ]
+                - comb_option (str): "COMB" (Combined) or "INDE" (Independent). Default is "COMB".
+                - scale_factors: List of Multiple Presence Factors [L1, L2, L3, L4, L5, L6]. Default: [1, 0.9, 0.8, 0.7, 0.65, 0.65].
+
+                [Optimization Load - Type 2 Inputs]
+                - optimize_lane_name: Target lane name to optimize (e.g. "L1").
+                - min_vehl_dist: Minimum vehicle distance (Float).
+                - min_num_vehicle: Min number of vehicles allowed (Int).
+                - max_num_vehicle: Max number of vehicles allowed (Int).
+                - optimize_items: List of optimization items in format: [ [vehicle_type("VL"/"VC"), vehicle_name, scale_factor] ]
+                """
+                if scale_factors is None: scale_factors = [1, 0.9, 0.8, 0.7, 0.65, 0.65]
+                super().__init__("KSCE-LSD15", name, case_type, desc=desc, sub_loads=sub_loads, 
+                                 comb_option=comb_option, lane_factor_type=1,  
+                                 optimize_lane_name=optimize_lane_name, min_vehl_dist=min_vehl_dist, 
+                                 min_num_vehicle=min_num_vehicle, max_num_vehicle=max_num_vehicle, 
+                                 optimize_items=optimize_items, scale_factors=scale_factors, id=id)
+
+        class Korea(GeneralCaseWrapper):
+            def __init__(self, name: str,
+                         sub_loads: list = None, comb_option: str = "COMB", lane_factor_type: int = 1,
+                         korea_lane_factors: dict = None, scale_factors: list = None, desc: str = "", id: int = None):
+                """
+                Moving Load Case for Korea.
+                Supported Load Types: General Load (0) only.
+
+                [General Load - Type 0 Inputs]
+                - sub_loads: List format -> [ [vehicle_type("VL" or "VC"), vehicle_name, scale_factor, min_lane, max_lane, ["Lane1", "Lane2"]] ]
+                - comb_option (str): "COMB" (Combined) or "INDE" (Independent). Default is "COMB".
+                - lane_factor_type: 0 = Multi Lane Factor in KS Rail Load, 1 = Multiple Presence Factor.
+                - korea_lane_factors: Required dictionary if lane_factor_type = 0.
+                  Format: {"_2_LANE_FACTOR_1": 1, "_3_LANE_FACTOR_1": 1, ... etc.}
+                - scale_factors: Multiple presence factors. Default: [1, 1, 0.9, 0.75, 0.75, 0.75].
+                """
+                if scale_factors is None: scale_factors = [1, 1, 0.9, 0.75, 0.75, 0.75]
+                super().__init__("KOREA", name, 0, desc=desc, sub_loads=sub_loads, 
+                                 comb_option=comb_option, lane_factor_type=lane_factor_type,
+                                 korea_lane_factors=korea_lane_factors, scale_factors=scale_factors, id=id)
+
+        class AASHTOStandard(GeneralCaseWrapper):
+            def __init__(self, name: str, case_type: int,
+                         sub_loads: list = None, comb_option: str = "COMB",
+                         optimize_lane_name: str = None, min_vehl_dist: float = None,
+                         min_num_vehicle: int = None, max_num_vehicle: int = None, optimize_items: list = None,
+                         scale_factors: list = None, desc: str = "", id: int = None):
+                """
+                Moving Load Case for AASHTO Standard.
+                Supported Load Types (case_type): 0 (General Load), 2 (Moving Load Optimization).
+
+                [General Load - Type 0]
+                - sub_loads: List format -> [ ["VL", "UD_Train", 1.0, 1, 2, ["LL_01", "LL_02"]] ]
+                - comb_option (str): "COMB" (Combined) or "INDE" (Independent). Default is "COMB".
+                - scale_factors: Defaults to [1, 1, 0.9, 0.75, 0.75, 0.75].
+
+                [Optimization Load - Type 2]
+                - optimize_items: Format -> [ ["VL", "UD_Train", 1.0], ["VL", "UD_Truck/Lane", 1.0] ]
+                """
+                if scale_factors is None: scale_factors = [1, 1, 0.9, 0.75, 0.75, 0.75]
+                super().__init__("AASHTO STANDARD", name, case_type, desc=desc, sub_loads=sub_loads, 
+                                 comb_option=comb_option, lane_factor_type=1, 
+                                 optimize_lane_name=optimize_lane_name, min_vehl_dist=min_vehl_dist, 
+                                 min_num_vehicle=min_num_vehicle, max_num_vehicle=max_num_vehicle, 
+                                 optimize_items=optimize_items, scale_factors=scale_factors, id=id)
+
+        class AASHTOLRFD(GeneralCaseWrapper):
+            def __init__(self, name: str, case_type: int,
+                         sub_loads: list = None, comb_option: str = "COMB",
+                         permit_vehicle_name: str = None, ref_lane: str = None, permit_scale_factor: float = 1.0,
+                         optimize_lane_name: str = None, min_vehl_dist: float = None,
+                         min_num_vehicle: int = None, max_num_vehicle: int = None, optimize_items: list = None,
+                         scale_factors: list = None, desc: str = "", id: int = None):
+                """
+                Moving Load Case for AASHTO LRFD.
+                Supported Load Types: 0 (General), 1 (Permit Vehicle), 2 (Optimization).
+
+                [General Load - Type 0]
+                - sub_loads: List format -> [ ["VL", "MOHS20", 1.0, 1, 2, ["LL_01", "LL_02"]] ]
+                - comb_option (str): "COMB" (Combined) or "INDE" (Independent). Default is "COMB".
+                - scale_factors: Defaults to [1.2, 1, 0.85, 0.65, 0.65, 0.65].
+
+                [Permit Vehicle - Type 1]
+                - permit_vehicle_name: "UD_PermitTruck"
+                - ref_lane: "LL_01"
+                - permit_scale_factor: 1.0
+
+                [Optimization Load - Type 2]
+                - min_vehl_dist: Float distance.
+                - optimize_items: Format -> [ ["VL", "MOHS20", 1.0], ["VL", "UD_Legal", 1.0] ]
+                """
+                if scale_factors is None: scale_factors = [1.2, 1, 0.85, 0.65, 0.65, 0.65]
+                super().__init__("AASHTO LRFD", name, case_type, desc=desc, sub_loads=sub_loads, 
+                                 comb_option=comb_option, lane_factor_type=1,
+                                 permit_vehicle_name=permit_vehicle_name, ref_lane=ref_lane, permit_scale_factor=permit_scale_factor, 
+                                 optimize_lane_name=optimize_lane_name, min_vehl_dist=min_vehl_dist, 
+                                 min_num_vehicle=min_num_vehicle, max_num_vehicle=max_num_vehicle, 
+                                 optimize_items=optimize_items, scale_factors=scale_factors, id=id)
+
+        class PENNDOT(GeneralCaseWrapper):
+            def __init__(self, name: str, case_type: int,
+                         sub_loads: list = None, comb_option: str = "COMB",
+                         optimize_lane_name: str = None, min_vehl_dist: float = None,
+                         min_num_vehicle: int = None, max_num_vehicle: int = None, optimize_items: list = None,
+                         scale_factors: list = None, desc: str = "", id: int = None):
+                """
+                Moving Load Case for AASHTO LRFD(PENDOT).
+                Supported Load Types: 0 (General), 2 (Optimization).
+
+                [General Load - Type 0]
+                - sub_loads: List format -> [ ["VL", "UD_Train", 1.0, 1, 2, ["LL_01", "LL_02"]] ]
+                - comb_option (str): "COMB" (Combined) or "INDE" (Independent). Default is "COMB".
+                - scale_factors: Defaults to [1.2, 1, 0.85, 0.65, 0.65, 0.65].
+
+                [Optimization Load - Type 2]
+                - optimize_items: Format -> [ ["VL", "UD_Train", 1.0], ["VL", "UD_Truck/Lane", 1.0] ]
+                """
+                if scale_factors is None: scale_factors = [1.2, 1, 0.85, 0.65, 0.65, 0.65]
+                super().__init__("AASHTO LRFD(PENDOT)", name, case_type, desc=desc, sub_loads=sub_loads, 
+                                 comb_option=comb_option, lane_factor_type=1, 
+                                 optimize_lane_name=optimize_lane_name, min_vehl_dist=min_vehl_dist, 
+                                 min_num_vehicle=min_num_vehicle, max_num_vehicle=max_num_vehicle, 
+                                 optimize_items=optimize_items, scale_factors=scale_factors, id=id)
+
+        class Taiwan(GeneralCaseWrapper):
+            def __init__(self, name: str,
+                         sub_loads: list = None, comb_option: str = "COMB",
+                         scale_factors: list = None, desc: str = "", id: int = None):
+                """
+                Moving Load Case for TAIWAN.
+                Supported Load Types: 0 (General Load) only.
+
+                - sub_loads: List format -> [ ["VL", "TW_C-AML", 1.0, 1, 2, ["LL_01", "LL_02"]] ]
+                - comb_option (str): "COMB" (Combined) or "INDE" (Independent). Default is "COMB".
+                - scale_factors: Defaults to [1, 1, 0.9, 0.75, 0.75, 0.75].
+                """
+                if scale_factors is None: scale_factors = [1, 1, 0.9, 0.75, 0.75, 0.75]
+                super().__init__("TAIWAN", name, 0, desc=desc, sub_loads=sub_loads, 
+                                 comb_option=comb_option, lane_factor_type=1, scale_factors=scale_factors, id=id)
+
+        class Canada(GeneralCaseWrapper):
+            def __init__(self, name: str, case_type: int,
+                         sub_loads: list = None, comb_option: str = "COMB",
+                         permit_vehicle_name: str = None, ref_lane: str = None, permit_scale_factor: float = 1.0,
+                         optimize_lane_name: str = None, min_vehl_dist: float = None,
+                         min_num_vehicle: int = None, max_num_vehicle: int = None, optimize_items: list = None,
+                         scale_factors: list = None, desc: str = "", id: int = None):
+                """
+                Moving Load Case for CANADA.
+                Supported Load Types: 0 (General), 1 (Permit Vehicle), 2 (Optimization).
+
+                [General Load - Type 0]
+                - sub_loads: List format -> [ ["VL", "CA(Auto)_BCL-625Lane", 1.0, 1, 2, ["LL_01", "LL_02"]] ]
+                - comb_option (str): "COMB" (Combined) or "INDE" (Independent). Default is "COMB".
+                - scale_factors: Defaults to [1, 0.9, 0.8, 0.7, 0.6, 0.55].
+                
+                [Permit Vehicle - Type 1]
+                - permit_vehicle_name: Name of Permit Vehicle.
+                - ref_lane: Name of the reference lane.
+                
+                [Optimization Load - Type 2]
+                - optimize_items: Format -> [ ["VL", "CA(Auto)_BCL-625Lane", 1.0] ]
+                """
+                if scale_factors is None: scale_factors = [1, 0.9, 0.8, 0.7, 0.6, 0.55]
+                super().__init__("CANADA", name, case_type, desc=desc, sub_loads=sub_loads, 
+                                 comb_option=comb_option, lane_factor_type=1, 
+                                 permit_vehicle_name=permit_vehicle_name, ref_lane=ref_lane, permit_scale_factor=permit_scale_factor, 
+                                 optimize_lane_name=optimize_lane_name, min_vehl_dist=min_vehl_dist, 
+                                 min_num_vehicle=min_num_vehicle, max_num_vehicle=max_num_vehicle, 
+                                 optimize_items=optimize_items, scale_factors=scale_factors, id=id)
+
+        class Australia(GeneralCaseWrapper):
+            def __init__(self, name: str, case_type: int,
+                         sub_loads: list = None, comb_option: str = "COMB",
+                         load_comb_type: int = 1, load_model: int = 0, fatigue: bool = False,
+                         permit_vehicle_name: str = None, ref_lane: str = None, permit_scale_factor: float = 1.0,
+                         optimize_lane_name: str = None, min_vehl_dist: float = None,
+                         min_num_vehicle: int = None, max_num_vehicle: int = None, optimize_items: list = None,
+                         asl_data: list = None, scale_factors: list = None, desc: str = "", id: int = None):
+                """
+                Moving Load Case for AUSTRALIA.
+                Supported Load Types: 0 (General), 1 (Permit Vehicle), 2 (Optimization).
+
+                [General Load - Type 0 Parameters]
+                - sub_loads: Format -> [ ["VL", "AS_(PB)_Attached...", 1.0, 1, 2, ["LL_01", "LL_02"]] ]
+                - comb_option (str): "COMB" (Combined) or "INDE" (Independent). Default is "COMB".
+                - scale_factors: Defaults to [1, 0.8, 0.4, 0.4, 0.4, 0.4].
+                - load_comb_type (int): 0 for Ultimate Limit State, 1 for Serviceability Limit State.
+                - load_model (int): 0 (General), 1 (Fatigue), 2 (Heavy Load Platform), 3 (Rail Traffic Load).
+                - fatigue (bool): True if Fatigue Option applies.
+                
+                - asl_data (list): Provided when load_model = 2. Simplified format: 
+                  [multiple_factor, vehicle_name1, vehicle_name2, min_lane, max_lane, ["NA_Lanes"], [["Strad1_Lanes"], ["Strad2_Lanes"]]]
+                  Example 1 (With 2 Strad Lists): [0.5, "AS_HLP320", "NONE", 0, 1, ["L1", "L2"], [["L1"], ["L2"]]]
+                  Example 2 (With 1 Strad List):  [0.5, "AS_HLP320", "NONE", 0, 1, ["L1", "L2"], ["L1", "L3"]]
+                
+                [Permit Vehicle - Type 1] / [Optimization Load - Type 2] follow similar patterns.
+                """
+                if scale_factors is None: scale_factors = [1, 0.8, 0.4, 0.4, 0.4, 0.4]
+                super().__init__("AUSTRALIA", name, case_type, desc=desc, sub_loads=sub_loads, 
+                                 comb_option=comb_option, lane_factor_type=1, 
+                                 load_comb_type=load_comb_type, load_model=load_model, fatigue=fatigue,
+                                 permit_vehicle_name=permit_vehicle_name, ref_lane=ref_lane, permit_scale_factor=permit_scale_factor, 
+                                 optimize_lane_name=optimize_lane_name, min_vehl_dist=min_vehl_dist, 
+                                 min_num_vehicle=min_num_vehicle, max_num_vehicle=max_num_vehicle, 
+                                 optimize_items=optimize_items, asl_data=asl_data, scale_factors=scale_factors, id=id)
+
+        class Russia(GeneralCaseWrapper):
+            def __init__(self, name: str, case_type: int,
+                         sub_loads: list = None, comb_option: str = "COMB", load_comb_type: int = 0,
+                         optimize_lane_name: str = None, min_vehl_dist: float = None,
+                         min_num_vehicle: int = None, max_num_vehicle: int = None, optimize_items: list = None,
+                         desc: str = "", id: int = None):
+                """
+                Moving Load Case for RUSSIA.
+                Supported Load Types: 0 (General), 2 (Optimization).
+
+                [General Load - Type 0]
+                - sub_loads: Format -> [ ["VL", "AK-AA", 1.0, 1, 2, ["LL_01", "LL_02"]] ]
+                - comb_option (str): "COMB" (Combined) or "INDE" (Independent). Default is "COMB".
+                - load_comb_type (int): 0 for Limit State Group, 1 for Limit State Group I-Fatigue, 2 for Limit State Group II.
+                
+                [Optimization Load - Type 2]
+                - optimize_items: Format -> [ ["VL", "AK-AA", 1.0], ["VL", "AK-AA-F-UDL", 1.0] ]
+
+                """
+                scale_factors = [0, 0, 0, 0, 0, 0]
+                super().__init__("RUSSIA", name, case_type, desc=desc, sub_loads=sub_loads, 
+                                 comb_option=comb_option, lane_factor_type=None, load_comb_type=load_comb_type,
+                                 optimize_lane_name=optimize_lane_name, min_vehl_dist=min_vehl_dist, 
+                                 min_num_vehicle=min_num_vehicle, max_num_vehicle=max_num_vehicle, 
+                                 optimize_items=optimize_items, scale_factors=scale_factors, id=id)

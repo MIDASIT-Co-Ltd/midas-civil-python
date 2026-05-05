@@ -7,7 +7,8 @@ from tqdm import tqdm
 
 
 class L2P:
-    first = 0
+    _reverse = False
+    first = 0       # 0 -> I end , next 1 -> J end
     nDivMESH =[]
     CG_data = {}
     thick_js = {}
@@ -81,7 +82,7 @@ def arrangeNodeList(n_list,elm_list):
 # GET THE NODE LOCATION OF THE CONTINUOUS LINE NODES
 # DELETE IN-BETWEEN NODES IF N_ELEM > 1 OR DELETE THE SELECTED ELEMENT
 
-def delSelectElements(elemList):
+def delSelectElements(elemList,reverse):
     ''' 
         Deletes the middle nodes
         Returns sorted nodes and alignment coordinates for the selected elements
@@ -113,7 +114,9 @@ def delSelectElements(elemList):
         align_elem_list.append(elmID)
 
     arrangeLIST, arrangeLIST_ELM = arrangeNodeList(align_nodes_list,align_elem_list)
-
+    if reverse:
+        arrangeLIST.reverse()
+        arrangeLIST_ELM.reverse()
 
 
     matID = align_elem_json['ELEM'][arrangeLIST_ELM[0]]['MATL']
@@ -521,13 +524,12 @@ def Mesh_SHAPE(shape:Section,meshSize=0.1):
                     sect_thk_off.append([i_thk_off[q+1],i_thk_off[q+2]])
             
             n_nodes+=n_div-1
-
     for i in range(len(sect_thk)):
         sect_thk[i] = (sect_thk[i][0]+sect_thk[i][1])*0.5   #Averaging the thickness and OFFSET
         sect_thk_off[i] = (sect_thk_off[i][0]+sect_thk_off[i][1])*0.5
 
         
-    L2P.first=1
+    L2P.first = not L2P._reverse
     return sect_shape, sect_thk ,sect_thk_off, sect_cg , sect_lin_con
 
 def getCGdata():
@@ -544,7 +546,9 @@ def getCGdata():
         L2P.CG_data[data[1]] = {"Y1" : float(data[3]) , "Z1" : float(data[4]) , "Y2" : float(data[2]) , "Z2" : float(data[5])}
     # print(L2P.CG_data)
 
-def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList):
+def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList,reverse):
+    L2P._reverse = reverse
+    L2P.first = reverse
     # ORIGINAL ALIGNMENT
     pbar = tqdm(total=14,desc="Converting Line to Plate ")
 
@@ -587,7 +591,7 @@ def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList):
 
     pbar.update(1)
     pbar.set_description_str("Deleting Elements and Nodes...")
-    sorted_node_list , align_points, align_beta_angle , elm_list, matID , align_sectID_list_sorted,k = delSelectElements(elemList) # Select elements
+    sorted_node_list , align_points, align_beta_angle , elm_list, matID , align_sectID_list_sorted,k = delSelectElements(elemList,reverse) # Select elements
 
     L2P.sorted_nodes = sorted_node_list
     # NEW SMOOTH ALIGNMENT

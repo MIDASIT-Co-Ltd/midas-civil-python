@@ -11,7 +11,17 @@ from ._material import Material
 from ._section import Section
 _meshType = Literal['Quad','Tri']
 _extrudeInp = Literal['XYZ','ID','NODE']
+_order = Literal['ID','XYZ','XZY','YXZ','YZX','ZXY','ZYX']
 
+
+_location2Index = {
+    'XYZ' : (0,1,2),
+    'XZY' : (0,2,1),
+    'YXZ' : (1,0,2),
+    'YZX' : (1,2,0),
+    'ZXY' : (2,0,1),
+    'ZYX' : (2,1,0),
+}
 
 def _cell(point): #SIZE OF GRID - string format
     # return str(f"{int(point.X//size)},{int(point.Y//size)},{int(point.Z//size)}")
@@ -1662,33 +1672,41 @@ def elemByID(elemID:int) -> _helperELEM:
         print(Fore.RED +f'There is no element with ID {elemID}'+Style.RESET_ALL)
         return None
     
-def elemsInGroup(groupName:str,unique:bool=True,reverse:bool=False,output:Literal['ID','ELEM']='ID') -> list[_helperELEM]:
+def elemsInGroup(groupName:str,unique:bool=True,reverse:bool=False,output:Literal['ID','ELEM']='ID',order:_order=None) -> list[_helperELEM]:
     ''' Returns Element ID list or Element object list in a Structure Group '''
     groupNames = _convItem2List(groupName)
     elist = []
     for gName in groupNames:
         chk=1
-        rev = reverse
-        if gName[0] == '!':
-            gName = gName[1:]
-            rev = not rev
         for i in Group.Structure.Groups:
                 if i.NAME == gName:
                     chk=0
                     eIDlist = i.ELIST
-                    if rev: eIDlist = list(reversed(eIDlist))
                     elist.append(eIDlist)
         if chk:
             print(f'⚠️   "{gName}" - Structure group not found !')
     if unique:
-        finalElist = list(dict.fromkeys(sFlatten(elist)))
+        finalElistID = list(dict.fromkeys(sFlatten(elist)))
     else:
-        finalElist = sFlatten(elist)
+        finalElistID = sFlatten(elist)
+  
+
+    if order == None:
+        pass
+    elif order == 'ID':
+        finalElistID.sort()
+    else:
+        _locationDic = {}
+        _a,_b,_c = _location2Index[order]
+        for elmID in finalElistID:
+            _elmLOC = elemByID(elmID).CENTER
+            _locationDic[elmID] = (_elmLOC[_a],_elmLOC[_b],_elmLOC[_c])
+        finalElistID = [k for k, v in sorted(_locationDic.items(), key=lambda item: item[1])]
+
+    if reverse: finalElistID = list(reversed(finalElistID))
 
     if output == 'ELEM':
-        finoutput = []
-        for elm in finalElist:
-            finoutput.append(elemByID(elm))
-        finalElist:Element = finoutput
-
-    return finalElist
+        finalElistElem = [elemByID(elmID) for elmID in finalElistID]
+        return finalElistElem
+    
+    return finalElistID

@@ -330,7 +330,7 @@ class CS:
                     for group in csa.act_load_groups:
                         stage_data["ACT_LOAD"].append({
                             "LOAD_NAME": group["name"],
-                            "DAY": group["day"]
+                            "DAY": str(group["day"])
                         })
                 
                 # Handle load group deactivation
@@ -339,7 +339,7 @@ class CS:
                     for group in csa.deact_load_groups:
                         stage_data["DACT_LOAD"].append({
                             "LOAD_NAME": group["name"],
-                            "DAY": group["day"]
+                            "DAY": str(group["day"])
                         })
                 
                 json["Assign"][str(csa.ID)] = stage_data

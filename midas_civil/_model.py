@@ -112,7 +112,10 @@ class Model:
             "SET_MODE": "post"
         }
         }
+        _current_dispWarning = NX.dispWarning
+        NX.dispWarning = False
         resp = MidasAPI('POST','/view/CAPTURE',json_body)
+        NX.dispWarning = _current_dispWarning
 
         if 'message' in resp or 'error' in resp:
                 MidasAPI("POST","/doc/ANAL",{"Assign":{}})

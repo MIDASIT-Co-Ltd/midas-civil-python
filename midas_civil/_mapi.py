@@ -217,6 +217,7 @@ class NX:
     visualiser = False
     modelIDs = {} # Handles the fast MAX ID
     autoTaperGroup = False
+    dispWarning = True
     PRODUCT = 'CIVIL'
 
     units = {
@@ -442,10 +443,11 @@ def MidasAPI(method:_httpMethod, command:str, body:dict={})->dict:
             sys.exit(0)
     
     resp = response.json()
-    if 'error' in resp:
-        cmd = _functionMapping.get(command.lower(),command)
-        tqdm.write(f'    ⚠️      Error observed in {cmd}.   |   URL : {command}')
-        tqdm.write(f'           Error : {Fore.LIGHTMAGENTA_EX+resp["error"]["message"]+Style.RESET_ALL}\n')        
+    if NX.dispWarning:
+        if 'error' in resp:
+            cmd = _functionMapping.get(command.lower(),command)
+            tqdm.write(f'    ⚠️      Error observed in {cmd}.   |   URL : {command}')
+            tqdm.write(f'           Error : {Fore.LIGHTMAGENTA_EX+resp["error"]["message"]+Style.RESET_ALL}\n')        
 
 
     return resp

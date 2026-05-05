@@ -6,6 +6,18 @@ from typing import Literal
 import numpy as np
 from ._group import Group
 
+_order = Literal['ID','XYZ','XZY','YXZ','YZX','ZXY','ZYX']
+
+
+_location2Index = {
+    'XYZ' : (0,1,2),
+    'XZY' : (0,2,1),
+    'YXZ' : (1,0,2),
+    'YZX' : (1,2,0),
+    'ZXY' : (2,0,1),
+    'ZYX' : (2,1,0),
+}
+
 def dist_tol(a, b):
     """Return ``True`` if two nodes are within the merge tolerance (0.00001 units).
 
@@ -369,7 +381,7 @@ class Node:
 #     print(f'There is no node with ID {nodeID}')
 #     return None
 
-def nodesInGroup(groupName: str, unique: bool = True, reverse: bool = False, output: Literal['ID','NODE'] = 'ID') -> list:
+def nodesInGroup(groupName: str, unique: bool = True, reverse: bool = False, output: Literal['ID','NODE'] = 'ID',order:_order=None) -> list[_hNode]:
     """Return node IDs (or Node objects) belonging to one or more structure groups.
 
     Args:
@@ -382,6 +394,7 @@ def nodesInGroup(groupName: str, unique: bool = True, reverse: bool = False, out
         output (Literal['ID', 'NODE']): Return format.
             - ``'ID'`` (default) → list of integer node IDs.
             - ``'NODE'`` → list of ``Node`` objects.
+        order : Returns nodes arranged per ID or location.
 
     Returns:
         list[int] | list[Node]: Node IDs or Node objects, depending on
@@ -400,23 +413,35 @@ def nodesInGroup(groupName: str, unique: bool = True, reverse: bool = False, out
         for i in Group.Structure.Groups:
                 if i.NAME == gName:
                     chk=0
-                    nIDlist = i.NLIST
-                    if reverse: nIDlist = list(reversed(nIDlist))
-                    nlist.append(nIDlist)
+                    eIDlist = i.NLIST
+                    nlist.append(eIDlist)
         if chk:
             print(f'⚠️   "{gName}" - Structure group not found !')
     if unique:
-        finalNlist = list(dict.fromkeys(sFlatten(nlist)))
+        finalNlistID = list(dict.fromkeys(sFlatten(nlist)))
     else:
-        finalNlist = sFlatten(nlist)
+        finalNlistID = sFlatten(nlist)
+  
+
+    if order == None:
+        pass
+    elif order == 'ID':
+        finalNlistID.sort()
+    else:
+        _locationDic = {}
+        _a,_b,_c = _location2Index[order]
+        for nID in finalNlistID:
+            _nLOC = nodeByID(nID).LOC
+            _locationDic[nID] = (_nLOC[_a],_nLOC[_b],_nLOC[_c])
+        finalNlistID = [k for k, v in sorted(_locationDic.items(), key=lambda item: item[1])]
+
+    if reverse: finalNlistID = list(reversed(finalNlistID))
 
     if output == 'NODE':
-        finoutput = []
-        for nod in finalNlist:
-            finoutput.append(nodeByID(nod))
-        finalNlist:Node = finoutput
-
-    return finalNlist
+        finalNlistNode = [nodeByID(nID) for nID in finalNlistID]
+        return finalNlistNode
+    
+    return finalNlistID
 
 def nodeByID(nodeID: int) -> Node:
     """Return the Node object for the given ID .
@@ -576,7 +601,7 @@ def _ifNodeExist_(x, y, z) -> tuple:
     return False,0
 
 
-def nodesInRadius(point_location, radius: float = 0, output: Literal['ID','NODE'] = 'ID', includeSelf: bool = False) -> list:
+def nodesInRadius(point_location, radius: float = 0, output: Literal['ID','NODE'] = 'ID', includeSelf: bool = False , bDistOutput=False) -> list:
     """Return all nodes within a spherical radius of a given point.
 
     Args:
@@ -624,6 +649,7 @@ def nodesInRadius(point_location, radius: float = 0, output: Literal['ID','NODE'
     checked_GridStr = []
     close_nodes:list[int] = []
     close_nodesID:list[Node] = []
+    _dist_record = {}
 
 
     minX = int(point_location[0]-radius)
@@ -633,29 +659,39 @@ def nodesInRadius(point_location, radius: float = 0, output: Literal['ID','NODE'
     minZ = int(point_location[2]-radius)
     maxZ = int(point_location[2]+radius)
 
+    gridStr = set(Node.Grid.keys())
+    grid_complete = Node.Grid
+
+    possible_gridStr = set()
     for i in np.arange(minX,maxX+1,1):
         for j in np.arange(minY,maxY+1,1):
             for k in np.arange(minZ,maxZ+1,1):
-                cgridStr = f"{i},{j},{k}"
-                if cgridStr in checked_GridStr:
-                    # print("Grid already checked")
-                    continue
-                else:
-                    if cgridStr in gridStr:
-                        for nd in Node.Grid[cgridStr]:
-                            dist = hypot(nd.X-point_location[0],nd.Y-point_location[1],nd.Z-point_location[2])
-                            if dist <= radius+0.0001 :
-                                close_nodes.append(nd)
-                                close_nodesID.append(nd.ID)
-                    checked_GridStr.append(cgridStr)
+                possible_gridStr.add(f"{i},{j},{k}")
+    
+    common_gridStr = list(gridStr.intersection(possible_gridStr))
+
+    for eachAvailGrid in common_gridStr:
+        for nd in grid_complete[eachAvailGrid]:
+            dist = hypot(nd.X-point_location[0],nd.Y-point_location[1],nd.Z-point_location[2])
+            if dist <= radius+0.0001 :
+                close_nodes.append(nd)
+                close_nodesID.append(nd.ID)
+                _dist_record[nd.ID] = dist
 
     if output == 'NODE':
         if ifRemove:
             close_nodes.remove(nodeByID(id2Remove))
-            return close_nodes
+            if bDistOutput:
+                return [(node,_dist_record[node.ID]) for node in close_nodes]
+            else:
+                return close_nodes
     if ifRemove:
         close_nodesID.remove(id2Remove)
-    return close_nodesID
+    
+    if bDistOutput:
+        return [(nID,_dist_record[nID]) for nID in close_nodesID]
+    else:
+        return close_nodesID
 
 
 

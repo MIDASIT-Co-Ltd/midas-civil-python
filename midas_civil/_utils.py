@@ -395,7 +395,7 @@ class utils:
 
             
     @staticmethod
-    def LineToPlate(nDiv:int = 10 , mSizeDiv:float = 0, bRigdLnk:bool=True , meshSize:float=0.5, elemList:list=None):
+    def LineToPlate(nDiv:int = 10 , mSizeDiv:float = 0, bRigdLnk:bool=True , meshSize:float=0.5, elemList:list=None, reverse=False):
         '''
         Converts selected/entered line element to Shell elements   
         **nDiv** - No. of Division along the length of span    
@@ -405,10 +405,11 @@ class utils:
         **bRigdLnk** - Whether to create Rigid links at the span ends  
         **meshSize** - Mesh size(in meter) of the plate elements   
         **elemList** - Element list which are to be converted . If None is passed, element are taken from selected elements in CIVIL NX  
+        **reverse** - Treats I, J end in opposite way , used for conversion of tapered sections   
 
         '''
         from ._utilsFunc._line2plate import SS_create
-        SS_create(nDiv , mSizeDiv , bRigdLnk , meshSize ,elemList)
+        SS_create(nDiv , mSizeDiv , bRigdLnk , meshSize ,elemList,reverse)
 
     @staticmethod
     def RC_Grillage(span_length = 20, width = 8, support:Literal['fix','pin']='fix', dia_no=2,start_loc = [0,0,0], girder_depth = 0, girder_width = 0, girder_no = 0, 

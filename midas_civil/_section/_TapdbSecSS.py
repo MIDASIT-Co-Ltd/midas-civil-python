@@ -157,13 +157,13 @@ class _SS_TAPERED_DBUSER(_common):
             sect_cg_RB = [B/2,-H/2]
 
             if H > B :
-                sect_shape = [[0,0],[0,H/2],[0,-H/2],[0,H/4],[0,-H/4]]
-                sect_thk = [B,B,B,B]
-                sect_thk_off = [0,0,0,0]
+                sect_shape = [[0,0],[0,H/2],[0,-H/2]]
+                sect_thk = [B,B]
+                sect_thk_off = [0,0]
             else : 
-                sect_shape = [[0,0],[B/2,0],[-B/2,0],[B/4,0],[-B/4,0]]
-                sect_thk = [H,H,H,H]
-                sect_thk_off = [0,0,0,0]
+                sect_shape = [[0,0],[B/2,0],[-B/2,0]]
+                sect_thk = [H,H]
+                sect_thk_off = [0,0]
 
         elif shape.SHAPE == 'L' :
             H,B,tw,tf = shape.PARAMS[:4]
