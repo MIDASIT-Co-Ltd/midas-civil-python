@@ -219,6 +219,8 @@ class NX:
     autoTaperGroup = False
     dispWarning = True
     PRODUCT = 'CIVIL'
+    SOLVER = 'FES'
+    _MEC_VERSIONS = ['9.7.5']
 
     units = {
         "FORCE": "KN",
@@ -470,12 +472,17 @@ def _setUNIT(unitJS):
 def _checkUSER():
     response =  MidasAPI('GET','/config/ver',{})
     if 'VER' in response:
-        resp = response['VER']
+        resp:dict = response['VER']
         _product = resp['NAME']
         if 'CIVIL' in _product:
             NX.PRODUCT = 'CIVIL'
         elif 'GEN' in _product:
             NX.PRODUCT = 'GEN'
+        
+        _version = resp.get('VERSION','9.6.0')
+        if _version in NX._MEC_VERSIONS:
+            NX.SOLVER == 'MEC'
+ 
 
         # print(f"{' '*15}Connected to {resp['NAME']}")
         # print(f"{' '*15}USER : {resp['USER']}          COMPANY : {resp['COMPANY']}")

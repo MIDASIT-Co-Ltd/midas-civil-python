@@ -297,6 +297,8 @@ class Model:
         Tendon.clear()
         Section.TaperedGroup.clear()
         LoadCombination.clear()
+        CS.clear()
+        MovingLoad.clear()
         
 
     @staticmethod

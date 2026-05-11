@@ -54,7 +54,7 @@ def _JSToDF_ResTable(js_json,excelLoc,sheetName,cellLoc="A1"):
 
     res_type_df = res_df.with_columns([
         pl.selectors.matches("Index|Elem|Node").cast(pl.Int64),
-        pl.selectors.matches("Shear|Torsion|Moment|F|M|D|R").cast(pl.Float64),
+        pl.selectors.matches("Axial|Shear|Torsion|Moment|F|M|D|R").cast(pl.Float64),
         pl.selectors.matches("Load|Part").cast(pl.String),
     ])
 

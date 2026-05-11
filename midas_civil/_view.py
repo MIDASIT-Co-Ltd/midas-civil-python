@@ -1,4 +1,35 @@
 from ._mapi import MidasAPI
+from typing import Literal
+
+#TYPE ALIASES 
+_ModeType = Literal["All", "Active", "Identity"]
+_IdentType = Literal["Group", "Boundary Group", "Load Group", "Named Plane"]
+_ColorType = Literal["vrgb", "rgb", "rbg", "gray scaled"]
+_PositionType = Literal["left", "right"]
+_LCaseType = Literal["ST", "CS", "RS", "TH", "MV", "SM", "CB"]
+_MinMaxType = Literal["Max", "Min", "All"]
+_PartType = Literal["I", "1/4", "1/2", "3/4", "J", "total"]
+
+#for specific methods
+_CompBeamForce = Literal["Fx", "Fy", "Fz", "Mx", "My", "Mz"]
+_MV_CompBeamForce = Literal["FX","FY","FZ","MX","MY","MZ","Mb","Mt","Mw"]
+_CompDisp = Literal["DX", "DY", "DZ", "DXY", "DYZ", "DXZ", "DXYZ", "RX", "RY", "RZ", "RW"]
+_MT_CompDisp = Literal["DX","DY","DZ","RX","RY","RZ","RW"]
+_CompReact = Literal["FX", "FY", "FZ", "FXYZ", "MX", "MY", "MZ", "MXYZ", "Mb"]
+_CompVib = Literal["Md-X", "Md-Y", "Md-Z", "Md-XY", "Md-YZ", "Md-XZ", "Md-XYZ"]
+_CompPlateForce = Literal["Fxx", "Mxx", "MMax", "WoodArmerMoment", "Mvector", "Fvector"]
+_CompTruss = Literal["All", "Tens.", "Comp."]
+_CompBeamStress = Literal["Sax", "Ssy", "Ssz", "Sby", "Sbz", "Combined", "7thDOF"]
+_FidelityType = Literal["Exact", "5 Points"]
+_FillType = Literal["No", "Line", "Solid"]
+_OutputLocType = Literal["Max", "MinMax", "All", "I", "J"]
+_TRUSS_OutputLocType = Literal["I", "J", "Max", "All"]
+_BEAM_OutputLocType = Literal["Max", "All"]
+_WoodArmerMoment_POS = Literal["Top","Bottom"]
+_WoodArmerMoment_DIR = Literal["Dir.1","Dir.2"]
+
+
+
 class View:
     '''
     Contains option for Viewport display
@@ -43,7 +74,7 @@ class View:
         ident_type = "Group"
         ident_list = []
 
-        def __init__(self,mode:str='Active',node_list:list=[],elem_list:list=[],ident_type='Group',ident_list:list=[]):
+        def __init__(self, mode: _ModeType = 'Active', node_list: list = [], elem_list: list = [], ident_type: _IdentType = 'Group', ident_list: list = []):
             '''Sets Elements to be Active for View.Capture() or View.CaptureResults()
 
             **Mode** - "All" , "Active" , "Identity"   
@@ -204,7 +235,7 @@ class ResultGraphic:
         num_color = 12
         color = "rgb"
 
-        def __new__(cls, use=True,num_color=12,color='rgb'):
+        def __new__(cls, use: bool = True, num_color: int = 12, color: _ColorType = 'rgb'):
             cls.use = use
             cls.num_color = num_color
             cls.color = color
@@ -230,7 +261,7 @@ class ResultGraphic:
         bExponent = False
         num_decimal = 2
 
-        def __new__(cls, use=True,position = 'right',bExponent=False,num_decimal=2):
+        def __new__(cls, use: bool = True, position: _PositionType = 'right', bExponent: bool = False, num_decimal: int = 2):
             cls.use = use
             cls.position = position
             cls.bExponent = bExponent
@@ -288,7 +319,7 @@ class ResultGraphic:
         bRealDisp = False
         bRelativeDisp = False
 
-        def __new__(cls, use = False, scale = 1.0,bRealDeform = False, bRealDisp = False, bRelativeDisp = False):
+        def __new__(cls, use: bool = False, scale: float = 1.0, bRealDeform: bool = False, bRealDisp: bool = False, bRelativeDisp: bool = False):
             cls.use = use
             cls.scale = scale
             cls.bRealDeform = bRealDeform
@@ -307,9 +338,9 @@ class ResultGraphic:
             return json_body
     
     @staticmethod
-    def BeamDiagram(lcase_type:str, lcase_name:str, lcase_minmax:str="Max",
-                    part:str="total", component:str="My",
-                    fidelity:str="Exact", fill:str="Solid", scale:float=1.0) -> dict:
+    def BeamDiagram(lcase_type: _LCaseType, lcase_name: str, lcase_minmax: _MinMaxType = "Max",
+                    part: _PartType = "total", component: _CompBeamForce = "My",
+                    fidelity: _FidelityType = "Exact", fill: _FillType = "Solid", scale: float = 1.0) -> dict:
         '''
         Generates JSON for Beam Diagrams Result Graphic.
         
@@ -360,8 +391,8 @@ class ResultGraphic:
         return json_body
     
     @staticmethod
-    def DisplacementContour(lcase_type:str, lcase_name:str, lcase_minmax:str="Max", component:str="DXYZ", 
-                            th_option:str="Displacement", opt_local_check:bool=False) -> dict:
+    def DisplacementContour(lcase_type: _LCaseType, lcase_name: str, lcase_minmax: _MinMaxType = "Max", component: _CompDisp = "DXYZ",
+                            th_option: str = "Displacement", opt_local_check: bool = False) -> dict:
         '''
         Generates JSON for Displacement Contour Result Graphic.
         
@@ -404,8 +435,8 @@ class ResultGraphic:
         return json_body
 
     @staticmethod
-    def ReactionForcesMoments(lcase_type:str, lcase_name:str, lcase_minmax:str="Max", component:str="FXYZ", 
-                                opt_local_check:bool=False, arrow_scale_factor:float=1.0) -> dict:
+    def ReactionForcesMoments(lcase_type: _LCaseType, lcase_name: str, lcase_minmax: _MinMaxType = "Max", component: _CompReact = "FXYZ",
+                              opt_local_check: bool = False, arrow_scale_factor: float = 1.0) -> dict:
         '''
         Generates JSON for Reaction Forces/Moments Result Graphic.
         
@@ -440,8 +471,8 @@ class ResultGraphic:
         return json_body
 
     @staticmethod
-    def DeformedShape(lcase_type:str, lcase_name:str, lcase_minmax:str="Max", component:str="DZ", 
-                    th_option:str="Displacement", opt_local_check:bool=False) -> dict:
+    def DeformedShape(lcase_type: _LCaseType, lcase_name: str, lcase_minmax: _MinMaxType = "Max", component: _CompDisp = "DZ",
+                      th_option: str = "Displacement", opt_local_check: bool = False) -> dict:
         '''
         Generates JSON for Deformed Shape Result Graphic.
         
@@ -482,8 +513,8 @@ class ResultGraphic:
         return json_body
 
     @staticmethod
-    def BeamForcesMoments(lcase_type:str, lcase_name:str, lcase_minmax:str="Max",
-                          part:str="total", component:str="Fx") -> dict:
+    def BeamForcesMoments(lcase_type: _LCaseType, lcase_name: str, lcase_minmax: _MinMaxType = "Max",
+                          part: _PartType = "total", component: _CompBeamForce = "Fx") -> dict:
         '''
         Generates JSON for Beam Forces/Moments Result Graphic.
         
@@ -569,7 +600,7 @@ class ResultGraphic:
         return json_body
 
     @staticmethod
-    def MovingTracer_Displacements(lcase_name:str, key_node_elem:int, lcase_minmax:str="Max",component:str="Dz") -> dict:
+    def MovingTracer_Displacements(lcase_name: str, key_node_elem: int, lcase_minmax: _MinMaxType = "Max", component: _MT_CompDisp = "Dz") -> dict:
         '''
         Generates JSON for Moving Tracer Displacements Result Graphic.
         
@@ -606,8 +637,8 @@ class ResultGraphic:
         return json_body
 
     @staticmethod
-    def MovingTracer_BeamForcesMoments(lcase_name:str, key_node_elem:int, lcase_minmax:str="Max", 
-                                 part:str="1/4", component:str="My") -> dict:
+    def MovingTracer_BeamForcesMoments(lcase_name: str, key_node_elem: int, lcase_minmax: _MinMaxType = "Max",
+                                       part: _PartType = "1/4", component: _MV_CompBeamForce = "My") -> dict:
         '''
         Generates JSON for Moving Tracer Beam Forces/Moments Result Graphic.
         
@@ -647,7 +678,7 @@ class ResultGraphic:
         return json_body
 
     @staticmethod
-    def VibrationModeShapes(mode_name:str, component:str="Md-XYZ") -> dict:
+    def VibrationModeShapes(mode_name: str, component: _CompVib = "Md-XYZ") -> dict:
         '''
         Generates JSON for Vibration Mode Shapes Result Graphic.
         
@@ -674,7 +705,7 @@ class ResultGraphic:
         return json_body
 
     @staticmethod
-    def BucklingModeShapes(mode_name:str, component:str="Md-XYZ") -> dict:
+    def BucklingModeShapes(mode_name: str, component: _CompVib = "Md-XYZ") -> dict:
         '''
         Generates JSON for Buckling Mode Shapes Result Graphic.
         
@@ -700,10 +731,11 @@ class ResultGraphic:
         return json_body
 
     @staticmethod
-    def PlateForcesMoments(lcase_type:str, lcase_name:str, lcase_minmax:str="Max",
-                           component:str="MMax", local_ucs_type:str="Local", avg_nodal_type:str="Element",
-                           wood_armer_pos:str="Top", wood_armer_dir:str="Dir.1",
-                           vector_opt_pos:bool=True, vector_opt_neg:bool=False) -> dict:
+    def PlateForcesMoments(lcase_type: _LCaseType, lcase_name: str, lcase_minmax: _MinMaxType = "Max",
+                           component: _CompPlateForce = "MMax", local_ucs_type: str = "Local", avg_nodal_type: str = "Element",
+                           wood_armer_pos: _WoodArmerMoment_POS = "Top", wood_armer_dir: _WoodArmerMoment_DIR = "Dir.1",
+                           vector_opt_pos: bool = True, vector_opt_neg: bool = False) -> dict:
+
         '''
         Generates JSON for Plate Forces/Moments Result Graphic.
 
@@ -765,8 +797,8 @@ class ResultGraphic:
         return json_body
 
     @staticmethod
-    def TrussStresses(lcase_type:str, lcase_name:str, component:str="All",
-                      output_loc:str="All") -> dict:
+    def TrussStresses(lcase_type: _LCaseType, lcase_name: str, component: _CompTruss = "All",
+                      output_loc: _TRUSS_OutputLocType = "All") -> dict:
         '''
         Generates JSON for Truss Stresses Result Graphic.
         
@@ -799,9 +831,9 @@ class ResultGraphic:
         return json_body
 
     @staticmethod
-    def BeamStresses(lcase_type:str, lcase_name:str, part:str="Total", 
-                     component:str="Combined", comp_sub:str="Maximum", output_loc:str="Max",
-                     comp_7th_dof:str="Combined(Ssy)") -> dict:
+    def BeamStresses(lcase_type: _LCaseType, lcase_name: str, part: _PartType = "total",
+                     component: _CompBeamStress = "Combined", comp_sub: str = "Maximum", output_loc: _BEAM_OutputLocType = "Max",
+                     comp_7th_dof: str = "Combined(Ssy)") -> dict:
         '''
         Generates JSON for Beam Stresses Result Graphic.
         
@@ -845,9 +877,9 @@ class ResultGraphic:
         return json_body
 
     @staticmethod
-    def BeamStressesDiagram(lcase_type:str, lcase_name:str, part:str="Total", 
-                            component:str="Combined", comp_sub:str="Maximum", output_loc:str="all",
-                            comp_7th_dof:str="Combined(Ssy)", fill:str="Solid", scale:float=1.0) -> dict:
+    def BeamStressesDiagram(lcase_type: _LCaseType, lcase_name: str, part: _PartType = "total",
+                            component: _CompBeamStress = "Combined", comp_sub: str = "Maximum", output_loc: _OutputLocType = "All",
+                            comp_7th_dof: str = "Combined(Ssy)", fill: _FillType = "Solid", scale: float = 1.0) -> dict:
         '''
         Generates JSON for Beam Stresses Diagram Result Graphic.
         

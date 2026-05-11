@@ -12,6 +12,12 @@ _swDir= Literal['X','Y','Z','VECTOR']
 _LCType = Literal["USER", "D", "DC", "DW", "DD", "EP", "EANN", "EANC", "EAMN", "EAMC", "EPNN", "EPNC", "EPMN", "EPMC", "EH", "EV", "ES", "EL", "LS", "LSC", 
             "L", "LC", "LP", "IL", "ILP", "CF", "BRK", "BK", "CRL", "PS", "B", "WP", "FP", "SF", "WPR", "W", "WL", "STL", "CR", "SH", "T", "TPG", "CO",
             "CT", "CV", "E", "FR", "IP", "CS", "ER", "RS", "GE", "LR", "S", "R", "LF", "RF", "GD", "SHV", "DRL", "WA", "WT", "EVT", "EEP", "EX", "I", "EE"]
+_BeamEccnDir = Literal["GX","GY","GZ","LX","LY","LZ"]
+_BeamEccnType = Literal[1,0]
+_LoadToMassdir = Literal["X","Y","Z","XY","YZ","XZ","XYZ"]
+_FloorLoadAssignDir = Literal["LX","LY","LZ","GX","GY","GZ"]
+_FloorLoadAssignDisType = Literal[1,2,3,4]
+
 # -----  Extend for list of nodes/elems -----
 
 def _ADD_NodalLoad(self):
@@ -175,7 +181,7 @@ class Load:
     class SW:
         """Load Case Name, direction, Value, Load Group.\n
         Sample: Load_SW("Self-Weight", "Z", -1, "DL")"""
-        data = []
+        data:list['Load.SW'] = []
         def __init__(self, load_case:str, dir:_swDir = "Z", value = -1, load_group:str = ""):
 
             chk = 0
@@ -266,7 +272,7 @@ class Load:
         """Creates node loads and converts to JSON format.
         Example: Load_Node(101, "LC1", "Group1", FZ = 10)
         """
-        data = []
+        data: list['Load.Nodal'] = []
         def __init__(self, node, load_case, load_group = "", FX:float = 0, FY:float = 0, FZ:float= 0, MX:float =0, MY:float =0, MZ:float=0, id = None):
 
 
@@ -352,10 +358,10 @@ class Load:
 
     #19 Class to define Beam Loads:
     class Beam:
-        data = []
+        data:list['Load.Beam'] = []
         def __init__(self, element:list[int], load_case: str, load_group: str = "", value: float=0, direction:_beamLoadDir = "GZ",
-             D:list = [0, 1, 0, 0], P = [0, 0, 0, 0], cmd = "BEAM", typ:_beamLoadType = "UNILOAD", use_ecc = False, use_proj = False,
-            eccn_dir = "LY", eccn_type = 1, ieccn = 0, jeccn = 0, adnl_h = False, adnl_h_i = 0, adnl_h_j = 0,id = None): 
+             D:list = [0, 1, 0, 0], P = [0, 0, 0, 0], cmd = "BEAM", typ:_beamLoadType = "UNILOAD", use_ecc:bool = False, use_proj:bool = False,
+            eccn_dir:_BeamEccnDir = "LY", eccn_type:_BeamEccnType = 1, ieccn = 0, jeccn = 0, adnl_h:bool = False, adnl_h_i = 0, adnl_h_j = 0,id = None): 
             """
             element: Element ID or list of Element IDs 
             load_case (str): Load case name
@@ -549,10 +555,10 @@ class Load:
             gravity (float, optional): 
                 Gravity acceleration. Defaults to 9.806.
         """
-        data = []
+        data:list['Load.LoadToMass'] = []
         
-        def __init__(self, dir, load_case, load_factor=None, nodal_load=True, beam_load=True, 
-                    floor_load=True, pressure=True, gravity=None):
+        def __init__(self, dir:_LoadToMassdir, load_case, load_factor=None, nodal_load:bool=True, beam_load:bool=True, 
+                    floor_load:bool=True, pressure:bool=True, gravity=None):
             
             if gravity == None: 
                 from ._model import Model
@@ -662,7 +668,7 @@ class Load:
         """Creates nodal mass and converts to JSON format.
         Example: NodalMass(1, 1.5, 2.0, 3.0, 0.1, 0.2, 0.3)
         """
-        data = []
+        data:list['Load.NodalMass'] = []
 
         def __init__(self, node_id:list[int], mX:float=0, mY:float=0, mZ:float=0, rmX:float=0, rmY:float=0, rmZ:float=0):
             """
@@ -735,7 +741,7 @@ class Load:
                     )
     
     class FloorLoadDefine:
-        data = []
+        data:list['Load.FloorLoadDefine'] = []
 
         def __init__(self, name: str, items: list, desc: str = "", id: int = None):
             """Define Floor Load Type with load case items.
@@ -841,10 +847,10 @@ class Load:
                     )
     
     class FloorLoadAssign:
-        data = []
+        data:list['Load.FloorLoadAssign'] = []
 
-        def __init__(self, floor_load_name: str, distribution_type: int = 2,
-                     direction: str = "GZ", node_list: list = [],
+        def __init__(self, floor_load_name: str, distribution_type: _FloorLoadAssignDisType = 2,
+                     direction: _FloorLoadAssignDir = "GZ", node_list: list = [],
                      group: str = "", load_angle: int = 0,
                      sub_beam_no: int = 0, sub_beam_angle: int = 0,
                      unit_selfweight: int = 0, bProjection: bool = False,
@@ -986,7 +992,7 @@ class Load:
         """Creates specified displacement loads and converts to JSON format.
         Example: SpDisp(10, "LL", "Group1", [1.5, 1.5, 1.5, 1.5, 0.5, 0.5])
         """
-        data = []
+        data:list['Load.SpDisp'] = []
         
         def __init__(self, node:list[int], load_case:str, load_group:str="", values:list[float]=[0, 0, 0, 0, 0, 0], id:int=None):
             """
@@ -1173,7 +1179,7 @@ class Load:
         """ Assign Pressure load to plates faces.
         
         """
-        data = []
+        data:list['Load.Pressure'] = []
         def __init__(self, element:list[int], load_case:str, load_group:str = "", D:_presDir='LZ', P:list=0, VectorDir:list = [1,0,0],bProjection:bool = False,id:int = None):
 
 

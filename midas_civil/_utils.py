@@ -5,6 +5,8 @@ from math import hypot,sqrt
 import numpy as np
 from typing import Literal
 
+_falloffType = Literal['Linear','Parabolic','Smooth']
+
 #Function to remove duplicate set of values from 2 lists
 # def unique_lists(li1, li2):
 #     if type (li1) == list and type (li2) == list:
@@ -565,3 +567,39 @@ class utils:
         utils.__RC_Grillage_nSpan+=1
         #---------------------------------------------------------------------------------------
         # Model.create()
+
+    @staticmethod
+    def SoftSelection(location=(0,0,0),radius:float=5,falloffType:_falloffType='Linear'):
+        from ._node import Node,nodesInRadius
+        # LINEAR MAPPING --------------------------
+        def _linearWeight(dist,Radius):
+            return round(1-dist/Radius,3)
+
+        def _quadWeight(dist,Radius):
+            return round(1-(dist/Radius)**2,3)
+
+        def _smoothWeight(dist,Radius):
+            return round((1-(3*((dist/Radius)**2)-2*((abs(dist/Radius))**3))),3)
+        
+        if falloffType == 'Parabolic': falloffFn = _quadWeight
+        elif falloffType == 'Smooth': falloffFn = _smoothWeight
+        else: falloffFn = _linearWeight
+
+        #-------------------------------------------
+        _selectRadius = radius
+        _softSelect_data = {}
+
+        if not isinstance(location[0],(tuple,list,set)): location = [location]
+
+        for nID in location:
+            nodeData = nodesInRadius(nID,radius=_selectRadius,bDistOutput=True,includeSelf=True)
+            for nID,dist in nodeData:
+                if nID in _softSelect_data:
+                    _softSelect_data[nID] = min(_softSelect_data[nID],dist)
+                else:
+                    _softSelect_data[nID] = dist
+
+        for nID,dist in _softSelect_data.items():
+            _softSelect_data[nID] = falloffFn(dist,_selectRadius)
+
+        return list(_softSelect_data.items())

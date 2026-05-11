@@ -12,28 +12,37 @@ class MovingLoad:
 
     @classmethod
     def create(cls):
+        if cls.LineLane.lanes:
+            cls.LineLane.create()
+        
+        # Assuming Vehicle and Case classes exist elsewhere or will be added later
+        if hasattr(cls, 'Vehicle') and cls.Vehicle.vehicles:
+            cls.Vehicle.create()
             
-            if cls.LineLane.lanes:
-                cls.LineLane.create()
-            
-            # Assuming Vehicle and Case classes exist elsewhere or will be added later
-            if hasattr(cls, 'Vehicle') and cls.Vehicle.vehicles:
-                cls.Vehicle.create()
-                
-            if hasattr(cls, 'Case') and cls.Case.cases:
-                cls.Case.create()
+        if hasattr(cls, 'Case') and cls.Case.cases:
+            cls.Case.create()
 
     @classmethod
     def delete(cls):
-            cls.Code.delete()
+        cls.LineLane.clear()
+        cls.Vehicle.clear()
+        cls.Case.clear()
+        cls.Code.delete()
+        
+    
+    @classmethod
+    def clear(cls):
+        cls.LineLane.clear()
+        cls.Vehicle.clear()
+        cls.Case.clear()
 
     @classmethod
     def sync(cls):
-            cls.LineLane.sync()
-            if hasattr(cls, 'Vehicle'):
-                cls.Vehicle.sync()
-            if hasattr(cls, 'Case'):
-                cls.Case.sync()
+        cls.LineLane.sync()
+        if hasattr(cls, 'Vehicle'):
+            cls.Vehicle.sync()
+        if hasattr(cls, 'Case'):
+            cls.Case.sync()
 
     
     class Code:
@@ -487,6 +496,10 @@ class MovingLoad:
                 # Simple deletion
                 MidasAPI("DELETE", endpoint, {"Remove": lane_ids})
                 
+            @classmethod
+            def clear(cls):
+                cls.lanes = []
+
             @classmethod
             def sync(cls):
                 """
@@ -953,7 +966,11 @@ class MovingLoad:
                     data["Assign"][str(v.id)] = vehicle_data
             
             return data
-
+        
+        @classmethod
+        def clear(cls):
+            cls.vehicles = []
+              
         @classmethod
         def sync(cls):
             """
@@ -1156,6 +1173,9 @@ class MovingLoad:
                 MidasAPI("DELETE", "/db/MVLDid")
             if "MVLDEU" in all_cases_in_model:
                 MidasAPI("DELETE", "/db/MVLDeu")
+        @classmethod
+        def clear(cls):
+            cls.cases = []
 
         @classmethod
         def sync(cls):

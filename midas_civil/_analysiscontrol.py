@@ -1,11 +1,14 @@
 from ._mapi import MidasAPI
+from typing import Optional,Literal
+#type hints
+_EigenAnalysisType = Literal['EIGEN','LANCZOS','RITZ']
 #--------------------------------------------------------------------------------------------------
 
 class AnalysisControl:
     
     class MainControlData:
         
-        data = []
+        data:Optional['AnalysisControl.MainControlData'] = None
         
         def __init__(self, 
                     ardc: bool = True,
@@ -57,7 +60,6 @@ class AnalysisControl:
                 raise ValueError("tol (Convergence Tolerance) is required")
             
             # ID is always 1
-            self.ID = 1
             
             # Set parameters
             self.ARDC = ardc
@@ -71,7 +73,7 @@ class AnalysisControl:
             self.CLATS = clats
             
             # Add to static list
-            AnalysisControl.MainControlData.data.append(self)
+            AnalysisControl.MainControlData.data = self
             
             # Automatically execute the data when instance is created
             self._execute()
@@ -94,13 +96,13 @@ class AnalysisControl:
                 "CLATS": self.CLATS
             }
             
-            json_data["Assign"][str(self.ID)] = control_data
+            json_data["Assign"]['1'] = control_data
             
             MidasAPI("PUT", "/db/actl", json_data)
 
     class PDelta:
         """Create P-Delta Analysis Control Object in Python"""
-        data = []
+        data:Optional['AnalysisControl.PDelta'] = None
         
         def __init__(self, 
                     iter: int = 5,
@@ -140,7 +142,7 @@ class AnalysisControl:
                     raise ValueError(f"load_case_data[{i}][1] (scale factor) must be a number")
             
             # ID is always 1
-            self.ID = 1
+            # self.ID = 1
             
             # Set parameters
             self.ITER = iter
@@ -148,7 +150,7 @@ class AnalysisControl:
             self.LOAD_CASE_DATA = load_case_data
             
             # Add to static list
-            AnalysisControl.PDelta.data.append(self)
+            AnalysisControl.PDelta.data = self
             
             # Automatically execute the data when instance is created
             self._execute()
@@ -173,13 +175,13 @@ class AnalysisControl:
                 "PDEL_CASES": pdel_cases
             }
             
-            json_data["Assign"][str(self.ID)] = control_data
+            json_data["Assign"]['1'] = control_data
             
             MidasAPI("PUT", "/db/pdel", json_data)
 
     class Buckling:
             """Create Buckling Analysis Control Object in Python"""
-            data = []
+            data:Optional['AnalysisControl.Buckling'] = None
             
             def __init__(self, 
                         mode_num: int = None,
@@ -243,7 +245,7 @@ class AnalysisControl:
                         raise ValueError(f"load_case_data[{i}][2] (load type) must be 0 (Variable) or 1 (Constant)")
                 
                 # ID is always 1
-                self.ID = 1
+                # self.ID = 1
                 
                 # Set parameters
                 self.MODE_NUM = mode_num
@@ -255,7 +257,7 @@ class AnalysisControl:
                 self.LOAD_CASE_DATA = load_case_data
                 
                 # Add to static list
-                AnalysisControl.Buckling.data.append(self)
+                AnalysisControl.Buckling.data = self
                 
                 # Automatically execute the data when instance is created
                 self._execute()
@@ -285,17 +287,17 @@ class AnalysisControl:
                     "ITEMS": items
                 }
                 
-                json_data["Assign"][str(self.ID)] = control_data
+                json_data["Assign"]['1'] = control_data
                 
                 MidasAPI("PUT", "/db/buck", json_data)
 
 
     class EigenValue:
         """Create Eigen Vector Analysis Control Object in Python"""
-        data = []
+        data:Optional['AnalysisControl.EigenValue'] = None
         
         def __init__(self, 
-                    analysis_type: str = None,
+                    analysis_type: _EigenAnalysisType  = None,
                     # EIGEN specific parameters
                     ifreq: int = 1,
                     iiter: int = 20,
@@ -468,7 +470,7 @@ class AnalysisControl:
                     raise ValueError("Either load_vector or vritz is required for RITZ analysis")
             
             # ID is always 1
-            self.ID = 1
+            # self.ID = 1
             
             # Set parameters
             self.TYPE = analysis_type
@@ -485,7 +487,7 @@ class AnalysisControl:
             self.vRITZ = vritz
             
             # Add to static list
-            AnalysisControl.EigenValue.data.append(self)
+            AnalysisControl.EigenValue.data = self
             
             # Automatically execute the data when instance is created
             self._execute()
@@ -521,13 +523,13 @@ class AnalysisControl:
                     "vRITZ": self.vRITZ
                 })
             
-            json_data["Assign"][str(self.ID)] = control_data
+            json_data["Assign"]['1'] = control_data
             
             MidasAPI("PUT", "/db/eigv", json_data)
 
     class Settlement:
         
-        data = []
+        data:Optional['AnalysisControl.Settlement'] = None
         
         def __init__(self, 
                     concurrent_calc: bool = True,
@@ -557,14 +559,14 @@ class AnalysisControl:
             """
             
             # ID is always 1
-            self.ID = 1
+            # self.ID = 1
             
             # Set parameters
             self.CONCURRENT_CALC = concurrent_calc
             self.CONCURRENT_LINK = concurrent_link
             
             # Add to static list
-            AnalysisControl.Settlement.data.append(self)
+            AnalysisControl.Settlement.data = self
             
             # Automatically execute the data when instance is created
             self._execute()
@@ -580,6 +582,6 @@ class AnalysisControl:
                 "CONCURRENT_LINK": self.CONCURRENT_LINK
             }
             
-            json_data["Assign"][str(self.ID)] = control_data
+            json_data["Assign"]['1'] = control_data
             
             MidasAPI("PUT", "/db/smct", json_data)

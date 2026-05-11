@@ -1,5 +1,18 @@
 from ._mapi import MidasAPI
-
+from typing import Literal
+#type hints
+_OffType = Literal['rat','val']
+#helper class
+class _Thickness:
+    def __init__(self,id,name,thktype,thick,binout,tout,offset,offtype):
+        self.ID = id
+        self.NAME = name
+        self.TYPE = thktype
+        self.T_IN = thick
+        self.bINOUT = binout
+        self.T_OUT = tout
+        self.OFFSET = offset
+        self.OFF_TYPE = offtype
 
 
 def _ThikADD(self):
@@ -76,10 +89,10 @@ class _common:
 
 class Thickness(_common):
     """Create Thicknes"""
-    thick = []
+    thick:list[_Thickness] = []
     ids = []
 
-    def __init__(self,thick=0.0,thick_out=-1,offset=0,off_type='rat',name="",id=None):
+    def __init__(self,thick=0.0,thick_out=-1,offset=0,off_type:_OffType='rat',name="",id=None):
             if id == None: id = 0  
             self.ID = id
             if name == "":

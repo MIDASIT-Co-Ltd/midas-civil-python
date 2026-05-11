@@ -34,9 +34,9 @@ class Settlement:
             Settlement.Group("SG2", 0.015, [102, 103])
             ```
         """
-        data = []
+        data:list['Settlement.Group'] = []
 
-        def __init__(self, name, displacement, node_list, id=None):
+        def __init__(self, name:str, displacement:float, node_list:list, id:int=None):
             if id == None: id =""
             self.NAME = name
             self.SETTLE = displacement
@@ -102,9 +102,9 @@ class Settlement:
             Settlement.Case("SMLC2", ["SG1", "SG2"], 1.0, 1, 2, "Combined Settlement")
             ```
         """
-        data = []
+        data:list['Settlement.Case'] = []
 
-        def __init__(self, name, settlement_groups=[],factor=1.0, min_groups=1, max_groups=1, desc="", id=None):
+        def __init__(self, name, settlement_groups:list=[],factor:float=1.0, min_groups:int=1, max_groups:int=1, desc:str="", id=None):
             if id == None: id =""
             self.NAME = name
             self.DESC = desc

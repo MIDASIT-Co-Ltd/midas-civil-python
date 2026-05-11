@@ -2,7 +2,10 @@
 from ._mapi import MidasAPI
 from ._utils import _convItem2List,sFlatten
 from colorama import Fore, Style
+from typing import Literal
 
+#Type Hints
+_StructureUpdateOperation = Literal['a','r']
 # ----------- HELPER FUNCTION -----------
     # --------   RETRIEVE NODE / ELEMENT FROM STRUCTURE GROUP -------
 
@@ -15,8 +18,16 @@ class _LGrup:
     def __init__(self,id,name):
         self.ID = id
         self.NAME = name
-
-
+class _SGrup:
+    def __init__(self,id,name,nlist,elist):
+        self.ID = id
+        self.NAME = name
+        self.NLIST = nlist
+        self.ELIST = elist
+class _TGrup:
+    def __init__(self,id,name):
+        self.ID = id
+        self.NAME = name
     # --------   ADD ELEMENT TO STRUCTURE GROUP -------
 
 def _add_elem_2_stGroup(elemID,groupName):
@@ -81,7 +92,7 @@ class Group:
 
     class Structure:
 
-        Groups = []
+        Groups:list[_SGrup] = []
         ids=[]
         _names = []
         url= "/db/GRUP"
@@ -109,7 +120,7 @@ class Group:
                 Group.Structure._names.append(self.NAME)
     
         @classmethod
-        def update(cls, name,operation = "r", nlist = [],elist = [] ):
+        def update(cls, name,operation:_StructureUpdateOperation = "r", nlist = [],elist = [] ):
             """Group name, element list, node list, operation ("a" to add or "r" to replace).\n
             Sample:  update_SG("Girder", [1,2,...20],[],"replace")"""
             up = 0
@@ -261,7 +272,7 @@ class Group:
 
     class Load:
 
-        Groups = []
+        Groups:list[_LGrup] = []
         ids=[]
         url= "/db/LDGR"
 
@@ -313,7 +324,7 @@ class Group:
 
     class Tendon:
 
-        Groups = []
+        Groups:list[_TGrup] = []
         ids=[]
         url= "/db/TDGR"
 

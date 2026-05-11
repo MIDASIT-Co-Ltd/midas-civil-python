@@ -11,7 +11,7 @@ _type = Literal["Add","Envelope","ABS","SRSS"]
 
 #28 Class to generate load combinations
 class LoadCombination:
-    data = []
+    data:list['LoadCombination'] = []
     valid = ["General", "Steel", "Concrete", "SRC", "Composite Steel Girder", "Seismic", "All"]
     com_map = {
             "General": "/db/LCOM-GEN",

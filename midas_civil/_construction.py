@@ -15,6 +15,14 @@ class CS:
         if CS.TimeLoad.timeloads!=[] : CS.TimeLoad.create()
         if CS.CreepCoeff.creepcoeffs!=[] : CS.CreepCoeff.create()
         if CS.Camber.cambers!=[] : CS.Camber.create()
+    
+    @staticmethod
+    def clear():
+        CS.STAGE.clear()
+        CS.CompSec.clear()
+        CS.TimeLoad.clear()
+        CS.CreepCoeff.clear()
+        CS.Camber.clear()
 
     class STAGE:
         stages:list[_hStage] = []
@@ -696,8 +704,13 @@ class CS:
         @classmethod
         def delete(cls):
             """Deletes all composite sections from the database and resets the class"""
-            cls.compsecs = []
+            cls.clear()
             return MidasAPI("DELETE", "/db/cscs")
+    
+        @classmethod
+        def clear(cls):
+            """Deletes all composite sections from the database and resets the class"""
+            cls.compsecs = []
 
 
 #-----------------------------------------------------------------------------------------------------------------------------------
@@ -808,8 +821,13 @@ class CS:
         @classmethod
         def delete(cls):
             """Deletes all time loads from the CIVIL NX and python class"""
-            cls.timeloads = []
+            cls.clear()
             return MidasAPI("DELETE", "/db/tmld")
+        
+        @classmethod
+        def clear(cls):
+            """Deletes all time loads from python class"""
+            cls.timeloads = []
 
     class CreepCoeff:
         creepcoeffs = []
@@ -923,6 +941,11 @@ class CS:
             """Deletes all creep coefficients from the database and resets the class"""
             cls.creepcoeffs = []
             return MidasAPI("DELETE", "/db/crpc")
+    
+        @classmethod
+        def clear(cls):
+            """Deletes all creep coefficients from the database"""
+            cls.creepcoeffs = []
 
     class Camber:
         cambers = []
@@ -1024,3 +1047,8 @@ class CS:
             """Deletes all cambers from the database and resets the class"""
             cls.cambers = []
             return MidasAPI("DELETE", "/db/cmcs")
+        
+        @classmethod
+        def clear(cls):
+            """Deletes all cambers from the database"""
+            cls.cambers = []

@@ -1,10 +1,25 @@
 from ._mapi import MidasAPI
 from ._load import Load_Case
-
+#helper class
+class _BoundaryCA:
+    def __init__(self,id,bspt,bspr,bgspr,bcglink,bsssf,bpssf,brls,bwssf,bessf,bcdof,vboundary,vloadanal):
+        self.ID = id
+        self.bSPT = bspt
+        self.bSPR = bspr
+        self.bGSPR = bgspr
+        self.bCGLINK = bcglink
+        self.bSSSF = bsssf
+        self.bPSSF = bpssf
+        self.bRLS = brls
+        self.bWSSF = bwssf
+        self.bESSF = bessf
+        self.bCDOF = bcdof
+        self.vBOUNDARY = vboundary
+        self.vLOADANAL = vloadanal
 
 class BoundaryChangeAssignment:
     
-    data = []
+    data:list[_BoundaryCA] = []
     
     def __init__(self,
                  # Support options

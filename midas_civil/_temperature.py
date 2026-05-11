@@ -2,7 +2,46 @@ from ._mapi import MidasAPI
 # from ._node import *
 from ._group import Group
 from ._load import Load_Case
+from typing import Literal
 
+#type hints for beamsection
+_BeamSectionSecType = Literal['General','PSC']
+_BeamSectionType = Literal['Element','Input']
+_BeamSectionDir = Literal['LY','LZ']
+_BeamSectionRefPos = Literal['Centroid','Top','Bot']
+
+#helper classes
+class _System():
+    def __init__(self,id,lcname,group,temperature):
+        self.ID = id
+        self.LCNAME = lcname
+        self.TEMPER = temperature
+        self.GROUP = group
+class _Element():
+    def __init__(self,id,lcname,group,temperature,element):
+        self.ID = id
+        self.ELEMENT = element
+        self.LCNAME = lcname
+        self.TEMP = temperature
+        self.GROUP_NAME = group    
+class _Gradient():
+    def __init__(self,id,element):
+        self.ID = id
+        self.ELEMENT = element
+class _Nodal():
+    def __init__(self,id,node,temperature,lcname,group,items):
+        self.ID = id
+        self.NODE = node
+        self.TEMPER = temperature
+        self.LCNAME = lcname
+        self.GROUP_NAME = group
+        self.ITEMS = items
+class _BeamSection():
+    def __init__(self,element,id,items):
+        self.ID = id
+        self.ELEMENT = element
+        self.ITEMS = items
+        
 def convList(item):
     if type(item) != list:
         return [item]
@@ -63,7 +102,7 @@ class Temperature:
         Example:
             Temperature.System(12.5, "Temp(+)", "LoadGroup1", 1)
         """
-        temps = []
+        temps:list[_System] = []
         
         def __init__(self, temperature, lcname, group="", id=None):
             chk = 0
@@ -159,7 +198,7 @@ class Temperature:
         Example:
             Temperature.Element(1, 35, "Temp(+)", "", 1)
         """
-        temps = []
+        temps:_Element = []
         
         def __init__(self, element, temperature, lcname, group="", id=None):
 
@@ -283,7 +322,7 @@ class Temperature:
         Example for Plate (providing gradient value):
             Temperature.Gradient(element=21, type='Plate', lcname='Temp(-)', tz=10, hz=0.2)
         """
-        temps = []
+        temps:list[_Gradient] = []
 
         def __init__(self, element, type, lcname, tz, group="", hz=None, ty=0, hy=None,id=None):
 
@@ -414,7 +453,7 @@ class Temperature:
         Example:
             Temperature.Nodal(6, 10, "Test")
         """
-        temps = []
+        temps:_Nodal = []
         
         def __init__(self, node, temperature, lcname, group="", id=None):
 
@@ -540,10 +579,10 @@ class Temperature:
             psc_opt_h1 (int, optional): H1-Type option for PSC. (0 - Z1 , 1- Z2 ,2 - Z2)
             psc_opt_h2 (int, optional): H2-Type option for PSC.  (0 - Z1 , 1- Z2 ,2 - Z2)
         """
-        temps = []
+        temps:_BeamSection = []
 
-        def __init__(self, element, lcname, section_type='General', type='Element', group="", 
-                    dir='LZ', ref_pos='Centroid', val_b=0, val_h1=0, val_h2=0, val_t1=0, val_t2=0,
+        def __init__(self, element, lcname, section_type:_BeamSectionSecType='General', type:_BeamSectionType='Element', group="", 
+                    dir:_BeamSectionDir='LZ', ref_pos:_BeamSectionRefPos='Centroid', val_b=0, val_h1=0, val_h2=0, val_t1=0, val_t2=0,
                     elast=None, thermal=None, psc_ref=0, psc_opt_b=1, psc_opt_h1=3, psc_opt_h2=3, id=None):
 
             # Validate required parameters for Input type

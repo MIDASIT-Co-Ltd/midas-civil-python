@@ -1,12 +1,31 @@
 from ._mapi import MidasAPI
-
 from typing import Literal
 
 _dbConc = Literal["KSCE-LSD15(RC)","KS01-Civil(RC)","KS-Civil(RC)","KS19(RC)","KS01(RC)","KS(RC)","ASTM19(RC)","ASTM(RC)","U.S.C(US)(RC)","U.S.C(SI)(RC)","NMX NTC-2017(RC)","CSA(RC)","JIS(RC)","JIS-Civil(RC)","JTJ023-85(RC)","Q/CR 9300-18(RC)","GB 50917-13(RC)","GB10(RC)","GB(RC)","GB-Civil(RC)","TB10092-17(RC)","JTG3362-18(RC)","JTG04(RC)","TB05(RC)","BS(RC)","EN04(RC)","EN(RC)","NTC08(RC)","NTC12(RC)","NTC18(RC)","UNI(RC)","SS(RC)","GOST-SP(RC)","GOST-SNIP(RC)","IRC(RC)","IRS(RC)","IS(RC)","CNS560-18(RC)","CNS560(RC)","CNS(RC)","AS17(RC)","TMH7(RC)","PNS49(RC)","SNI(RC)","TIS(RC)","TIS(MKS)(RC)"]
-
+_CreepIRCCementType =Literal['SL','NR','RS']
+_CreepIRCAggType =Literal['Basalt','Quartzite','Limestone','Sandstone']
+_map_CreepIRCAggTypeIndex = {'Basalt':0,'Quartzite':1,'Limestone':2,'Sandstone':3}
+_CreepIRCYear = Literal['2011','2000','2020']
+_CreepCEBFIPYear = Literal['2010','1990','1978']
+_CreepCEBFIPCementType =Literal['SL','NR','RS']
+_CReepACICuring = Literal['MOIST','STEAM']
+_CreepACIMatType = Literal['CODE','USER']
+_CreepEuropeanCementType = Literal['Class S','Class N','Class R']
+_CreepASNZStandard = Literal['AS_5100_5_2017','AS_5100_5_2016','AS_RTA_5100_5_2011','AS_3600_2009','NEWZEALAND']
+_CreepChineseStandard = Literal['CHINESE','JTG','CHINA_JTG3362_2018']
+_CreepChineseHumidityType = Literal['CU','RH']
+_CreepKoreanStandard = Literal['KDS_2016','KSI_USD12','KSCE_2010','KS']
+_CreepKoreanCementType = Literal['SL','NR','RS'] 
+_CreepJapanStandard = Literal['JSCE_12','JSCE_07','JSCE']
+_CreepJapaneseCalMethod = Literal['JSCE','AIJ']
+_CreepJapaneseHumidityType = Literal['RH','CU'] 
+_CreepJapaneseCementType = Literal['RH','NC']
+_CompStrengthIRCYear = Literal['2000','2011','2020']
+_CompStrengthCEBFIPYear = Literal['1978','1990','2010']
+_CompStrengthASStandard = Literal['AS5100.5-2017','AS5100.5-2016','AS/RTA5100.5-2011','AS3600-2009']
 
 class Material:
-    mats = []
+    mats:list['Material'] = []
     ids = []
     _dic = {}
     def __init__(self,data,id=None):
@@ -245,7 +264,7 @@ class Material:
 # ------------------------------------------ TIME DEPENDENT - CREEP and SHRINKAGE ----------------------------------------------------
 
 class CreepShrinkage:
-    mats = []
+    mats:list['CreepShrinkage'] = []
     ids = []
     def __init__(self,data,id:int=None):
         if id == None: id =0
@@ -300,23 +319,30 @@ class CreepShrinkage:
     # ---------------------------------  IRC CnS --------------------------------------------------------------
 
     class IRC:
-        def __init__(self,name: str, code_year: int = 2011, fck: float = 0, notional_size: float = 1,
-                     relative_humidity: float = 70, age_shrinkage: int = 3, type_cement: str = 'NR', id: int = None):
+        def __init__(self,name: str, code_year: _CreepIRCYear = 2011, fck: float = 0, notional_size: float = 1,
+                     relative_humidity: float = 70, age_shrinkage: int = 3, type_cement: _CreepIRCCementType = 'NR', type_aggregate:_CreepIRCAggType='Basalt',id: int = None):
             """
             IRC Creep and Shrinkage for Indian Road Congress standards. 
 
             Parameters:
                 name (str): The name for the material property.
-                code_year (int, optional): The year of the IRC code. Can be 2000 or 2011. Defaults to 2011.
+                code_year (int, optional): The year of the IRC code. Can be 2000, 2011 or 2020. Defaults to 2000.   
+                        **2000** : IRC 18 (2000)    
+                        **2011** : IRC 112 (2011)    
+                        **2020** : IRC 112 (2020)    
                 fck (float): 28-day characteristic compressive strength. 
                 notional_size (float): The notional size of the member 
                 relative_humidity (float): The relative humidity in percentage (40-99%). 
                 age_shrinkage (int): The age of the concrete at the beginning of shrinkage in days. 
                 type_cement (str, optional): The type of cement ('SL'= Slow Setting cement, 'NR'= Normal cement, 'RS'=Rapid hardening cement). Only for IRC:112-2011. Defaults to 'NR'. 
+                type_aggregate (str, optional): The type of aggregates ('Basalt','Quartzite','Limestone','Sandstone')
                 id (int, optional): A specific ID for the material. Auto-generated if not provided.
 
             Examples:
                 ```python
+                # Create a material based on IRC:112-2020
+                CreepShrinkage.IRC("IRC_M30_2020", code_year=2020, fck=30000, notional_size=1, type_cement = "RS", age_shrinkage=7 , type_aggregate='Basalt')
+
                 # Create a material based on IRC:112-2011
                 CreepShrinkage.IRC("IRC_M30_2011", code_year=2011, fck=30000, notional_size=1, type_cement = "RS", age_shrinkage=7)
 
@@ -325,14 +351,7 @@ class CreepShrinkage:
                 ```
             """
             if id == None: id =0
-            code_name = ""
-            if code_year == 2011:
-                code_name = "INDIA_IRC_112_2011"
-            elif code_year == 2000:
-                code_name = "INDIA_IRC_18_2000"
-            else:
-                code_name = "INDIA_IRC_112_2011"
-            
+
             if type_cement == "SL":
                 type_cement = "RS"
             elif type_cement == "RS":
@@ -340,14 +359,24 @@ class CreepShrinkage:
 
             js =  {
                 "NAME": name,
-                "CODE": code_name,
+                "CODE": "INDIA_IRC_18_2000",
                 "STR": fck,
                 "HU": relative_humidity,
                 "AGE": age_shrinkage,
                 "MSIZE": notional_size
             }
-            if code_year == 2011:
+
+            if code_year == 2020 or int(code_year) == 2020:
+                js["CODE"] = "INDIA_IRC_112_2020"
                 js["CTYPE"] = type_cement
+                js["TYPEOFAFFR"] = _map_CreepIRCAggTypeIndex.get(type_aggregate,0)
+            elif code_year == 2011 or int(code_year) == 2011:
+                js["CODE"] = "INDIA_IRC_112_2011"
+                js["CTYPE"] = type_cement
+            else:
+                js["CODE"] = "INDIA_IRC_18_2000"
+            
+            
 
             temp = CreepShrinkage(js,id)
             self.ID = temp.ID
@@ -356,8 +385,8 @@ class CreepShrinkage:
     # ---------------------------------  CEB-FIP CnS --------------------------------------------------------------
 
     class CEB_FIP:
-        def __init__(self, name: str, code_year: int = 2010, fck: float = 0, notional_size: float = 1,
-                     relative_humidity: float = 70, age_shrinkage: int = 3, type_cement: str = 'RS',
+        def __init__(self, name: str, code_year: _CreepCEBFIPYear = 2010, fck: float = 0, notional_size: float = 1,
+                     relative_humidity: float = 70, age_shrinkage: int = 3, type_cement: _CreepCEBFIPCementType = 'RS',
                      type_of_aggregate: int = 0, id: int = None):
             """
             CEB-FIP Creep and Shrinkage for European concrete standards.
@@ -384,11 +413,11 @@ class CreepShrinkage:
             """
             if id == None: id =0
             code_name = ""
-            if code_year == 2010:
+            if code_year == 2010 or int(code_year) == 2010:
                 code_name = "CEB_FIP_2010"
-            elif code_year == 1990:
+            elif code_year == 1990 or int(code_year) == 1990:
                 code_name = "CEB"
-            elif code_year == 1978:
+            elif code_year == 1978 or int(code_year) == 1978:
                 code_name = "CEB_FIP_1978"
             else:
                 code_name = "CEB_FIP_2010"
@@ -402,7 +431,7 @@ class CreepShrinkage:
                 "MSIZE": notional_size,
                 "CTYPE": type_cement,
             }
-            if code_year == 2010:
+            if code_year == 2010 or int(code_year) == 2010:
                 js["TYPEOFAFFR"] = type_of_aggregate
 
             temp = CreepShrinkage(js, id)
@@ -414,7 +443,7 @@ class CreepShrinkage:
     class ACI:
         def __init__(self, name: str, fck: float = 0, relative_humidity: float = 70, age_shrinkage: int = 3,
                      vol_surface_ratio: float = 1.2, cfact_a: float = 4, cfact_b: float = 0.85,
-                     curing_method: str = "MOIST", material_type: str = "CODE", cement_content: float = 24,
+                     curing_method: _CReepACICuring = "MOIST", material_type: _CreepACIMatType = "CODE", cement_content: float = 24,
                      slump: float = 1.1, fine_agg_percent: float = 12, air_content: float = 13,
                      creep_coeff: float = None, shrink_strain: float = None, id: int = None):
             """
@@ -518,7 +547,7 @@ class CreepShrinkage:
 
     class European:
         def __init__(self, name: str, fck: float = 0, relative_humidity: float = 70, age_shrinkage: int = 3,
-                     notional_size: float = 1.2, type_cement: str = "Class N", t_code: int = 0, b_silica: bool = False, id: int = None):
+                     notional_size: float = 1.2, type_cement: _CreepEuropeanCementType = "Class N", t_code: int = 0, b_silica: bool = False, id: int = None):
             """
             European Creep and Shrinkage model (EN 1992). 
 
@@ -614,7 +643,7 @@ class CreepShrinkage:
 
     # ---------------------------------  AS & NZ CnS -------------------------------------------------
     class AS_NZ:
-        def __init__(self, name: str, standard: str, fck: float, concrete_age: int,
+        def __init__(self, name: str, standard: _CreepASNZStandard, fck: float, concrete_age: int,
                     hypothetical_thickness: float, drying_shrinkage_type: int = 0,
                     user_defined_shrinkage_strain: float = 0, humidity_factor: float = 0.72,
                     exposure_environment: int = 0, id: int = None):
@@ -703,8 +732,8 @@ class CreepShrinkage:
     # ---------------------------------  Chinese Standard CnS ----------------------------------------------------
 
     class Chinese:
-        def __init__(self, name: str, standard: str, fck: float, relative_humidity: float,
-                     concrete_age: int, notional_size: float, humidity_type: str = "RH",
+        def __init__(self, name: str, standard:_CreepChineseStandard, fck: float, relative_humidity: float,
+                     concrete_age: int, notional_size: float, humidity_type: _CreepChineseHumidityType = "RH",
                      cement_coeff: float = 5, fly_ash_amount: float = 20, id: int = None):
             """
             Chinese Standards Creep and Shrinkage model.
@@ -752,8 +781,8 @@ class CreepShrinkage:
     # ---------------------------------  Korean Standards CnS ----------------------------------------------------
 
     class Korean:
-        def __init__(self, name: str, standard: str, fck: float, relative_humidity: float,
-                     concrete_age: int, notional_size: float, cement_type: str = "NR",
+        def __init__(self, name: str, standard: _CreepKoreanStandard, fck: float, relative_humidity: float,
+                     concrete_age: int, notional_size: float, cement_type: _CreepKoreanCementType = "NR",
                      density: float = 240, id: int = None):
             """
             Korean Standards Creep and Shrinkage model.
@@ -839,7 +868,7 @@ class CreepShrinkage:
     # ---------------------------------  Japan CnS ---------------------------------------------------------------
 
     class Japan:
-        def __init__(self, name: str, standard: str, relative_humidity: float, concrete_age: int,
+        def __init__(self, name: str, standard: _CreepJapanStandard , relative_humidity: float, concrete_age: int,
                      vol_surface_ratio: float, cement_content: float, water_content: float, fck: float = 30000,
                      impact_factor: float = 1, age_of_solidification: int = 5, alpha_factor: int = 11,
                      autogenous_shrinkage: bool = True, gamma_factor: int = 1, a_factor: float = 0.1,
@@ -905,7 +934,7 @@ class CreepShrinkage:
     # ---------------------------------  Japanese Standard CnS ---------------------------------------------
     class JapaneseStandard:
         def __init__(self, name: str, fck: float, relative_humidity: float, concrete_age: int, notional_size: float,
-                     calculation_method: str = "JSCE", humidity_type: str = "RH", cement_type: str = "NC",
+                     calculation_method: _CreepJapaneseCalMethod = "JSCE", humidity_type: _CreepJapaneseHumidityType = "RH", cement_type: _CreepJapaneseCementType = "NC",
                      environmental_coeff: int = 1, id: int = None):
             """
             Japanese Standard Creep and Shrinkage model. 
@@ -979,7 +1008,7 @@ class CreepShrinkage:
 
 
 class CompStrength:
-    mats = []
+    mats:list['CompStrength'] = []
     ids = []
     def __init__(self,data,id=None):
         if id == None: id =0
@@ -1034,7 +1063,7 @@ class CompStrength:
     # ---------------------------------  IRC Compressive Strength --------------------------------------------------------------
 
     class IRC:
-        def __init__(self, name: str, code_year: int = 2020,
+        def __init__(self, name: str, code_year: _CompStrengthIRCYear = 2020,
                      fck_delta: float = 0, cement_type: int = 1,
                      aggregate_type: int = 0, id: int = None):
             """
@@ -1069,9 +1098,9 @@ class CompStrength:
             """
             if id == None: id =0
             # Determine the code name string based on the integer year
-            if code_year == 2011:
+            if code_year == 2011 or int(code_year) == 2011:
                 code_name = "INDIA(IRC:112-2011)"
-            elif code_year == 2000:
+            elif code_year == 2000 or int(code_year) == 2000:
                 code_name = "INDIA(IRC:18-2000)"
             else: # Default to 2020
                 code_name = "INDIA(IRC:112-2020)"
@@ -1084,7 +1113,7 @@ class CompStrength:
             }
 
             # Add cement and aggregate types for IRC:112 standards
-            if code_year in [2020, 2011]:
+            if (code_year in [2020, 2011]) or (code_year in ['2020','2011']):
                 js["iCTYPE"] = cement_type
                 js["nAGGRE"] = aggregate_type
 
@@ -1134,7 +1163,7 @@ class CompStrength:
     # ---------------------------------  CEB-FIP Compressive Strength --------------------------------------------------------------
 
     class CEB_FIP:
-        def __init__(self, name: str, code_year: int = 2010, fck: float = 0, 
+        def __init__(self, name: str, code_year: _CompStrengthCEBFIPYear = 2010, fck: float = 0, 
                      cement_type: int = 1, aggregate_type: int = 0, id: int = None):
             """
             CEB-FIP Compressive Strength for European concrete standards.
@@ -1171,9 +1200,9 @@ class CompStrength:
             """
             if id == None: id =0
             # Determine code name based on year
-            if code_year == 1978:
+            if code_year == 1978 or int(code_year) == 1978:
                 code_name = "CEB-FIP(1978)"
-            elif code_year == 1990:
+            elif code_year == 1990 or int(code_year) == 1990:
                 code_name = "CEB-FIP(1990)"
             else:  # Default to 2010
                 code_name = "CEB-FIP(2010)"
@@ -1186,11 +1215,11 @@ class CompStrength:
             }
             
             # Add cement type for 1990 and 2010
-            if code_year in [1990, 2010]:
+            if (code_year in [1990, 2010]) or (code_year in ['1990', '2010']):
                 js["iCTYPE"] = cement_type
                 
             # Add aggregate type for 2010 only
-            if code_year == 2010:
+            if (code_year == 2010) or (code_year == '2010'):
                 js["nAGGRE"] = aggregate_type
                 
             temp = CompStrength(js, id)
@@ -1332,7 +1361,7 @@ class CompStrength:
     # ---------------------------------  Australian Standards Compressive Strength --------------------------------------------------------------
 #add EXPOSURE
     class AS:
-        def __init__(self, name: str, standard: str = "AS5100.5-2017", fck: float = 0, id: int = None):
+        def __init__(self, name: str, standard: _CompStrengthASStandard = "AS5100.5-2017", fck: float = 0, id: int = None):
             """
             Australian Standards Compressive Strength model.
             
