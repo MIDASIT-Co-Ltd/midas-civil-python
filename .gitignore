@@ -6,6 +6,7 @@ midas_civil/_section/__pycache__/
 midas_civil/_utilsFunc/__pycache__/
 cmd*.py
 test*.py
+ss*.py
 back*.py
 gitDEPLOY.py
 
