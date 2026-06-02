@@ -10,6 +10,8 @@ from ._Tap_CompSteelSS import _SS_TAP_COMP_STEEL_TUB_TYPE1
 from ._tapPSC12CellSS import _SS_TAP_PSC_12CELL
 from ._tapPSCValue import _SS_TAP_PSC_Value
 
+from._Tap_CompPSC import _SS_TAP_COMP_PSC_I
+
 from midas_civil import MidasAPI
 from typing import Literal
 
@@ -462,10 +464,10 @@ class Section:
                 tc (float): Slab thickness.
                 Hh (float): Haunch height between slab soffit and girder top.
                 H1 (float): Total height of the PSC girder.
-                HL1–HL5 (float): Left-side girder height dimensions.
-                BL1–BL4 (float): Left-side girder width dimensions.
-                HR1–HR5 (float): Right-side height dimensions (when ``Symm=False``).
-                BR1–BR4 (float): Right-side width dimensions (when ``Symm=False``).
+                HL1-HL5 (float): Left-side girder height dimensions.
+                BL1-BL4 (float): Left-side girder width dimensions.
+                HR1-HR5 (float): Right-side height dimensions (when ``Symm=False``).
+                BR1-BR4 (float): Right-side width dimensions (when ``Symm=False``).
                 EgdEsb (float): Modular ratio girder / slab (E_gd / E_sb).
                 DgdDsb (float): Unit weight ratio (D_gd / D_sb).
                 Pgd (float): Girder Poisson's ratio.
@@ -823,6 +825,28 @@ class Section:
                                                 Sect_J.BI1,Sect_J.BI11,Sect_J.BI12,Sect_J.BI21,Sect_J.BI3,Sect_J.BI31,Sect_J.BI32,Sect_J.BI4,
                                                 Offset,useShear,use7Dof,id
                                               )
+            elif isinstance(Sect_I,_SS_COMP_PSC_I):
+                sect_Obj = _SS_TAP_COMP_PSC_I(Name, Sect_I.SYMM,
+                                                [Sect_I.J1,Sect_I.JL1,Sect_I.JL2,Sect_I.JL3,Sect_I.JL4,Sect_I.JR1,Sect_I.JR2,Sect_I.JR3,Sect_I.JR4],
+                                                Sect_I.BC,Sect_I.TC,Sect_I.HH,
+
+                                                Sect_I.H1,
+                                                Sect_I.HL1, Sect_I.HL2, Sect_I.HL21, Sect_I.HL22, Sect_I.HL3, Sect_I.HL4, Sect_I.HL41, Sect_I.HL42, Sect_I.HL5,
+                                                Sect_I.BL1, Sect_I.BL2, Sect_I.BL21, Sect_I.BL22, Sect_I.BL4, Sect_I.BL41, Sect_I.BL42,
+                                                Sect_I.HR1, Sect_I.HR2, Sect_I.HR21, Sect_I.HR22, Sect_I.HR3, Sect_I.HR4, Sect_I.HR41, Sect_I.HR42, Sect_I.HR5,
+                                                Sect_I.BR1, Sect_I.BR2, Sect_I.BR21, Sect_I.BR22, Sect_I.BR4, Sect_I.BR41, Sect_I.BR42,
+
+                                                Sect_J.H1,
+                                                Sect_J.HL1, Sect_J.HL2, Sect_J.HL21, Sect_J.HL22, Sect_J.HL3, Sect_J.HL4, Sect_J.HL41, Sect_J.HL42, Sect_J.HL5,
+                                                Sect_J.BL1, Sect_J.BL2, Sect_J.BL21, Sect_J.BL22, Sect_J.BL4, Sect_J.BL41, Sect_J.BL42,
+                                                Sect_J.HR1, Sect_J.HR2, Sect_J.HR21, Sect_J.HR22, Sect_J.HR3, Sect_J.HR4, Sect_J.HR41, Sect_J.HR42, Sect_J.HR5,
+                                                Sect_J.BR1, Sect_J.BR2, Sect_J.BR21, Sect_J.BR22, Sect_J.BR4, Sect_J.BR41, Sect_J.BR42,
+
+                                                Sect_I.MATL_ELAST,Sect_I.MATL_DENS,Sect_I.MATL_POIS_G,Sect_I.MATL_POIS_S,Sect_I.MATL_THERMAL,
+                                                Sect_I.USE_MULTI_ELAST,Sect_I.LONGTERM_ESEC,Sect_I.SHRINK_ESEC,
+
+                                                Offset,useShear,use7Dof,id)
+                
             elif isinstance(Sect_I,_SS_PSC_Value):
                 sect_Obj = _SS_TAP_PSC_Value(Name,Sect_I.OUTER_POLYGON,Sect_J.OUTER_POLYGON,
                                              Sect_I.INNER_POLYGON,Sect_J.INNER_POLYGON,
@@ -831,6 +855,62 @@ class Section:
                                              Sect_I.THK_TORSION,Sect_J.THK_TORSION,
                                              Offset,useShear,use7Dof,id)
 
+            _SectionADD(sect_Obj)
+            return sect_Obj
+        
+
+        @staticmethod
+        def Composite_PSC_I(Name='', Symm=True, Joint=[0,0,0,0,0,0,0,0,0],
+                    Bc=0, tc=0, Hh=0,
+
+                    H1_I=0,
+                    HL1_I=0, HL2_I=0, HL21_I=0, HL22_I=0, HL3_I=0, HL4_I=0, HL41_I=0, HL42_I=0, HL5_I=0,
+                    BL1_I=0, BL2_I=0, BL21_I=0, BL22_I=0, BL4_I=0, BL41_I=0, BL42_I=0,
+                    HR1_I=0, HR2_I=0, HR21_I=0, HR22_I=0, HR3_I=0, HR4_I=0, HR41_I=0, HR42_I=0, HR5_I=0,
+                    BR1_I=0, BR2_I=0, BR21_I=0, BR22_I=0, BR4_I=0, BR41_I=0, BR42_I=0,
+
+                    H1_J=0,
+                    HL1_J=0, HL2_J=0, HL21_J=0, HL22_J=0, HL3_J=0, HL4_J=0, HL41_J=0, HL42_J=0, HL5_J=0,
+                    BL1_J=0, BL2_J=0, BL21_J=0, BL22_J=0, BL4_J=0, BL41_J=0, BL42_J=0,
+                    HR1_J=0, HR2_J=0, HR21_J=0, HR22_J=0, HR3_J=0, HR4_J=0, HR41_J=0, HR42_J=0, HR5_J=0,
+                    BR1_J=0, BR2_J=0, BR21_J=0, BR22_J=0, BR4_J=0, BR41_J=0, BR42_J=0,
+
+                    EgdEsb =0, DgdDsb=0,Pgd=0,Psb=0,TgdTsb=0,
+
+                    MultiModulus=False, CreepEratio=0, ShrinkEratio=0,
+                    Offset: Offset = Offset.CC(), useShear: bool = True, use7Dof: bool = False, id: int = None):
+            """Create a composite PSC I-girder section (girder + concrete deck).
+
+            Args:
+                Name (str): Section name.
+                Symm (bool): Mirror right-side dimensions from left-side.
+                Joint (list[int]): 9-element joint flag list.
+                Bc (float): Effective width of the concrete slab.
+                tc (float): Slab thickness.
+                Hh (float): Haunch height between slab soffit and girder top.
+                H1 (float): Total height of the PSC girder.
+                HL1-HL5 (float): Left-side girder height dimensions.
+                BL1-BL4 (float): Left-side girder width dimensions.
+                HR1-HR5 (float): Right-side height dimensions (when ``Symm=False``).
+                BR1-BR4 (float): Right-side width dimensions (when ``Symm=False``).
+                EgdEsb (float): Modular ratio girder / slab (E_gd / E_sb).
+                DgdDsb (float): Unit weight ratio (D_gd / D_sb).
+                Pgd (float): Girder Poisson's ratio.
+                Psb (float): Slab Poisson's ratio.
+                TgdTsb (float): Thermal expansion ratio.
+                MultiModulus (bool): Use multi-modulus method for long-term effects.
+                CreepEratio (float): Creep modular ratio.
+                ShrinkEratio (float): Shrinkage modular ratio.
+                Offset (Offset): Cross-section offset. Defaults to centroid (CC).
+                useShear (bool): Include shear deformation. Default ``True``.
+                use7Dof (bool): Include warping effect. Default ``False``.
+                id (int | None): Section ID. Auto-assigned when ``None``.
+
+            Returns:
+                _SS_TAP_COMP_PSC_I: The created section object.
+            """
+            args = locals()
+            sect_Obj = _SS_TAP_COMP_PSC_I(**args)
             _SectionADD(sect_Obj)
             return sect_Obj
 
@@ -924,7 +1004,7 @@ class Section:
                 # Base data that's always included
                 tapper_data = {
                     "NAME": i.NAME,
-                    "ELEMLIST": i.ELEM_LIST,
+                    "ELEMLIST": list(i.ELEM_LIST),
                     "ZVAR": i.Z_VAR,
                     "YVAR": i.Y_VAR,
                     "ZFROM" : i.Z_FROM,
@@ -948,7 +1028,7 @@ class Section:
         @classmethod
         def create(cls):
             """Push all tapered groups to MIDAS Civil NX (PUT /db/tsgr)."""
-            MidasAPI("PUT", "/db/tsgr", cls.json())
+            MidasAPI("PUT", "/db/TSGR", cls.json())
 
         @classmethod
         def autoGenerate(cls):

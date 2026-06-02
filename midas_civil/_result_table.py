@@ -11,6 +11,7 @@ from base64 import b64decode
 # print(js_file)
 # js_json = json.load(js_file)
 
+_SD_Type = Literal["X","Y","COMB"]
 _forceType = Literal["KN", "N", "KGF", "TONF", "LBF", "KIPS"]
 _lengthType = Literal["M", "CM", "MM", "FT", "IN"]
 _numFormat = Literal["Fixed","Scientific","General"]
@@ -20,6 +21,24 @@ _reactionType = Literal["Global", "Local", "SurfaceSpring"]
 _dispdiaType = Literal["Global", "Local"]
 _dispType = Literal["Accumulative", "Current", "Real"]
 _plateforce = Literal["Global", "Local"]
+
+
+def _convertColm2DataType(res_df):
+    import polars as pl
+
+    str_colms = set(res_df.select(pl.selectors.matches("Load|Part|Remark")).columns)
+    int_colms1 = set(res_df.select(pl.selectors.by_name("Index","Elem","Node",require_all=False)).columns)
+    int_colms2 = set(res_df.select(pl.selectors.matches("/Node")).columns)-int_colms1
+    float_colms = set(res_df.select(pl.selectors.matches("Axial|Shear|Torsion|Moment|FX|FY|FZ|MX|MY|MZ|DX|DY|DZ|RX|RY|RZ|Level|Height|Displacement|Maximum/Average|Elements|Drift|Factor")).columns)-str_colms-int_colms1-int_colms2
+    
+    res_type_df = res_df.with_columns([
+        pl.selectors.by_name(*str_colms,require_all=False).cast(pl.String),
+        pl.selectors.by_name(*int_colms1,require_all=False).cast(pl.Int64),
+        pl.selectors.by_name(*int_colms2,require_all=False).cast(pl.Int64),
+        pl.selectors.by_name(*float_colms,require_all=False).cast(pl.Float32),
+
+    ])
+    return res_type_df
 
 #---- INPUT: JSON -> OUTPUT : Data FRAME --------- ---------
 def _JSToDF_ResTable(js_json,excelLoc,sheetName,cellLoc="A1"):
@@ -52,12 +71,7 @@ def _JSToDF_ResTable(js_json,excelLoc,sheetName,cellLoc="A1"):
 
     res_df = pl.DataFrame(res_json) # Final DF
 
-    res_type_df = res_df.with_columns([
-        pl.selectors.matches("Index|Elem|Node").cast(pl.Int64),
-        pl.selectors.matches("Axial|Shear|Torsion|Moment|F|M|D|R").cast(pl.Float64),
-        pl.selectors.matches("Load|Part").cast(pl.String),
-    ])
-
+    res_type_df = _convertColm2DataType(res_df)
 
     # EXPORTING FILE STARTS HERE................
     if excelLoc:
@@ -120,10 +134,13 @@ def _JSToDF_UserDefined(tableName,js_json,summary,excelLoc,sheetName,cellLoc="A1
     res_json = _Head_Data_2_DF_JSON(head,data)
     res_df = pl.DataFrame(res_json)
 
-    if excelLoc:
-        _write_df_to_existing_excel(res_df,(excelLoc,sheetName, cellLoc))
+    res_type_df = _convertColm2DataType(res_df)
 
-    return(res_df)
+    # EXPORTING FILE STARTS HERE................
+    if excelLoc:
+        _write_df_to_existing_excel(res_type_df,(excelLoc,sheetName, cellLoc))
+
+    return(res_type_df)
 
     
 def _write_df_to_existing_excel(res_df, existing_excel_input: list):
@@ -965,6 +982,73 @@ class Result :
                     }
                 }
             }
+
+            ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS)
+            return polarDF
+        
+                
+        @staticmethod
+        def Story_Displacement(SD_type:_SD_Type = "X",
+                                loadcase:list=[], 
+                                options:TableOptions=None):
+            '''
+            Fetches story displacement - story result tables.
+            
+            Args:
+                SD_type (str): "X","Y" or "COMB
+                loadcase (list): List of load case names, e.g., ["Selfweight(ST)"].
+                options : Table options
+            '''
+            if options == None: options = TableOptions()
+
+            if SD_type == "X":
+                table_type = "STORY_DISPLACEMENT_X"
+            elif SD_type == "Y":
+                table_type = "STORY_DISPLACEMENT_Y"
+            else:
+                table_type = "STORY_DISPLACEMENT_COMB"
+
+            sheetName = options.EXCEL_SHEET_NAME or f"{table_type} {_case2name(loadcase)}"
+            
+            js_dat = _generate(table_type,None,loadcase,None,None, options)
+            
+
+            ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS)
+            return polarDF
+        
+        @staticmethod
+        def Story_Drift(SD_type:_SD_Type = "X",
+                        loadcase:list=[], 
+                        allowable_ratio:float = 0.0015,
+                        options:TableOptions=None):
+            '''
+            Fetches story drift -    story result tables.
+            
+            Args:
+                SD_type (str): "X","Y" or "COMB"
+                loadcase (list): List of load case names, e.g., ["Selfweight(ST)"].
+                allowable_ratio (float): Allowable Story Drift Ratio
+                options : Table options
+            '''
+            if options == None: options = TableOptions()
+
+            if SD_type == "X":
+                table_type = "STORY_DRIFT_X"
+            elif SD_type == "Y":
+                table_type = "STORY_DRIFT_Y"
+            else:
+                table_type = "STORY_DRIFT_COMB"
+
+            sheetName = options.EXCEL_SHEET_NAME or f"{table_type} {_case2name(loadcase)}"
+            
+            js_dat = _generate(table_type,None,loadcase,None,None, options)
+            js_dat["Argument"]['SET_STORY_DRIFT_PARAMS'] = {}
+            js_dat["Argument"]['SET_STORY_DRIFT_PARAMS']['RESPONSE_MOD_FACTOR_CHECK']  = True
+            js_dat["Argument"]['SET_STORY_DRIFT_PARAMS']['RESPONSE_MOD_FACTOR_VALUE']  = 1 
+            js_dat["Argument"]['SET_STORY_DRIFT_PARAMS']['SCALE_FACTOR_VALUE']  = 1
+            js_dat["Argument"]['SET_STORY_DRIFT_PARAMS']['ALLOWABLE_RATIO']  = allowable_ratio
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
             polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS)

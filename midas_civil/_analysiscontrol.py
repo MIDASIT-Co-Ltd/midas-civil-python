@@ -5,6 +5,7 @@ _EigenAnalysisType = Literal['EIGEN','LANCZOS','RITZ']
 #--------------------------------------------------------------------------------------------------
 
 class AnalysisControl:
+    _Controls = {}
     
     class MainControlData:
         
@@ -297,23 +298,20 @@ class AnalysisControl:
         data:Optional['AnalysisControl.EigenValue'] = None
         
         def __init__(self, 
-                    analysis_type: _EigenAnalysisType  = None,
+                    analysis_type: _EigenAnalysisType  = 'EIGEN',
                     # EIGEN specific parameters
-                    ifreq: int = 1,
-                    iiter: int = 20,
-                    idim: int = 1,
-                    tol: float = 0,
+                    nFreq: int = 1,
+                    nIter: int = 20,
+                    nSubspaceDim: int = 1,
+                    tolerance: float = 1e-10,
                     # LANCZOS specific parameters 
-                    frequency_range: list = None,  
-                    bstrum: bool = False,
-                    bminmax: bool = None,
-                    frmin: float = None,
-                    frmax: float = None,
+                    frequency_range: list[int,int] = [None,None],  
+                    bStrum: bool = False,
                     # RITZ specific parameters 
-                    bincnl: bool = False,
-                    ignum: int = None,
-                    load_vector: list = None,  
-                    vritz: list = None):
+                    load_Vectors: list[str,int] = None,
+                    nGL_LinkVectors: int = 0,
+                      
+                    ):
             """
             Eigen Vector Analysis Control 
             
@@ -370,6 +368,11 @@ class AnalysisControl:
                 )
             """
             
+            bminmax = False
+            frmin=0
+            frmax=1600
+            vritz = []
+
             # Validate required parameters
             if analysis_type is None:
                 raise ValueError("analysis_type is required")
@@ -378,16 +381,17 @@ class AnalysisControl:
             
             # Validate type-specific required parameters
             if analysis_type in ["EIGEN"]:
-                if ifreq is None:
+                if nFreq is None:
                     raise ValueError("ifreq (Number of Frequencies) is required for EIGEN")
-                if iiter is None:
+                if nIter is None:
                     raise ValueError("iiter (Number of Iterations) is required for EIGEN")
+                
             
             # Handle LANCZOS parameters
-            if analysis_type == "LANCZOS":
+            elif analysis_type == "LANCZOS":
                 # Handle new frequency_range format
-                if frequency_range is not None:
-                    if not isinstance(frequency_range, list) or len(frequency_range) != 2:
+                if frequency_range != [None,None]:
+                    if not isinstance(frequency_range, (list,tuple)) or len(frequency_range) != 2:
                         raise ValueError("frequency_range must be a list with exactly 2 elements [frmin, frmax]")
                     if frequency_range[0] >= frequency_range[1]:
                         raise ValueError("frmin must be less than frmax in frequency_range")
@@ -396,31 +400,19 @@ class AnalysisControl:
                     bminmax = True
                     frmin = frequency_range[0]
                     frmax = frequency_range[1]
-                else:
-                    # Use legacy parameters or defaults
-                    if bminmax is None:
-                        bminmax = False
-                    if bminmax and (frmin is None or frmax is None):
-                        raise ValueError("frmin and frmax are required when bminmax is True for LANCZOS")
-                    if frmin is not None and frmax is not None and frmin >= frmax:
-                        raise ValueError("frmin must be less than frmax")
-            
+                    
+
             # Handle RITZ parameters
-            if analysis_type == "RITZ":
-                if ignum is None:
-                    raise ValueError("ignum (Number of Generations) is required for RITZ")
+            elif analysis_type == "RITZ":
                 
                 # Handle new load_vector format
-                if load_vector is not None:
-                    if not isinstance(load_vector, list) or len(load_vector) == 0:
-                        raise ValueError("load_vector must be a non-empty list")
-                    
+                if load_Vectors is not None:
+
                     # Convert load_vector to vritz format
-                    vritz = []
                     ground_acc_types = ["ACCX", "ACCY", "ACCZ"]
                     
-                    for i, item in enumerate(load_vector):
-                        if not isinstance(item, list) or len(item) != 2:
+                    for item in load_Vectors:
+                        if not isinstance(item, (list,tuple)) or len(item) != 2:
                             raise ValueError(f"load_vector[{i}] must be a list with exactly 2 elements [name, nog]")
                         
                         name, nog = item
@@ -474,20 +466,25 @@ class AnalysisControl:
             
             # Set parameters
             self.TYPE = analysis_type
-            self.iFREQ = ifreq
-            self.iITER = iiter
-            self.iDIM = idim
-            self.TOL = tol
+            self.iFREQ = nFreq
+
+            self.iITER = nIter
+            self.iDIM = nSubspaceDim
+            self.TOLERANCE = tolerance
+
+
             self.bMINMAX = bminmax
             self.FRMIN = frmin
             self.FRMAX = frmax
-            self.bSTRUM = bstrum
-            self.bINCNL = bincnl
-            self.iGNUM = ignum
+            self.bSTRUM = bStrum
+
+            self.bINCNL = not (nGL_LinkVectors==0)
+            self.iGNUM = nGL_LinkVectors
             self.vRITZ = vritz
             
             # Add to static list
             AnalysisControl.EigenValue.data = self
+            AnalysisControl._Controls["Eigen"] = self
             
             # Automatically execute the data when instance is created
             self._execute()
@@ -500,21 +497,22 @@ class AnalysisControl:
             
             control_data = {"TYPE": self.TYPE}
             
-            if self.TYPE in ["EIGEN", "LANCZOS"]:
+            if self.TYPE in ["EIGEN"]:
                 control_data.update({
                     "iFREQ": self.iFREQ,
                     "iITER": self.iITER,
                     "iDIM": self.iDIM,
-                    "TOL": self.TOL
+                    "TOL": self.TOLERANCE
                 })
                 
-                if self.TYPE == "LANCZOS":
-                    control_data.update({
-                        "bMINMAX": self.bMINMAX,
-                        "FRMIN": self.FRMIN,
-                        "FRMAX": self.FRMAX,
-                        "bSTRUM": self.bSTRUM
-                    })
+            elif self.TYPE == "LANCZOS":
+                control_data.update({
+                    "iFREQ": self.iFREQ,
+                    "bMINMAX": self.bMINMAX,
+                    "FRMIN": self.FRMIN,
+                    "FRMAX": self.FRMAX,
+                    "bSTRUM": self.bSTRUM
+                })
             
             elif self.TYPE == "RITZ":
                 control_data.update({

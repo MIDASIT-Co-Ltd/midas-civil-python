@@ -1231,9 +1231,6 @@ class Element():
         #     for shape in _quadShape.shapes:
         #         shape.mesh()
 
-
-
-
     class Tension(_common):
      def __init__(self, i: int, j: int, stype: int, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = None, non_len: float = None, cable_type: int = None, tens: float = None, t_limit: float = None):
         """
@@ -1422,6 +1419,12 @@ class Element():
 
             self._GROUP = group
             _ADD(self)
+
+
+        # @staticmethod
+        # def extudeFromPlate():
+        #     pass
+
 
 # class _quadShape():
 #     shapes = []

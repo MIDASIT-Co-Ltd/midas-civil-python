@@ -21,6 +21,7 @@ _jackStep = Literal['BEGIN' , 'END' , 'BOTH']
 
 
 
+
 def _JStoObj_Relax(js):
     rm = js['RM']
     rv = js['RV']
@@ -120,7 +121,7 @@ def _JStoObj_Profile(id,js:dict):
 
 
     #Variable initialise to remove errors
-    prof_xyz = []  
+    prof_xyzr = []  
     prof_xyr = []  
     prof_xzr = []  
     prof_ins_point_end = 'END-I'  
@@ -139,14 +140,24 @@ def _JStoObj_Profile(id,js:dict):
     offset = 0  
     dir = 'CW'      
 
+    _bRound = True if curve_type == 'ROUND' else False
+
     
     #3D - SPLINE - ROUND is bFIX , R is not considered
     if inp_type == '3D' :
-        prof_xyz = []  
+        prof_xyzr = []  
         json_profile_arr = js['PROF']
 
         for i in range(len(json_profile_arr)):
-            prof_xyz.append([json_profile_arr[i]['PT'][0],json_profile_arr[i]['PT'][1],json_profile_arr[i]['PT'][2]])
+            if _bRound:
+                prof_xyzr.append([json_profile_arr[i]['PT'][0],json_profile_arr[i]['PT'][1],json_profile_arr[i]['PT'][2],json_profile_arr[i]['RADIUS']])
+            else:
+                _Rdata = json_profile_arr[i]['R']
+                _bFix = json_profile_arr[i]['bFIX']
+                if _bFix:
+                    prof_xyzr.append([json_profile_arr[i]['PT'][0],json_profile_arr[i]['PT'][1],json_profile_arr[i]['PT'][2],_Rdata])
+                else:
+                    prof_xyzr.append([json_profile_arr[i]['PT'][0],json_profile_arr[i]['PT'][1],json_profile_arr[i]['PT'][2]])
 
     
 
@@ -157,7 +168,6 @@ def _JStoObj_Profile(id,js:dict):
         json_profileY_arr = js['PROFY']
         json_profileZ_arr = js['PROFZ']
 
-        _bRound = True if curve_type == 'ROUND' else False
             
 
         for i in range(len(json_profileY_arr)):
@@ -221,7 +231,7 @@ def _JStoObj_Profile(id,js:dict):
 
     Tendon.Profile(name,tdnProperty,tdn_group,elem,inp_type,curve_type,st_len_begin,st_len_end,n_typical_tendon,
                    trans_len_opt,trans_len_begin,trans_len_end,debon_len_begin,debon_len_end,ref_axis,
-                   prof_xyz,prof_xyr,prof_xzr,prof_ins_point_end,prof_ins_point_elem,x_axis_dir_element,x_axis_rot_ang,
+                   prof_xyzr,prof_xyr,prof_xzr,prof_ins_point_end,prof_ins_point_elem,x_axis_dir_element,x_axis_rot_ang,
                    projection,offset_y,offset_z,prof_ins_point,x_axis_dir_straight,x_axis_dir_vec,grad_rot_axis,grad_rot_ang,radius_cen,offset,dir,tdn_id)
 
 def _ObjtoJS_Profile(self):
@@ -251,18 +261,20 @@ def _ObjtoJS_Profile(self):
 
         # -------- 3D SPLINE & ROUND ------------
         if self.CURVE == 'ROUND' :
-            for j in range(len(self.P_XYZ)):
+            for j in range(len(self.P_XYZR)):
+                _bFix,_RADIUS = (False,0) if self.P_XYZR[j].R == None else (True,self.P_XYZR[j].R)
                 array_temp.append({
-                        'PT' : [self.P_XYZ[j].X,self.P_XYZ[j].Y,self.P_XYZ[j].Z],
-                        'bFIX' : self.bFIX[j],
-                        'RADIUS' : self.RADIUS[j]
+                        'PT' : [self.P_XYZR[j].X,self.P_XYZR[j].Y,self.P_XYZR[j].Z],
+                        'bFIX' : _bFix,
+                        'RADIUS' : _RADIUS
                 })
         else:
-            for j in range(len(self.P_XYZ)):
+            for j in range(len(self.P_XYZR)):
+                _bFix,_R = (False,[0,0]) if self.P_XYZR[j].R == [None,None] else (True,self.P_XYZR[j].R)
                 array_temp.append({
-                        'PT' : [self.P_XYZ[j].X,self.P_XYZ[j].Y,self.P_XYZ[j].Z],
-                        'bFIX' : self.bFIX[j],
-                        'R' : self.R[j]
+                        'PT' : [self.P_XYZR[j].X,self.P_XYZR[j].Y,self.P_XYZR[j].Z],
+                        'bFIX' : _bFix,
+                        'R' : _R
                 })
         
         
@@ -282,33 +294,37 @@ def _ObjtoJS_Profile(self):
 
         # -------- 2D  ------------
         if self.CURVE == 'ROUND' :
-            for j in range(len(self.P_XY)):
+            for j in range(len(self.P_XYR)):
+                    _bFix = False if self.P_XYR[j].R == None else True
                     array_y_temp.append({
-                            'PT' : [self.P_XY[j].X,self.P_XY[j].Y],
-                            'bFIX' : self.bFIX_XY[j],
-                            'RADIUS' : self.R_XY[j]
+                            'PT' : [self.P_XYR[j].X,self.P_XYR[j].Y],
+                            'bFIX' : _bFix,
+                            'RADIUS' : self.P_XYR[j].R
                     })
 
-            for j in range(len(self.P_XZ)):
+            for j in range(len(self.P_XZR)):
+                    _bFix = False if self.P_XZR[j].R == None else True
                     array_z_temp.append({
-                            'PT' : [self.P_XZ[j].X,self.P_XZ[j].Z],
-                            'bFIX' : self.bFIX_XZ[j],
-                            'RADIUS' : self.R_XZ[j]
+                            'PT' : [self.P_XZR[j].X,self.P_XZR[j].Z],
+                            'bFIX' : _bFix,
+                            'RADIUS' : self.P_XZR[j].R
                 })
 
         else:
-            for j in range(len(self.P_XY)):
+            for j in range(len(self.P_XYR)):
+                    _bFix,_R = (False,0) if self.P_XYR[j].R == None else (True,self.P_XYR[j].R)
                     array_y_temp.append({
-                            'PT' : [self.P_XY[j].X,self.P_XY[j].Y],
-                            'bFIX' : self.bFIX_XY[j],
-                            'R' : self.R_XY[j]
+                            'PT' : [self.P_XYR[j].X,self.P_XYR[j].Y],
+                            'bFIX' : _bFix,
+                            'R' : _R
                     })
 
-            for j in range(len(self.P_XZ)):
+            for j in range(len(self.P_XZR)):
+                    _bFix,_R = (False,0) if self.P_XZR[j].R == None else (True,self.P_XZR[j].R)
                     array_z_temp.append({
-                            'PT' : [self.P_XZ[j].X,self.P_XZ[j].Z],
-                            'bFIX' : self.bFIX_XZ[j],
-                            'R' : self.R_XZ[j]
+                            'PT' : [self.P_XZR[j].X,self.P_XZR[j].Z],
+                            'bFIX' : _bFix,
+                            'R' : _R
                     })
         
         # --- 3D Main ----
@@ -362,13 +378,14 @@ def _ObjtoJS_Profile(self):
     return js
 
 class _POINT_ : # Local class to store points
-    def __init__(self,x,y,z):
+    def __init__(self,x,y,z,r=None):
         self.X = x
         self.Y = y
         self.Z = z
+        self.R = r
     
     def __str__(self):
-        return str(self.X , self.Y, self.Z)
+        return f"{self.X} , {self.Y}, {self.Z}, {self.R}"
 
 #5 Class to create nodes
 class Tendon:
@@ -394,9 +411,19 @@ class Tendon:
         class CEBFIP_2010:
             
             def __init__(self,rho,rel_class,ult_st,yield_st,curv_fric_fac=0,wob_fric_fac=0,unint_ang_disp=0):
-                '''
-                    rel_class =  1 Slow | 2 Mean | 3 Rapid
-                '''
+                """
+                Args:
+                    rho (float): Relaxation value.
+                    rel_class (int): Relaxation class.
+                        - 1 : Slow
+                        - 2 : Mean
+                        - 3 : Rapid
+                    ult_st (float): Ultimate stress of tendon.
+                    yield_st (float): Yield stress of tendon.
+                    curv_fric_fac (float, optional): Curvature friction factor. Defaults to 0.
+                    wob_fric_fac (float, optional): Wobble friction factor. Defaults to 0.
+                    unint_ang_disp (float, optional): Unintentional angular displacement. Defaults to 0.
+                """
                 self.CODE = 'CEB FIP-2010'
                 self.RHO = rho
                 self.CLASS = rel_class
@@ -431,7 +458,6 @@ class Tendon:
             
             def __init__(self,rho,ult_st,yield_st,curv_fric_fac=0,wob_fric_fac=0,unint_ang_disp=0):
                 '''
-                    rel_class =  1 Slow | 2 Mean | 3 Rapid
                 '''
                 self.CODE = 'CEB FIP-1978'
                 self.RHO = rho
@@ -498,9 +524,20 @@ class Tendon:
         class European:
             
             def __init__(self,rel_class,ult_st,yield_st,curv_fric_fac=0,wob_fric_fac=0,unint_ang_disp=0):
-                '''
-                    rel_class =  1 Ordinary | 2 Low | 3 HotRolled
-                '''
+                """
+                CEBFIP 2010 Relaxation.
+
+                Args:
+                    rel_class (int): Relaxation class.
+                        - 1 : Slow
+                        - 2 : Mean
+                        - 3 : Rapid
+                    ult_st (float): Ultimate stress of tendon.
+                    yield_st (float): Yield stress of tendon.
+                    curv_fric_fac (float, optional): Curvature friction factor. Defaults to 0.
+                    wob_fric_fac (float, optional): Wobble friction factor. Defaults to 0.
+                    unint_ang_disp (float, optional): Unintentional angular displacement. Defaults to 0.
+                """
                 self.CODE = 'European'
                 self.CLASS = rel_class
 
@@ -642,7 +679,7 @@ class Tendon:
                                      
     # -----------------   TENDON    PROPERTY  --------------------------
     class Property:
-        properties =[]
+        properties:list['Tendon.Property'] =[]
         ids = []
 
         def __init__(self,name:str,type:_tdnType,matID:int,tdn_area:float,duct_dia:float,relaxation,ext_mom_mag:float=0,anch_slip_begin:float=0,anch_slip_end:float=0,bond_type:bool=True,id:int=None):
@@ -738,7 +775,7 @@ class Tendon:
 
     # -----------------   TENDON    PROFILE  --------------------------
     class Profile:
-        profiles =[]
+        profiles:list['Tendon.Profile'] =[]
         ids=[]
 
         def __init__(self,name,tdn_prop,tdn_group=0,elem=[],inp_type:_inputType='3D',curve_type:_curveType = 'SPLINE',st_len_begin = 0 , st_len_end = 0,n_typical_tendon=0,
@@ -852,101 +889,118 @@ class Tendon:
             #---------------   PROFILES CREATION -----------------
 
             #----- 3D Profile (Round + Spline) -------------
-            xyz_loc = []
-            bFix = []
-            R_spline3d = []
-            R_round3d = []
+            xyzR_loc = []
+  
 
             for point in prof_xyzR:
-                xyz_loc.append(_POINT_(point[0],point[1],point[2]))
+                if len(point) ==3 :
+                    if curve_type == 'ROUND':
+                        xyzR_loc.append(_POINT_(point[0],point[1],point[2],None))
+                    else:
+                        xyzR_loc.append(_POINT_(point[0],point[1],point[2],[None,None]))
 
-                if len(point) > 3 and point[3]!=None:
-                    bFix.append(True)
-                    if curve_type == 'SPLINE':
-                        if isinstance(point[3],(list,tuple)):
-                            R_spline3d.append(point[3])
-                        else:
-                            R_spline3d.append([point[3][0],0])
-                    else:
-                        R_round3d.append(point[3])
-                else:
-                    bFix.append(False) 
-                    if curve_type == 'SPLINE':
-                        R_spline3d.append([0,0])
-                    else:
-                        R_round3d.append(0)
+
+                else :
+                    xyzR_loc.append(_POINT_(point[0],point[1],point[2],point[3]))
 
                 
 
-            self.P_XYZ = xyz_loc
+            self.P_XYZR = xyzR_loc
 
-            self.bFIX = bFix
-            self.R = R_spline3d
-            self.RADIUS = R_round3d
 
             
 
             #----- 2D Profile Spline + Round -------------
-            xy_loc = []
-            xz_loc = []
+            xyR_loc = []
+            xzR_loc = []
 
-            bFix_y = []
-            bFix_z = []
-
-            R_2d_Rz = []
-            R_2d_Ry = []
 
             for point in prof_xyR:
-                xy_loc.append(_POINT_(point[0],point[1],0))
-                if len(point) > 2 and point[2]!=None:
-                    bFix_y.append(True)
-                    R_2d_Rz.append(point[2])
+                if len(point) == 2 :
+                    xyR_loc.append(_POINT_(point[0],point[1],0))
                 else:
-                    bFix_y.append(False) 
-                    R_2d_Rz.append(0)
+                    xyR_loc.append(_POINT_(point[0],point[1],0,point[2]))
 
             for point in prof_xzR:
-                xz_loc.append(_POINT_(point[0],0,point[1]))
-                if len(point) > 2 and point[2]!=None:
-                    bFix_z.append(True) 
-                    R_2d_Ry.append(point[2])
+                if len(point) == 2 :
+                    xzR_loc.append(_POINT_(point[0],0,point[1]))
                 else:
-                    bFix_z.append(False) 
-                    R_2d_Ry.append(0)
+                    xzR_loc.append(_POINT_(point[0],0,point[1],point[2]))
 
 
-            self.P_XY = xy_loc
-            self.P_XZ = xz_loc
+            self.P_XYR = xyR_loc
+            self.P_XZR = xzR_loc
 
-            self.bFIX_XY = bFix_y
-            self.bFIX_XZ = bFix_z
 
-            self.R_XY = R_2d_Rz
-            self.R_XZ = R_2d_Ry
+            #-------- PROPERTIES FOR BACKWARD COMPATIBILITY ---------
+            self.bFIX = []
+            self.R = []
+            self.RADIUS = []
+
+            self.bFIX_XY = []
+            self.R_XY = []
+
+            self.bFIX_XZ = []
+            self.R_XZ = []
+
+            
+
+            #--- 3D------
+            if self.CURVE == 'ROUND' :
+                for j in range(len(self.P_XYZR)):
+                    if self.P_XYZR[j].R == None: 
+                        self.bFIX.append(False)
+                        self.RADIUS.append(0) 
+                    else:
+                        self.bFIX.append(True)
+                        self.RADIUS.append(self.P_XYZR[j].R) 
+ 
+            else:
+                for j in range(len(self.P_XYZR)):
+                    if self.P_XYZR[j].R == [None,None]:
+                        self.bFIX.append(False)
+                        self.R.append([0,0]) 
+                    else:
+                        self.bFIX.append(True)
+                        self.R.append(self.P_XYZR[j].R)
+
+            # ---- 2D -------
+            for j in range(len(self.P_XYR)):
+                if self.P_XYR[j].R == None:
+                    self.bFIX_XY.append(False) 
+                    self.R_XY.append(0)
+                else:
+                    self.bFIX_XY.append(True) 
+                    self.R_XY.append(self.P_XYR[j].R)
+
+            for j in range(len(self.P_XZR)):
+                if self.P_XZR[j].R == None:
+                    self.bFIX_XZ.append(False) 
+                    self.R_XZ.append(0)
+                else:
+                    self.bFIX_XZ.append(True) 
+                    self.R_XZ.append(self.P_XZR[j].R)
+
 
 
             Tendon.Profile.profiles.append(self)
             Tendon.Profile.ids.append(self.ID)
 
-        def update_profile(self,points_xyz):
+
+        def update_profile(self,points_xyzR):
             xyz_loc = []
-            bFix = []
-            R_spline3d = []
-            R_round3d = []
 
-            for point in points_xyz:
-                xyz_loc.append(_POINT_(point[0],point[1],point[2]))
-                bFix.append(False) # Default not defining here
-                R_spline3d.append([0,0])   # Default not defining here
+            for point in points_xyzR:
+                if len(point) ==3 :
+                    xyz_loc.append(_POINT_(point[0],point[1],point[2],[None,None]))
+                else :
+                    xyz_loc.append(_POINT_(point[0],point[1],point[2],point[3]))
 
-            self.P_XYZ = xyz_loc
+            self.P_XYZR = xyz_loc
             self.INPUT = '3D'
             self.CURVE = 'SPLINE'
-            self.SHAPE = 'STRAIGHT'
+            # self.SHAPE = 'STRAIGHT'
 
-            self.bFIX = bFix
-            self.R = R_spline3d
-            self.RADIUS = R_round3d
 
         @classmethod
         def json(cls):

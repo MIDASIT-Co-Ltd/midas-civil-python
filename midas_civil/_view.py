@@ -340,7 +340,7 @@ class ResultGraphic:
     @staticmethod
     def BeamDiagram(lcase_type: _LCaseType, lcase_name: str, lcase_minmax: _MinMaxType = "Max",
                     part: _PartType = "total", component: _CompBeamForce = "My",
-                    fidelity: _FidelityType = "Exact", fill: _FillType = "Solid", scale: float = 1.0) -> dict:
+                    fidelity: _FidelityType = "Exact", fill: _FillType = "Solid", scale: float = 1.0,output_loc:_OutputLocType='Max') -> dict:
         '''
         Generates JSON for Beam Diagrams Result Graphic.
         
@@ -352,7 +352,8 @@ class ResultGraphic:
             component (str): Component Name ("Fx", "Fy", "Fz", "Mx", "My", "Mz"). Defaults to "My".
             fidelity (str): Fidelity of the diagram ("Exact", "5 Points", ...). Defaults to "Exact".
             fill (str): Fill of Diagram ("No", "Line", "Solid"). Defaults to "Solid".
-            scale (float): Scale of Diagram. Defaults to 1.0.
+            scale (float): Scale of Diagram. Defaults to 1.0.    
+            output_loc (str): Output Section Location ("Max", "All"). Defaults to "Max".
 
         '''
         json_body = {
@@ -385,8 +386,8 @@ class ResultGraphic:
                     "OPT_CUR_STEP_FORCE": False
                 },
                 "OUTPUT_SECT_LOCATION": {
-					"OPT_MAX_MINMAX_ALL": "absmax"
-        	    }
+                    "OPT_MAX_ALL": output_loc
+                }
             }
         return json_body
     

@@ -4,7 +4,7 @@ from typing import Literal
 _offsetPt = Literal['LT','CT','RT','LC','CC','RC','LB','CB','RB']
 
 class Offset:
-    def __init__(self,OffsetPoint:_offsetPt='CC',CenterLocation:int=0,HOffset:float=0,HOffOpt:int=0,VOffset:float=0,VOffOpt:int=0,UsrOffOpt:int=0):
+    def __init__(self,OffsetPoint:_offsetPt='CC',CenterLocation:int=0,HOffset:float=0,HOffOpt:int=0,VOffset:float=0,VOffOpt:int=0,UsrOffOpt:int=0,HOffset_J:float=None,VOffset_J:float=None):
         '''
         Parameters
         ----------
@@ -26,7 +26,13 @@ class Offset:
             0 : Extreme fiber   |   1 : User
         UsrOffOpt : int
             User-defined offset option flag for custom behavior. Default is 0.    
-            0 : Centroid     |    1 : Centre of Section
+            0 : Centroid     |    1 : Extreme fiber
+
+        HOffset_J : float   
+            Horizontal offset value for J end. Applicable in Tapered sections. Default is 0.   
+        VOffset_J : float   
+            Vertical offset value for J end. Applicable in Tapered sections. Default is 0.   
+        
         '''
 
         # self.OFFSET_PT =OffsetPoint
@@ -43,7 +49,8 @@ class Offset:
         # HOffset -> Horizontal offset distance
         # HOffOpt -> 0 -> Extreme fiber | 1 -> User
 
-
+        if HOffset_J==None: HOffset_J = HOffset
+        if VOffset_J==None: VOffset_J = VOffset
 
         self.JS = {
             "OFFSET_PT": OffsetPoint,
@@ -53,12 +60,12 @@ class Offset:
             "HORZ_OFFSET_OPT": HOffOpt,
             "USERDEF_OFFSET_YI": HOffset,
 
-            "USERDEF_OFFSET_YJ": HOffset,   #Tapered only
+            "USERDEF_OFFSET_YJ": HOffset_J,   #Tapered only
 
             "VERT_OFFSET_OPT": VOffOpt,
             "USERDEF_OFFSET_ZI": VOffset,
 
-            "USERDEF_OFFSET_ZJ": VOffset,   #Tapered only
+            "USERDEF_OFFSET_ZJ": VOffset_J,   #Tapered only
         }
 
 

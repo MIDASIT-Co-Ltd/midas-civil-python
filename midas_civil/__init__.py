@@ -1,7 +1,7 @@
 import requests
 from colorama import Fore,Style
 from ._mapi import NX,MidasAPI,MAPI_KEY,MAPI_BASEURL,MAPI_COUNTRY,Midas_help
-_version_ = "1.6.5"
+_version_ = "1.6.6"
 
 
 print('\n╭────────────────────────────────────────────────────────────────────────────────────╮')
@@ -19,7 +19,7 @@ if NX.version_check:
                 print('╰────────────────────────────────────────────────────────────────────────────────────╯\n'+Style.RESET_ALL)
     except:
          pass
-
+    
 from ._model import Model
 from ._boundary import Boundary
 from ._utils import getID,getNodeID,utils,getLOC
@@ -50,5 +50,5 @@ from ._BoundaryChangeAssignment import BoundaryChangeAssignment         # <=== N
 from ._result_table import Result,TableOptions
 
 
-# from ._responseSpectrum import ResponseSpectrum
-
+from ._responseSpectrum import RS
+    

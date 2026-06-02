@@ -33,8 +33,8 @@ class _SS_COMP_PSC_I(_common):
 
         self.MATL_ELAST = EgdEsb
         self.MATL_DENS = DgdDsb
-        self.MATL_POIS_S = Pgd
-        self.MATL_POIS_C = Psb
+        self.MATL_POIS_G = Pgd
+        self.MATL_POIS_S = Psb
         self.MATL_THERMAL = TgdTsb
         self.USE_MULTI_ELAST = MultiModulus
         self.LONGTERM_ESEC = CreepEratio
@@ -144,10 +144,11 @@ class _SS_COMP_PSC_I(_common):
                     "USE_WEB_THICK": [True,False],
                     "WEB_THICK": [0,0],
                     "JOINT": [sect.J1,sect.JL1,sect.JL2,sect.JL3,sect.JL4,sect.JR1,sect.JR2,sect.JR3,sect.JR4],
+                    "USE_SYMMETRIC": sect.SYMM,
                     "MATL_ELAST": sect.MATL_ELAST,
                     "MATL_DENS": sect.MATL_DENS,
-                    "MATL_POIS_S": sect.MATL_POIS_S,
-                    "MATL_POIS_C": sect.MATL_POIS_C,
+                    "MATL_POIS_S": sect.MATL_POIS_G,
+                    "MATL_POIS_C": sect.MATL_POIS_S,
                     "MATL_THERMAL": sect.MATL_THERMAL,
                     "USE_MULTI_ELAST": sect.USE_MULTI_ELAST,
                     "LONGTERM_ESEC": sect.LONGTERM_ESEC,

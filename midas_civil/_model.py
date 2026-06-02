@@ -233,6 +233,8 @@ class Model:
     def create():
         """Create Material, Section, Node, Elements, Groups and Boundary."""
         from tqdm import tqdm
+        from._analysiscontrol import AnalysisControl
+        from ._responseSpectrum import RS
         pbar = tqdm(total=15,desc="Creating Model...")
 
         if Material.mats!=[]: Material.create()
@@ -276,11 +278,16 @@ class Model:
         pbar.update(1)
         pbar.set_description_str("Creating Moving Load...")
         MovingLoad.create()
+        # PLACING EIGEN VALUE CONTROL
+        if 'Eigen' in AnalysisControl._Controls: AnalysisControl._Controls["Eigen"]._execute()
+        RS.Function.create()
+        RS.Case.create()
         pbar.update(1)
         pbar.set_description_str("Creating Load Combination...")
         LoadCombination.create()
         pbar.update(1)
         pbar.set_description_str(Fore.GREEN+"Model creation complete"+Style.RESET_ALL)
+        
         
     @staticmethod
     def clear():
