@@ -16,7 +16,11 @@ _BeamEccnDir = Literal["GX","GY","GZ","LX","LY","LZ"]
 _BeamEccnType = Literal[1,0]
 _LoadToMassdir = Literal["X","Y","Z","XY","YZ","XZ","XYZ"]
 _FloorLoadAssignDir = Literal["LX","LY","LZ","GX","GY","GZ"]
+_HydrostaticpressureDir = Literal['GX', 'GY', 'GZ','LX', 'LY', 'LZ']
+_HydrostaticpressuregradDir = Literal['-X','-Y','-Z','X','Y','Z']
 _FloorLoadAssignDisType = Literal[1,2,3,4]
+
+_PlaneLoadType= Literal['POINT','LINE','AREA']
 
 # -----  Extend for list of nodes/elems -----
 
@@ -1193,7 +1197,7 @@ class Load:
                 if load_group in a: chk = 1
                 if chk == 0: Group.Load(load_group)
 
-
+            P = [P] if isinstance(P,(int,float)) else P
             self.ELEM = element
             self.LCN = load_case
             self.LDGR = load_group
@@ -1287,6 +1291,187 @@ class Load:
                                 a['PRES'][i]['ITEMS'][j]['ID'],
                                 )
                             
+    class PlaneLoad_Define:
+        """ Define Plane load to plates faces.
+        
+        """
+        data:list['Load.PlaneLoad_Define'] = []
+        def __init__(self,name,load_type:_PlaneLoadType='POINT', point_load=[(0,0,10)] , line_load=[(0,0,10),(1,0,10)], area_load = [(0,0,10),(1,0,10),(0,0,10)] , copy_X=[], copy_Y=[],  desc=''):
+            
+            _valid = True
+
+            self.NAME = name
+            self.DESC = desc
+
+
+            self.ID = len(Load.PlaneLoad_Define.data) + 1
+
+
+            self.LOAD_TYPE = load_type
+            self.COPY_X = copy_X
+            self.COPY_Y = copy_Y
+
+            if load_type=='LINE':
+                self.LOAD = line_load
+                if len(line_load) != 2 : _valid = False
+            elif load_type=='AREA':
+                self.LOAD = area_load
+                if len(area_load) not in (3,4): _valid = False
+            else:
+                self.LOAD = point_load
+
+            if _valid: Load.PlaneLoad_Define.data.append(self)
+            else: print(f"   ⚠️   Plane Load Define: {name} definition is invalid.")
+
+
+        @classmethod
+        def json(cls):
+            json = {"Assign": {}}
+            for i in cls.data:
+                js = {
+                    "NAME": i.NAME,
+                    "DESC": i.DESC,
+                    "LTYPE": i.LOAD_TYPE,
+                    "COPY_X": i.COPY_X,
+                    "COPY_Y": i.COPY_Y,
+                    "SEQ": i.ID,
+                }
+                
+                if i.LOAD_TYPE=='POINT':
+                    load_dic = []
+                    for data in i.LOAD:
+                        load_dic.append({"X":data[0],"Y":data[1],"F":data[2]})
+                    js['POINTLOAD'] = load_dic
+
+                elif i.LOAD_TYPE=='LINE':
+                    load_dic = {
+                        "bUNIFORM" : False,
+                        "X":[i.LOAD[0][0],i.LOAD[1][0]],
+                        "Y":[i.LOAD[0][1],i.LOAD[1][1]],
+                        "F":[i.LOAD[0][2],i.LOAD[1][2]]
+                    }
+                    js['LINELOAD'] = load_dic
+                elif i.LOAD_TYPE=='AREA':
+                    if len(i.LOAD)==3:
+                        load_dic = {
+                            "bUNIFORM" : False,
+                            "b3PNT" : True,
+                            "X":[i.LOAD[0][0],i.LOAD[1][0],i.LOAD[2][0]],
+                            "Y":[i.LOAD[0][1],i.LOAD[1][1],i.LOAD[2][1]],
+                            "LOAD":[i.LOAD[0][2],i.LOAD[1][2],i.LOAD[2][2]],
+                        }
+                    else:
+                        load_dic = {
+                            "bUNIFORM" : False,
+                            "b3PNT" : False,
+                            "X":[i.LOAD[0][0],i.LOAD[1][0],i.LOAD[2][0],i.LOAD[3][0]],
+                            "Y":[i.LOAD[0][1],i.LOAD[1][1],i.LOAD[2][1],i.LOAD[3][1]],
+                            "LOAD":[i.LOAD[0][2],i.LOAD[1][2],i.LOAD[2][2],i.LOAD[3][2]],
+                        }
+                    js['AREALOAD'] = load_dic
+
+
+                    
+                json['Assign'][str(i.ID)] = js
+            return json
+        
+        @classmethod
+        def create(cls):
+            MidasAPI("PUT", "/db/PNLD",cls.json())
+        
+        @classmethod
+        def get(cls):
+            return MidasAPI("GET", "/db/PNLD")
+        
+        @classmethod
+        def delete(cls):
+            cls.clear()
+            return MidasAPI("DELETE", "/db/PNLD")
+        
+        @classmethod
+        def clear(cls):
+            cls.data=[]
+    
+
+    class PlaneLoad_Assign:
+        """
+        Define Plane load to plates faces.
+        """
+        data:list['Load.PlaneLoad_Assign'] = []
+        def __init__(self,load_case,load_group,plane_load:int=1,origin=(0,0,0),x_axis=(1,0,0),xy_plane=(0,1,0),tolerance=0.001,loading_dir='Normal',elmList='onLoadingPlane',desc='',id=None):
+            
+            _valid = True
+            
+            chk = 0
+            for i in Load_Case.cases:
+                if load_case in i.NAME: chk = 1
+            if chk == 0: Load_Case("D", load_case)
+            if load_group != "":
+                chk = 0
+                a = [v['NAME'] for v in Group.Load.json()["Assign"].values()]
+                if load_group in a: chk = 1
+                if chk == 0: Group.Load(load_group)
+
+            if id is None:
+                self.ID = len(Load.PlaneLoad_Assign.data) + 1
+            else:
+                self.ID = id
+
+            self.LOAD_CASE = load_case
+            self.LOAD_GROUP = load_group
+            self.LOAD_TYPE = plane_load
+            self.ORIGN = origin
+            self.AXIS_X = x_axis
+            self.AXIS_Y = xy_plane
+            self.TOLERANCE = tolerance
+            self.LOAD_DIR = loading_dir
+            self.DESC = desc
+
+            Load.PlaneLoad_Assign.data.append(self)
+            
+
+        @classmethod
+        def json(cls):
+            json = {"Assign": {}}
+            for i in cls.data:
+                js = {
+                    "LCNAME": i.LOAD_CASE,
+                    "LOAD_GROUP":i.LOAD_GROUP,
+                    "PNLD_KEY": i.LOAD_TYPE,
+                    "ELEM_TYPE": 'PLATE',
+                    "POINT_ORIGIN": i.ORIGN,
+                    "AXIS_X": i.AXIS_X,
+                    "AXIS_Y": i.AXIS_Y,
+                    "TOL": i.TOLERANCE,
+                    "SELECT_TYPE": 'ON_PLANE',
+                    "LOAD_DIR": 'NORMAL_PLANE',
+                    "PROJECT_TYPE": 'NO',
+                    "DESC":i.DESC
+                }
+                
+                    
+                json['Assign'][str(i.ID)] = js
+            return json
+        
+        @classmethod
+        def create(cls):
+            MidasAPI("PUT", "/db/PNLA",cls.json())
+        
+        @classmethod
+        def get(cls):
+            return MidasAPI("GET", "/db/PNLA")
+        
+        @classmethod
+        def delete(cls):
+            cls.clear()
+            return MidasAPI("DELETE", "/db/PNLA")
+        
+        @classmethod
+        def clear(cls):
+            cls.data=[]
+
+
+
 
     class Misc:
 
@@ -1342,3 +1527,103 @@ class Load:
                 if a != {'message': ''}:
                     cls.loadCases = set(a['PLCB']["1"]["LCNAME_ITEM"])
 
+    class HydrostaticPressure:
+
+        def __init__(self, element, load_case, load_group="", load_dir:_HydrostaticpressureDir='GX', load_gradient_dir:_HydrostaticpressuregradDir="-Z", constant_intensity=0, gradient_intensity=0, reference_node=None, reference_level=None):
+            """
+            Parameters:
+            - element (int | list[int]): A single element ID or a list of element IDs to apply the pressure to.
+            - load_case (str): Name of the load case.
+            - load_group (str): Name of the load group.(default="")
+            - load_dir (str): Direction of the applied load (from 'GX', 'GY', 'GZ','LX', 'LY', 'LZ').(default='GX')
+            - load_gradient_dir (str): Distribution direction ('X','Y','Z','-X','-Y','-Z').(default='-Z')
+            - constant_intensity (float): Constant pressure to add across the whole depth.
+            - gradient_intensity (float): Unit weight / gradient for pressure calculation.
+            - reference_node (int, optional):
+                If provided, the coordinate of this node will be used as the absolute global zero-pressure level.
+            - reference_level (float, optional):
+                If provided, this specific level coordinate will be used as the absolute global zero-pressure level.
+                (Note: If both reference_level and reference_node are provided, reference_level takes precedence).
+                If both are None, the highest/lowest point of the provided elements is used automatically.
+            """
+            from ._node import Node
+            from ._element import Element
+
+            elements = [element] if isinstance(element, (int, str)) else list(element)
+
+            if not elements:
+                print("No elements provided.")
+                return
+
+            nodes_data = Node.json().get('Assign', {})
+            elems_data = Element.json().get('Assign', {})
+
+            axis_key = load_gradient_dir.replace('-', '').replace('+', '').upper()
+            is_negative = '-' in load_gradient_dir
+
+            selected_nodes = set()
+            valid_elements = []
+
+            for elem_id in elements:
+                elem_id_int = int(elem_id)
+                if elem_id_int in elems_data:
+                    valid_elements.append(elem_id_int)
+                    nodes = elems_data[elem_id_int].get('NODE', [])
+                    selected_nodes.update(nodes)
+                else:
+                    print(f"Warning: Element {elem_id} not found in model.")
+
+            if not selected_nodes:
+                print("Error: Could not find coordinate data for the provided elements.")
+                return
+
+            global_top_coord = None
+
+            if reference_level is not None:
+                global_top_coord = float(reference_level)
+            elif reference_node is not None:
+                ref_node_int = int(reference_node)
+                if ref_node_int in nodes_data:
+                    global_top_coord = nodes_data[ref_node_int].get(axis_key, 0.0)
+                else:
+                    print(f"Error: Reference node {reference_node} not found.")
+                    return
+            else:
+                # Automatically find highest/lowest point among all nodes of the selected elements
+                coords = [
+                    nodes_data[int(nid)].get(axis_key, 0.0)
+                    for nid in selected_nodes
+                    if int(nid) in nodes_data
+                ]
+                if not coords:
+                    print("Error: Failed to retrieve coordinates for calculation.")
+                    return
+                global_top_coord = max(coords) if is_negative else min(coords)
+
+            for elem_id_int in valid_elements:
+                elem_nodes = elems_data[elem_id_int].get('NODE', [])
+
+                pressures = []
+                for nid in elem_nodes:
+                    nid_int = int(nid)
+                    if nid_int in nodes_data:
+                        c_main = nodes_data[nid_int].get(axis_key, 0.0)
+
+                        if is_negative:
+                            heff = global_top_coord - c_main
+                        else:
+                            heff = c_main - global_top_coord
+                        heff = max(0.0, heff)
+
+                        # Calculate Pressure: P = Gradient * heff + Constant Intensity
+                        p = (gradient_intensity * heff) + constant_intensity
+                        pressures.append(p)
+
+                if pressures:
+                    Load.Pressure(
+                        element=[elem_id_int],
+                        load_case=load_case,
+                        load_group=load_group,
+                        D=load_dir,
+                        P=pressures
+                    )

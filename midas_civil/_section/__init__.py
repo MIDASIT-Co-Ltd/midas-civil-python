@@ -27,7 +27,6 @@ class _helperSECTION:
     def toJSON():
         pass
 
-
 def _SectionADD(self):
     # Commom HERE ---------------------------------------------
     if self.ID==None: id = 0
@@ -55,8 +54,6 @@ def _SectionADD(self):
     Section._dic[self.NAME] = int(self.ID)
     # Common END -------------------------------------------------------
 
-
-
 def off_JS2Obj(js):
 
     try: OffsetPoint = js['OFFSET_PT']
@@ -75,8 +72,6 @@ def off_JS2Obj(js):
     except: UsrOffOpt=0
 
     return Offset(OffsetPoint,CenterLocation,HOffset,HOffOpt,VOffset,VOffOpt,UsrOffOpt)
-
-
 
 # -------------------  FUNCTION TO CREATE OBJECT used in ELEMENT SYNC  --------------------------
 def _JS2OBJ(id,js):
@@ -119,9 +114,6 @@ def _JS2OBJ(id,js):
 
 
     _SectionADD(obj)
-
-
-
 
 
 class Section:

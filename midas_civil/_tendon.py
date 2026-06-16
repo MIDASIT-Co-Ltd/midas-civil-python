@@ -569,6 +569,7 @@ class Tendon:
         class IRC_18:
             
             def __init__(self,factor,ult_st,yield_st,curv_fric_fac=0,wob_fric_fac=0):
+                '''factor : 1 -> Normal  , 2 -> Low '''
 
                 self.CODE = 'IRC:18-2000'
 
@@ -596,6 +597,7 @@ class Tendon:
         class IRC_112:
             
             def __init__(self,factor,ult_st,yield_st,curv_fric_fac=0,wob_fric_fac=0):
+                '''factor : 1 -> Normal  , 2 -> Low '''
 
                 self.CODE = 'IRC:112-2011'
 

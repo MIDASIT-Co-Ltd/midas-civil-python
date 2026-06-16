@@ -407,7 +407,7 @@ class Model:
         js = {"Assign": {
               "1":{}}}
         
-        if project_name+revision+user+title=="":
+        if project_name+revision+user+title+comment=="":
             return MidasAPI("GET","/db/PJCF",{})
         else:
             if project_name!="":

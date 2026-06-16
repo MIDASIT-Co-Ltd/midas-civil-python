@@ -1747,3 +1747,47 @@ class TDMatLink:
                     TDMatLink(a['TMAT'][j], int(j))
 
 #-------------------------------------------------------------------------------------------------
+
+class ChangeProperty:
+    mats = {}
+    def __init__(self,matID,CnSName='',CompName=''):
+
+        TDMatLink.mats[str(matID)]={
+            "TDMT_NAME": CnSName,
+            "TDME_NAME": CompName
+        }
+    
+    @classmethod
+    def json(cls):
+        json = {"Assign": TDMatLink.mats}
+        return json
+    
+    @staticmethod
+    def create():
+        MidasAPI("PUT","/db/TMAT",TDMatLink.json())
+        
+    @staticmethod
+    def get():
+        return MidasAPI("GET","/db/TMAT")
+    
+    
+    @staticmethod
+    def delete():
+        MidasAPI("DELETE","/db/TMAT")
+        TDMatLink.clear()
+
+    @staticmethod
+    def clear():
+        TDMatLink.mats={}
+
+    @staticmethod
+    def sync():
+        a = TDMatLink.get()
+        if a != {'message': ''}:
+            if list(a['TMAT'].keys()) != []:
+                TDMatLink.mats = []
+                TDMatLink.ids=[]
+                for j in a['TMAT'].keys():
+                    TDMatLink(a['TMAT'][j], int(j))
+
+#-------------------------------------------------------------------------------------------------

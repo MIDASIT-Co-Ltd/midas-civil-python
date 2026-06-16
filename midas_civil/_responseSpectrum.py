@@ -12,6 +12,11 @@ _INCode = Literal['IS1893(2016)','IS1893(2002)','IRC:SP114(2018)']
 _INSoil = Literal['Hard','Medium','Soft']
 _INZone = Literal['II','III','IV','V']
 
+_PeruSoil = Literal['S0','S1','S2','S3',]
+_PeruUse = Literal['A1','A2','B','C',]
+
+
+
 class _RSCase:
     ID :int = 0
     NAME: str = 0
@@ -403,4 +408,121 @@ class RS:
                 
             
 
+        class Peru:
+            def __init__(self,name,zone:int=1,soilType:_PeruSoil='S0',usage_cat:_PeruUse='A1',RRF=1.5,max_period=6,spectral_type='Normalized Accel',scaling=1,max_value=None,gravity=None,damping_rat = 0.05,desc="",id=None):
+                
+                if gravity==None:
+                    gravity = Model.gravity()
+
+                if isinstance(spectral_type,str):
+                    _mapping = {
+                        "Normalized Accel" : 1,
+                        "Acceleration" : 2,
+                        "Velocity" : 3,
+                        "Displacement" : 4
+                    }
+                    spectral_type = _mapping.get(spectral_type,1)
+
+                if id is None:
+                    self.ID = max(RS.Function._ids)+1
+                else:
+                    self.ID = id
+                if desc == "":
+                    desc = f"Espectro Peru E.030 : Zone = {zone}  |  Soil = {soilType} |  Usage Cat = {usage_cat}  |  R = {RRF} | Damping = {round(damping_rat*100,2)} % "
+                
+                self.NAME = name
+
+                self.SEIS_ZONE = zone
+                self.SOIL_TYPE =soilType
+
+                self.USE_CATG = usage_cat
+                self.RRF = RRF
+                self.MAX_PERIOD = max_period
+
+                
+                self.TYPE = spectral_type
+                self.SCALE_FACTOR = scaling
+                self.MAX_VALUE = max_value
+                self.GRAVITY = gravity
+                self.DAMP = damping_rat
+
+                
+                self.DESC = desc
+
+
+                RS.Function.functions.append(self)
+                RS.Function._ids.append(self.ID)
+
+            def _json(self):
+                import numpy as np
+                js_data = {
+                        "NAME": self.NAME,
+                        "iTYPE": self.TYPE,
+                        "DRATIO": self.DAMP,
+                        "DESC": self.DESC,
+                        }
+                if self.MAX_VALUE != None:
+                    js_data["iMETHOD"] = 1
+                    js_data["SCALE"] = self.MAX_VALUE
+                else:
+                    js_data["iMETHOD"] = 0
+                    js_data["SCALE"] = self.SCALE_FACTOR
+                
+                if self.TYPE == 1:
+                    js_data["GRAV"] = self.GRAVITY
+                
+
+                # Factor de Zona (Z)
+                tabla_Z = {1: 0.10, 2: 0.25, 3: 0.35, 4: 0.45}
+                Z = tabla_Z.get(self.SEIS_ZONE)
+                
+                # Factor de Suelo (S)
+                tabla_S = {
+                    "S0": {1: 0.80, 2: 0.80, 3: 0.80, 4: 0.80},
+                    "S1": {1: 1.00, 2: 1.00, 3: 1.00, 4: 1.00},
+                    "S2": {1: 1.60, 2: 1.20, 3: 1.15, 4: 1.05},
+                    "S3": {1: 2.00, 2: 1.40, 3: 1.20, 4: 1.10}
+                }
+                S = tabla_S[self.SOIL_TYPE][self.SEIS_ZONE]
+                
+                # Periodos TP y TL
+                tabla_periodos = {
+                    "S0": {"TP": 0.3, "TL": 3.0},
+                    "S1": {"TP": 0.4, "TL": 2.5},
+                    "S2": {"TP": 0.6, "TL": 2.0},
+                    "S3": {"TP": 1.0, "TL": 1.6}
+                }
+                TP = tabla_periodos[self.SOIL_TYPE]["TP"]
+                TL = tabla_periodos[self.SOIL_TYPE]["TL"]
+                
+                # Factor de Uso (U)
+                tabla_U = {"A1": 1.50, "A2": 1.50, "B": 1.30, "C": 1.00}
+                U = tabla_U[self.USE_CATG]
+
+
+
+                periodos = np.arange(0, self.MAX_PERIOD, 0.05) 
+                Rs = []                 
+                for Ti in periodos:
+                    # Cálculo del parámetro C
+                    if Ti < TP:
+                        C = 2.5
+                    elif TP <= Ti <= TL:
+                        C = 2.5 * (TP / Ti)
+                    else: # Ti > TL
+                        C = 2.5 * ((TP * TL) / (Ti**2))
+                        
+                    # Ecuación Sa = (Z * U * C * S) / R
+                    Sa = (Z * U * C * S) / self.RRF
+                        
+                    Rs.append({"PERIOD": round(Ti, 3), "VALUE": round(Sa, 4)})
+
+
+
+
+                js_data["aFUNC"] = Rs
+
+                return js_data
+
+                
             

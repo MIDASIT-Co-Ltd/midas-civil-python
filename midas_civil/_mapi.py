@@ -208,7 +208,7 @@ def Midas_help():
 
 
 class NX:
-    version_check = True    # CHANGE IT TO FALSE TO SKIP VERSION CHECK OF LIBRARY
+    version_check = False    # CHANGE IT TO FALSE TO SKIP VERSION CHECK OF LIBRARY
     user_print = True
     debug_request = False
     debug_requestJSON = False

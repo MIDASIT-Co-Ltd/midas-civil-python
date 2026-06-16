@@ -137,7 +137,7 @@ class utils:
         '''Defines alignment object passing through the points
         X -> monotonous increasing'''
         
-        def __init__(self,points,type: _alignType = 'cubic',xz_interp:_interpXZ = 'linear'):
+        def __init__(self,points,type: _alignType = 'cubic',xz_interp:_interpXZ = 'linear',yEcc=0):
             ''' 
             **POINTS** -> Points on the alignment [[x,y] , [x,y] , [x,y] ....]   
                           Points on the alignment [[x,y,z] , [x,y,z] , [x,y,z] ....]   
@@ -146,6 +146,12 @@ class utils:
             **XZ Interpolation** -> Type of interpolating curve in X,Z
                     linear , slinear , cubic
             '''
+
+            if yEcc!=0:
+                from ._element import _pointOffset
+                points = _pointOffset(points,yEcc,0,0)
+
+
             from scipy.interpolate import CubicSpline , Akima1DInterpolator , PchipInterpolator, interp1d
             _b3D = False
 
@@ -158,6 +164,11 @@ class utils:
             except:
                 _b3D = False
                 _pt_z = [0 for pt in points]
+
+
+           
+
+
 
 
 
@@ -218,9 +229,17 @@ class utils:
             self.U_FINE = _u_fine
 
         def getPoint(self,distance):
-            x_interp = np.interp(distance,self.CUMLENGTH,self.X_FINE)
-            y_interp = np.interp(distance,self.CUMLENGTH,self.Y_FINE)
-            return x_interp , y_interp
+            # x_interp = np.interp(distance,self.CUMLENGTH,self.X_FINE)
+            # y_interp = np.interp(distance,self.CUMLENGTH,self.Y_FINE)
+            # z_interp = np.interp(distance,self.CUMLENGTH,self.Z_FINE)
+
+            from scipy.interpolate import interp1d
+            x_interp = interp1d(self.CUMLENGTH,self.X_FINE,fill_value='extrapolate')(distance)
+            y_interp = interp1d(self.CUMLENGTH,self.Y_FINE,fill_value='extrapolate')(distance)
+            z_interp = interp1d(self.CUMLENGTH,self.Z_FINE,fill_value='extrapolate')(distance)
+
+
+            return x_interp , y_interp , z_interp
         
         def getSlope(self,distance):
             'Returns theta in radians (-pi/2  to pi/2)'
