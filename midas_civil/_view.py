@@ -17,7 +17,7 @@ _CompDisp = Literal["DX", "DY", "DZ", "DXY", "DYZ", "DXZ", "DXYZ", "RX", "RY", "
 _MT_CompDisp = Literal["DX","DY","DZ","RX","RY","RZ","RW"]
 _CompReact = Literal["FX", "FY", "FZ", "FXYZ", "MX", "MY", "MZ", "MXYZ", "Mb"]
 _CompVib = Literal["Md-X", "Md-Y", "Md-Z", "Md-XY", "Md-YZ", "Md-XZ", "Md-XYZ"]
-_CompPlateForce = Literal["Fxx", "Mxx", "MMax", "WoodArmerMoment", "Mvector", "Fvector"]
+_CompPlateForce = Literal["Fxx", "Mxx", "MMax", "Wood Armer Moment", "Mvector", "Fvector"]
 _CompTruss = Literal["All", "Tens.", "Comp."]
 _CompBeamStress = Literal["Sax", "Ssy", "Ssz", "Sby", "Sbz", "Combined", "7thDOF"]
 _FidelityType = Literal["Exact", "5 Points"]
@@ -755,7 +755,7 @@ class ResultGraphic:
         '''
         
         components_json = {"COMP": component}
-        if component == "WoodArmerMoment":
+        if component == "Wood Armer Moment":
             components_json["WOOD_ARMER_MOMENT_OPTION"] = {
                 "POSITION": wood_armer_pos,
                 "DIRECTION": wood_armer_dir
