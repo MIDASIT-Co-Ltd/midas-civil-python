@@ -169,6 +169,8 @@ class Load:
         if cls.FloorLoadDefine.data : cls.FloorLoadDefine.create()
         if cls.FloorLoadAssign.data : cls.FloorLoadAssign.create()
         if cls.Misc.PreCompositeSection.loadCases : cls.Misc.PreCompositeSection.create()
+        if cls.PlaneLoad_Define.data: cls.PlaneLoad_Define.create()
+        if cls.PlaneLoad_Assign.data : cls.PlaneLoad_Assign.create()
     
     @classmethod
     def clear(cls):
@@ -180,6 +182,8 @@ class Load:
         cls.FloorLoadAssign.clear()
         cls.FloorLoadDefine.clear()
         cls.Misc.PreCompositeSection.clear()
+        cls.PlaneLoad_Assign.clear()
+        cls.PlaneLoad_Define.clear()
         
 
     class SW:
@@ -1398,7 +1402,7 @@ class Load:
         Define Plane load to plates faces.
         """
         data:list['Load.PlaneLoad_Assign'] = []
-        def __init__(self,load_case,load_group,plane_load:int=1,origin=(0,0,0),x_axis=(1,0,0),xy_plane=(0,1,0),tolerance=0.001,loading_dir='Normal',elmList='onLoadingPlane',desc='',id=None):
+        def __init__(self,load_case,load_group='',plane_load:int=1,origin=(0,0,0),x_axis=(1,0,0),xy_plane=(0,1,0),tolerance=0.001,loading_dir='Normal',elmList='onLoadingPlane',desc='',id=None):
             
             _valid = True
             

@@ -223,3 +223,67 @@ class _SS_DB_SECTION(_common):
         sect_cg = (sect_cg_LT,sect_cg_CC,sect_cg_RB)
 
         return sect_shape, sect_thk ,sect_thk_off, sect_cg , sect_lin_con
+    
+
+
+
+
+class _SS_VALUE(_common):
+
+    """ Create Standard Value type sections"""
+
+    def __init__(self,Name='',Shape='',parameters:list=[],
+                 Area=None,Ixx=None,Iyy=None,Izz=None,
+                 Offset=Offset(),useShear=True,use7Dof=True,id:int=None):  
+        """ Shape = 'SB' 'SR' for rectangle \n For cylinder"""
+        self.ID = id
+        self.NAME = Name
+        self.TYPE = 'VALUE'
+        self.SHAPE = Shape
+        self.PARAMS = parameters
+        self.OFFSET = Offset
+        self.USESHEAR = useShear
+        self.USE7DOF = use7Dof
+
+        self.bAUTOCALC= True
+        self.AREA = Area
+        self.IXX = Ixx
+        self.IYY = Iyy
+        self.IZZ = Izz
+
+
+    
+    def __str__(self):
+         return f'  >  ID = {self.ID}   |  USER DEFINED STANDARD SECTION \nJSON = {self.toJSON()}\n'
+
+
+    def toJSON(sect):
+        js =  {
+                "SECTTYPE": sect.TYPE,
+                "SECT_NAME": sect.NAME,
+                "CALC_OPT": sect.bAUTOCALC,
+                "SECT_BEFORE": {
+                    "SHAPE": sect.SHAPE,
+                    "SECT_I": {
+                        "vSIZE": sect.PARAMS,
+                        "STIFF":{}
+                    },
+                    
+                }
+            }
+        
+
+        if sect.AREA!=None: js['SECT_BEFORE']['SECT_I']['STIFF']['AREA'] = sect.AREA
+        if sect.IXX!=None: js['SECT_BEFORE']['SECT_I']['STIFF']['RXX'] = sect.IXX
+        if sect.IYY!=None: js['SECT_BEFORE']['SECT_I']['STIFF']['RYY'] = sect.IYY
+        if sect.IZZ!=None: js['SECT_BEFORE']['SECT_I']['STIFF']['RZZ'] = sect.IZZ
+
+
+        js['SECT_BEFORE'].update(sect.OFFSET.JS)
+        js['SECT_BEFORE']['USE_SHEAR_DEFORM'] = sect.USESHEAR
+        js['SECT_BEFORE']['USE_WARPING_EFFECT'] = sect.USE7DOF
+        return js
+    
+    @staticmethod
+    def _objectify(id,name,type,shape,offset,uShear,u7DOF,js):
+        return _SS_DBUSER(name,shape,js['SECT_BEFORE']['SECT_I']['vSIZE'],offset,uShear,u7DOF,id)

@@ -1,4 +1,4 @@
-from ._mapi import MidasAPI,NX
+from ._mapi import MidasAPI,NX,MAPI_KEY,MAPI_BASEURL
 from colorama import Fore,Style
 import numpy as np
 import math
@@ -24,6 +24,7 @@ from ._view import View
 from collections import defaultdict
 from typing import Literal
 
+
 _forceUnit = Literal["KN", "N", "KGF", "TONF", "LBF", "KIPS"]
 _lengthUnit = Literal["M", "CM", "MM", "FT", "IN"]
 _heatUnit = Literal["CAL", "KCAL", "J", "KJ", "BTU"]
@@ -47,6 +48,69 @@ _SelectOutputElem = Literal['ELEM_ID','ELEM']
 _getSelectOutput = Literal['ELEM_ID','NODE_ID']
 
 class Model:
+
+    # NAME = 'UNTITLED'
+    # SAVE_LOC = ''
+
+    # _DATA = {}
+    # _DATA[NAME] = {'NODE':Node}
+
+    # def __init__(self,name:str,folder:str=None,mapiKey:str=None,baseURL:str=None):
+    #     Model.clear()
+    #     if name not in Model._DATA:
+    #         # CREATE A NEW MODEL DATA ----------------------------
+    #         Model._DATA[name] = {
+    #                     'MAPIKEY' : str(mapiKey) if mapiKey else str(MAPI_KEY.data) ,
+    #                     'BASEURL' : str(baseURL) if baseURL else str(MAPI_BASEURL.baseURL) ,
+    #                     'PATH' : f'{folder}\\{name}.mcb'  ,
+    #                     'NODE': {'OBJ':None,'IDS':None,'MAXID':None,'GRID':None,'DIC':None} , 
+    #                     'ELEM': {'OBJ':None,'IDS':None,'MAXID':None,'GRID':None,'DIC':None} ,
+    #             }
+            
+
+    #     else:
+    #         # RETRIEVE OLD DATA ------------------------------------
+    #         # NODE -------------------------------------------------
+
+    #         Node.nodes = Model._DATA[name]['NODE']['OBJ']
+    #         Node.ids = Model._DATA[name]['NODE']['IDS']
+    #         Node.maxID = Model._DATA[name]['NODE']['MAXID']
+    #         Node.Grid = Model._DATA[name]['NODE']['GRID']
+    #         Node.__nodeDic__ = Model._DATA[name]['NODE']['DIC']
+
+    #         # ELEMENT ----------------------------------------------
+
+    #         Element.elements = Model._DATA[name]['ELEM']['OBJ']
+    #         Element.ids = Model._DATA[name]['ELEM']['IDS']
+    #         Element.maxID = Model._DATA[name]['ELEM']['MAXID']
+    #         Element.__elemDIC__  = Model._DATA[name]['ELEM']['DIC']
+    #         Element.Grid  = Model._DATA[name]['ELEM']['GRID']
+
+    #     Model.NAME = name
+    
+    # @staticmethod
+    # def SSYNCC(bModelDATA=False):
+    #     ''' Stores current data into particular model'''
+    #     name = Model.NAME
+
+    #     if bModelDATA: 
+    #         MAPI_KEY.data = Model._DATA[name]['MAPIKEY']
+    #         MAPI_BASEURL.baseURL = Model._DATA[name]['BASEURL']
+    #         Model.SAVE_LOC = Model._DATA[name]['PATH']
+
+
+    #     Model._DATA[name]['NODE']['OBJ'] = Node.nodes
+    #     Model._DATA[name]['NODE']['IDS'] = Node.ids
+    #     Model._DATA[name]['NODE']['MAXID'] = Node.maxID
+    #     Model._DATA[name]['NODE']['GRID'] = Node.Grid
+    #     Model._DATA[name]['NODE']['DIC'] = Node.__nodeDic__
+
+    #     Model._DATA[name]['ELEM']['OBJ'] = Element.elements
+    #     Model._DATA[name]['ELEM']['IDS'] = Element.ids
+    #     Model._DATA[name]['ELEM']['MAXID'] = Element.maxID
+    #     Model._DATA[name]['ELEM']['DIC'] = Element.__elemDIC__
+    #     Model._DATA[name]['ELEM']['GRID'] = Element.Grid
+
 
     @staticmethod
     def gravity():
@@ -173,6 +237,13 @@ class Model:
         \nheat --> CAL, KCAL, J, KJ, BTU ||  
         \ntemp --> C, F
         \nDefault --> KN, M, BTU, C"""
+
+        if isinstance(force,dict):
+            length = force['DIST']
+            heat = force['HEAT']
+            temp = force['TEMPER']
+            force = force['FORCE']
+
         if temp not in ["C","F"]:
             temp="C"
         if force not in ["KN", "N", "KGF", "TONF", "LBF", "KIPS"]:
@@ -181,6 +252,8 @@ class Model:
             length = "M"
         if heat not in ["CAL", "KCAL", "J", "KJ", "BTU"]:
             heat = "BTU"
+
+
         unit={"Assign":{
             1:{
                 "FORCE":force,
@@ -189,6 +262,7 @@ class Model:
                 "TEMPER":temp
             }
         }}
+
         NX.units = {
                 "FORCE":force,
                 "DIST":length,
@@ -196,6 +270,15 @@ class Model:
                 "TEMPER":temp
             }
         MidasAPI("PUT","/db/UNIT",unit)
+        return NX.units
+
+
+    @staticmethod
+    def getUnits():
+        resp = MidasAPI("GET","/db/UNIT")['UNIT']['1']
+        # js = {'FORCE':resp['FORCE'],'DIST':resp['DIST'],'HEAT':resp['HEAT'],'TEMPER':resp['TEMPER']}
+        return resp
+
 
 
     @staticmethod
@@ -232,6 +315,10 @@ class Model:
     @staticmethod
     def create():
         """Create Material, Section, Node, Elements, Groups and Boundary."""
+        
+        # if bSync: Model.SSYNCC(bModelDATA=bModelMAPI)
+
+        
         from tqdm import tqdm
         from._analysiscontrol import AnalysisControl
         from ._responseSpectrum import RS
@@ -367,7 +454,7 @@ class Model:
     def saveAs(location=""):
         """Saves the model at location provided   
          Model.saveAs("D:\\model2.mcb")"""
-        if location.endswith('.mcb') or location.endswith('.mcbz'):
+        if location.endswith(('.mcb','.mcbz','.mgb','.mgbx')):
             MidasAPI("POST","/doc/SAVEAS",{"Argument":str(location)})
         else:
             print('⚠️  File extension is missing')
@@ -810,7 +897,7 @@ class Model:
 
 
     @staticmethod
-    def IMAGE(location:str='',image_size:tuple = None , view:str='pre',CS_StageName:str='',_boutputImage:bool=True):
+    def IMAGE(location:str='',image_size:tuple = None , view:str='pre',CS_StageName:str='',_bOutputImage:bool=True):
         ''' 
         Capture the image in the viewport
             Location - image location
@@ -845,17 +932,59 @@ class Model:
 
         resp = MidasAPI('POST','/view/CAPTURE',json_body)
 
-        bs64_img = b64decode(resp["base64String"])
-        if location:
-            __img_file = open(location, 'wb')  # Open image file to save.
-            __img_file.write(bs64_img)  # Decode and write data.
-            __img_file.close()
+        if 'base64String' in resp:
+            bs64_img = b64decode(resp["base64String"])
+            if location:
+                __img_file = open(location, 'wb')  # Open image file to save.
+                __img_file.write(bs64_img)  # Decode and write data.
+                __img_file.close()
 
-        if _boutputImage:
-            from PIL import Image as ImagePIL
-            from io import BytesIO
-            # return bs64_img
-            return ImagePIL.open(BytesIO(bs64_img))
+            if _bOutputImage:
+                from PIL import Image as ImagePIL
+                from io import BytesIO
+                # return bs64_img
+                return ImagePIL.open(BytesIO(bs64_img))
+        
+        else:
+            try:
+                _ERROR_MSG = resp['error']['message']
+            except:
+                _ERROR_MSG = "CANNOT RETRIEVE IMAGE. ERROR UNKNOWN"
+
+            
+            from PIL import Image, ImageDraw, ImageFont
+            image = Image.new("RGB", image_size, "white")
+            draw = ImageDraw.Draw(image)
+
+            font = ImageFont.load_default()
+
+
+            # Get text bounding box for centering
+            bbox = draw.textbbox((0, 0), _ERROR_MSG, font=font)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+
+            # Calculate centered position
+            x = (image_size[0] - text_width) // 2
+            y = (image_size[1] - text_height) // 2
+
+            # Draw the text in black
+            draw.text((x, y-15), "ERROR", fill="red", font=font)
+            draw.text((x, y), _ERROR_MSG, fill="black", font=font)
+
+
+            _IMG_DEF = f"Model Image   |    Size  {image_size[0]}x{image_size[1]} px"
+
+            draw.text((image_size[0]//2, image_size[1]-30), _IMG_DEF, fill="black", font=font,anchor='ms')
+
+            if location:
+                # Save the image
+                image.save(location)
+            
+            if _bOutputImage:
+                return image 
+        
+
         return resp
     
     @staticmethod

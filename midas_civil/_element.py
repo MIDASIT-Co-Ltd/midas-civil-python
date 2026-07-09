@@ -10,7 +10,7 @@ from typing import Literal
 from ._material import Material
 from ._section import Section
 _meshType = Literal['Quad','Tri']
-_extrudeInp = Literal['XYZ','ID','NODE']
+_extrudeInp = Literal['XYZ','NODE_ID']
 _order = Literal['ID','XYZ','XZY','YXZ','YZX','ZXY','ZYX']
 
 
@@ -1161,27 +1161,67 @@ class Element():
             return plate_obj
         
         @staticmethod
-        def extrude(points: list,dir:list,nDiv:int=1,bClose:bool=False,inpType:_extrudeInp='XYZ', stype: int = 1, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = None): #CHANGE TO TUPLE
+        def extrude(inpType:_extrudeInp,input: list,dir:list,nDiv:int=1,bClose:bool=False, stype: int = 1, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = None): #CHANGE TO TUPLE
                 # INPUTS 2 or more structure groups to create rectangular plates between the nodes | No. of nodes should be same in the Str Group
             """
             Enter node id list to extrude along a vector
             inpType ->  'XYZ' -> points = ((x,y,z),(x,y,z))
-                        'ID' -> points = (1,2,3,..) Node IDs
-                        'NODE' -> points = (Node objects,...)
+                        'NODE_ID' -> points = (1,2,3,..) Node IDs
             """
             nDiv = int(nDiv)
-            id_new = None
             nID_A = []
             nID_B = []
 
+            def _createPlateExtrude(nID_A,nID_B,nDiv,id):
+                max_len = len(nID_B)
+                id_new = None
+                plate_obj = []
+                if nDiv == 1 :
+                    for i in range(max_len-1):
+                        if id != None : id_new = id+i
+                        pt_array = [nID_A[i],nID_B[i],nID_B[i+1],nID_A[i+1]]
+                        plate_obj.append(Element.Plate(pt_array,stype,mat,sect,angle,group,id_new))
+                if nDiv > 1 :
+                    nID_dic = {}
+                    for j in range(nDiv+1):
+                        nID_dic[j] = []
+                    nID_dic[0] = nID_A
+                    nID_dic[nDiv] = nID_B
+                    for i in range(max_len):
+                        loc0= nodeByID(nID_A[i]).LOC
+                        loc1 = nodeByID(nID_B[i]).LOC
+                        int_points = np.linspace(loc0,loc1,nDiv+1)
+
+                        for j in range(nDiv-1):
+                            nID_dic[j+1].append(Node(int_points[j+1][0],int_points[j+1][1],int_points[j+1][2]).ID)
+                    j=0
+                    for q in range(nDiv):
+                        for i in range(max_len-1):
+                            if id != None : id_new = id+j
+                            pt_array = [nID_dic[q][i],nID_dic[q+1][i],nID_dic[q+1][i+1],nID_dic[q][i+1]]
+                            plate_obj.append(Element.Plate(pt_array,stype,mat,sect,angle,group,id_new))
+                            j+=1
+
+                return plate_obj
+
+
             if inpType == 'XYZ':
+                points = input
 
                 f_pt = np.add(points,dir)
 
                 for i,pt in enumerate(points):
                     nID_A.append(Node(pt[0],pt[1],pt[2]).ID)
                     nID_B.append(Node(f_pt[i][0],f_pt[i][1],f_pt[i][2]).ID)
-            if inpType == 'ID':
+
+                if bClose:
+                    nID_A.append(nID_A[0])
+                    nID_B.append(nID_B[0])
+
+                return _createPlateExtrude(nID_A,nID_B,nDiv,id)
+
+            elif inpType == 'NODE_ID':
+                points = input
                 nID_A = list(points)
                 pts_loc = [nodeByID(pt).LOC for pt in points]
 
@@ -1190,50 +1230,96 @@ class Element():
                 for i in range(len(points)):
                     nID_B.append(Node(f_pt[i][0],f_pt[i][1],f_pt[i][2]).ID)
 
-            if inpType == 'NODE':
-                nID_A = [pt.ID for pt in points]
-                pts_loc = [pt.LOC for pt in points]
+                if bClose:
+                    nID_A.append(nID_A[0])
+                    nID_B.append(nID_B[0])
 
-                f_pt = np.add(pts_loc,dir)
+                return _createPlateExtrude(nID_A,nID_B,nDiv,id)
+            
 
-                for i in range(len(points)):
-                    nID_B.append(Node(f_pt[i][0],f_pt[i][1],f_pt[i][2]).ID)
-                
+            
 
-            if bClose:
-                nID_A.append(nID_A[0])
-                nID_B.append(nID_B[0])
 
-            max_len = len(nID_B)
 
-            plate_obj = []
-            if nDiv == 1 :
-                for i in range(max_len-1):
-                    if id != None : id_new = id+i
-                    pt_array = [nID_A[i],nID_B[i],nID_B[i+1],nID_A[i+1]]
-                    plate_obj.append(Element.Plate(pt_array,stype,mat,sect,angle,group,id_new))
-            if nDiv > 1 :
-                nID_dic = {}
-                for j in range(nDiv+1):
-                    nID_dic[j] = []
-                nID_dic[0] = nID_A
-                nID_dic[nDiv] = nID_B
-                for i in range(max_len):
-                    loc0= nodeByID(nID_A[i]).LOC
-                    loc1 = nodeByID(nID_B[i]).LOC
-                    int_points = np.linspace(loc0,loc1,nDiv+1)
+            
+            
+            # if inpType in ('NODE_ID','XYZ'):
+            #     return _createPlateExtrude(nID_A,nID_B,nDiv,id)
+            
+        @staticmethod
+        def extrudeLine(elmIDs: list,dir:list,nDiv:int=1,bDeleteLine:bool=False, stype: int = 1, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = None): #CHANGE TO TUPLE
+                # INPUTS 2 or more structure groups to create rectangular plates between the nodes | No. of nodes should be same in the Str Group
+            """
+            """
+            nDiv = int(nDiv)
+            nID_A = []
+            nID_B = []
 
-                    for j in range(nDiv-1):
-                        nID_dic[j+1].append(Node(int_points[j+1][0],int_points[j+1][1],int_points[j+1][2]).ID)
-                j=0
-                for q in range(nDiv):
+            def _createPlateExtrude(nID_A,nID_B,nDiv,id):
+                max_len = len(nID_B)
+                id_new = None
+                plate_obj = []
+                if nDiv == 1 :
                     for i in range(max_len-1):
-                        if id != None : id_new = id+q*nDiv+j
-                        pt_array = [nID_dic[q][i],nID_dic[q+1][i],nID_dic[q+1][i+1],nID_dic[q][i+1]]
+                        if id != None : id_new = id+i
+                        pt_array = [nID_A[i],nID_B[i],nID_B[i+1],nID_A[i+1]]
                         plate_obj.append(Element.Plate(pt_array,stype,mat,sect,angle,group,id_new))
-                        j+=1
+                if nDiv > 1 :
+                    nID_dic = {}
+                    for j in range(nDiv+1):
+                        nID_dic[j] = []
+                    nID_dic[0] = nID_A
+                    nID_dic[nDiv] = nID_B
+                    for i in range(max_len):
+                        loc0= nodeByID(nID_A[i]).LOC
+                        loc1 = nodeByID(nID_B[i]).LOC
+                        int_points = np.linspace(loc0,loc1,nDiv+1)
 
-            return plate_obj
+                        for j in range(nDiv-1):
+                            nID_dic[j+1].append(Node(int_points[j+1][0],int_points[j+1][1],int_points[j+1][2]).ID)
+                    j=0
+                    for q in range(nDiv):
+                        for i in range(max_len-1):
+                            if id != None : id_new = id+j
+                            pt_array = [nID_dic[q][i],nID_dic[q+1][i],nID_dic[q+1][i+1],nID_dic[q][i+1]]
+                            plate_obj.append(Element.Plate(pt_array,stype,mat,sect,angle,group,id_new))
+                            j+=1
+
+                return plate_obj
+
+            finalPlateObj = []
+            for eID in elmIDs:
+                nID_A = []
+                nID_B = []
+                eObj = elemByID(eID)
+                if eObj.TYPE in ('BEAM','TRUSS','TENSTR','COMPTR'):
+                    nID_A = eObj.NODE[:2]
+                
+                    pts_loc = [nodeByID(nID).LOC for nID in nID_A]
+
+
+                    f_pt = np.add(pts_loc,dir)
+
+                    for i in range(len(nID_A)):
+                        nID_B.append(Node(f_pt[i][0],f_pt[i][1],f_pt[i][2]).ID)
+
+                    finalPlateObj+=_createPlateExtrude(nID_A,nID_B,nDiv,id)
+                    if id!=None: id+=nDiv
+
+            if bDeleteLine:
+                for eID in elmIDs:
+                    Element._deleteElem(eID)
+                # return finalPlateObj
+
+
+            
+
+
+
+            
+            
+            # if inpType in ('NODE_ID','XYZ'):
+            #     return _createPlateExtrude(nID_A,nID_B,nDiv,id)
             
 
         # @staticmethod

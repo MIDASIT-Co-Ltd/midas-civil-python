@@ -1,7 +1,7 @@
 import requests
 from colorama import Fore,Style
 from ._mapi import NX,MidasAPI,MAPI_KEY,MAPI_BASEURL,MAPI_COUNTRY,Midas_help
-_version_ = "1.6.7"
+_version_ = "1.6.8"
 
 
 print('\n╭────────────────────────────────────────────────────────────────────────────────────╮')
@@ -51,4 +51,6 @@ from ._result_table import Result,TableOptions
 
 
 from ._responseSpectrum import RS
+
+from ._story import Story
     

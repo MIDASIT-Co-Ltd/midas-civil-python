@@ -1065,6 +1065,7 @@ class Result :
             Construction stage Name (default = "") if desired
         '''
         if image_size==None: image_size=View.Image_Size
+        _ERROR_MSG = ''
         json_body = {
                 "Argument":{
                     "SET_MODE":"post",
@@ -1087,15 +1088,61 @@ class Result :
         
         resp = MidasAPI('POST','/view/CAPTURE',json_body)
 
-        bs64_img = b64decode(resp["base64String"])
-        if location:
-            __img_file = open(location, 'wb')  # Open image file to save.
-            __img_file.write(bs64_img)  # Decode and write data.
-            __img_file.close()
+        if "base64String" in resp:
+            bs64_img = b64decode(resp["base64String"])
 
-        if _bOutputImage:
-            from PIL import Image as ImagePIL
-            from io import BytesIO
-            # return bs64_img
-            return ImagePIL.open(BytesIO(bs64_img))
+            if location:
+                __img_file = open(location, 'wb')  # Open image file to save.
+                __img_file.write(bs64_img)  # Decode and write data.
+                __img_file.close()
+
+            if _bOutputImage:
+                from PIL import Image
+                from io import BytesIO
+                # return bs64_img
+                return Image.open(BytesIO(bs64_img))
+            
+        else:
+            try:
+                _ERROR_MSG = resp['error']['message']
+            except:
+                _ERROR_MSG = "CANNOT RETRIEVE IMAGE. ERROR UNKNOWN"
+
+            
+            from PIL import Image, ImageDraw, ImageFont
+            image = Image.new("RGB", image_size, "white")
+            draw = ImageDraw.Draw(image)
+
+            font = ImageFont.load_default()
+
+
+            # Get text bounding box for centering
+            bbox = draw.textbbox((0, 0), _ERROR_MSG, font=font)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+
+            # Calculate centered position
+            x = (image_size[0] - text_width) // 2
+            y = (image_size[1] - text_height) // 2
+
+            # Draw the text in black
+            draw.text((x, y-15), "ERROR", fill="red", font=font)
+            draw.text((x, y), _ERROR_MSG, fill="black", font=font)
+
+
+
+
+            _RES_TYPE = ResultGraphic["CURRENT_MODE"]
+            _LC_NAME = ResultGraphic["LOAD_CASE_COMB"]["NAME"]
+            _IMG_DEF = f"Result Image    |    {_RES_TYPE}  for  {_LC_NAME}  load case.    |    Size  {image_size[0]}x{image_size[1]} px"
+
+            draw.text((image_size[0]//2, image_size[1]-30), _IMG_DEF, fill="black", font=font,anchor='ms')
+
+            if location:
+                # Save the image
+                image.save(location)
+            
+            if _bOutputImage:
+                return image           
+
         return resp

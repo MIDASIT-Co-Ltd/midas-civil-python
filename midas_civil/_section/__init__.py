@@ -1,5 +1,5 @@
 from ._pscSS import _SS_PSC_12CELL,_SS_PSC_I,_SS_PSC_Value
-from ._dbSecSS import _SS_DBUSER,_SS_DB_SECTION
+from ._dbSecSS import _SS_DBUSER,_SS_DB_SECTION , _SS_VALUE
 from ._offsetSS import Offset
 from ._unSupp import _SS_UNSUPP,_SS_STD_DB
 from ._compositeSS_PSC import _SS_COMP_PSC_I,_SS_COMP_PSC_VALUE
@@ -322,6 +322,22 @@ class Section:
         """
         args = locals()
         sect_Obj = _SS_DB_SECTION(**args)
+        _SectionADD(sect_Obj)
+        return sect_Obj
+    
+    @staticmethod
+    def VALUE(Name:str='',Shape:_dbsection='',parameters:list=[],
+                 Area=None,Ixx=None,Iyy=None,Izz=None,Offset=Offset(),useShear:bool=True,use7Dof:bool=False,id:int=None):
+        """Create a Value type section.
+
+            _SS_DBUSER: The created section object.
+
+        Example::
+
+            Section.DBUSER("MainGirder", "H", [1000, 300, 200, 300, 20, 20, 15, 0])
+        """
+        args = locals()
+        sect_Obj = _SS_VALUE(**args)
         _SectionADD(sect_Obj)
         return sect_Obj
     
@@ -769,9 +785,10 @@ class Section:
             be the same type and, for ``DBUSER`` sections, the same shape code.
 
             Supported end-section types:
-                - ``_SS_DBUSER`` → ``_SS_TAPERED_DBUSER``
-                - ``_SS_PSC_12CELL`` → ``_SS_TAP_PSC_12CELL``
-                - ``_SS_PSC_Value`` → ``_SS_TAP_PSC_Value``
+                - ``DBUSER``
+                - ``PSC_12CELL``
+                - ``PSC_Value``
+                - ``COMPOSITE PSC_I``
 
             Args:
                 Name (str): Name for the new tapered section.
