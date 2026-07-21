@@ -18,6 +18,8 @@ from ._movingload import MovingLoad
 
 from ._temperature import Temperature
 from ._construction import CS
+from._analysiscontrol import AnalysisControl
+from ._responseSpectrum import RS
 
 from ._view import View
 
@@ -270,6 +272,7 @@ class Model:
                 "TEMPER":temp
             }
         MidasAPI("PUT","/db/UNIT",unit)
+        NX._isSyncUnit = True
         return NX.units
 
 
@@ -278,6 +281,15 @@ class Model:
         resp = MidasAPI("GET","/db/UNIT")['UNIT']['1']
         # js = {'FORCE':resp['FORCE'],'DIST':resp['DIST'],'HEAT':resp['HEAT'],'TEMPER':resp['TEMPER']}
         return resp
+    
+    @staticmethod
+    def syncUnits():
+        resp = MidasAPI("GET","/db/UNIT")['UNIT']['1']
+        # js = {'FORCE':resp['FORCE'],'DIST':resp['DIST'],'HEAT':resp['HEAT'],'TEMPER':resp['TEMPER']}
+        NX.units = resp
+        NX._isSyncUnit = True
+        return NX.units
+
 
 
 
@@ -320,8 +332,6 @@ class Model:
 
         
         from tqdm import tqdm
-        from._analysiscontrol import AnalysisControl
-        from ._responseSpectrum import RS
         pbar = tqdm(total=15,desc="Creating Model...")
 
         if Material.mats!=[]: Material.create()
@@ -349,6 +359,7 @@ class Model:
         Group.create()
         pbar.update(1)
         pbar.set_description_str("Creating Boundary...")
+        if Element.StiffnessScaleFactor.data: Element.StiffnessScaleFactor.create()
         Boundary.create()
         pbar.update(1)
         pbar.set_description_str("Creating Load...")
@@ -440,7 +451,7 @@ class Model:
         MidasAPI("PUT","/db/STYP",js)
 
     @staticmethod
-    def save(location=""):
+    def save(location=None):
         """Saves the model\nFor the first save, provide location - \nModel.save("D:\\model2.mcb")"""
         if location=="":
             MidasAPI("POST","/doc/SAVE",{"Argument":{}})
@@ -451,7 +462,7 @@ class Model:
                 print('⚠️  File extension is missing')
                 
     @staticmethod
-    def saveAs(location=""):
+    def saveAs(location):
         """Saves the model at location provided   
          Model.saveAs("D:\\model2.mcb")"""
         if location.endswith(('.mcb','.mcbz','.mgb','.mgbx')):
@@ -460,9 +471,9 @@ class Model:
             print('⚠️  File extension is missing')
     
     @staticmethod
-    def open(location=""):
+    def open(location):
         """Open Civil NX model file \n Model.open("D:\\model.mcb")"""
-        if location.endswith('.mcb') or location.endswith('.mcbz'):
+        if location.endswith(('.mcb','.mcbz','.mgb','.mgbx')):
             MidasAPI("POST","/doc/OPEN",{"Argument":str(location)})
         else:
             print('⚠️  File extension is missing')
@@ -481,7 +492,7 @@ class Model:
     @staticmethod
     def saveStageAs(stageName="",filePath=""):
         """Save Construction Stage as separate model"""
-        if filePath.endswith('.mcb') or filePath.endswith('.mcbz'):
+        if filePath.endswith(('.mcb','.mcbz','.mgb','.mgbx')):
             MidasAPI("POST","/doc/STAGAS",{"Argument":{"EXPORT_PATH":str(filePath), "STAGE_STEP":str(stageName)}})
         else:
             print('⚠️  File extension is missing')
@@ -901,7 +912,7 @@ class Model:
         ''' 
         Capture the image in the viewport
             Location - image location
-            Image Size =  height and width of image captured
+            Image Size =  width and height of image captured
             View - 'pre' or 'post'
             stage - CS name
         '''

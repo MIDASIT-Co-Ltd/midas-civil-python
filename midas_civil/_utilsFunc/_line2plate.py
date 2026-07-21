@@ -1,5 +1,9 @@
 # from midas_civil import *
-from midas_civil import MidasAPI,Node,Element,Boundary,Thickness,Section,Model,NX
+# from midas_civil import MidasAPI,Node,Element,Boundary,Thickness,Section,Model,NX
+
+from .._mapi import MidasAPI,NX
+from .._model import Node,Element,Boundary,Thickness,Section,Model
+
 from colorama import Fore,Style
 import numpy as np
 from math import hypot , sin , cos

@@ -29,7 +29,7 @@ def _convertColm2DataType(res_df):
     str_colms = set(res_df.select(pl.selectors.matches("Load|Part|Remark")).columns)
     int_colms1 = set(res_df.select(pl.selectors.by_name("Index","Elem","Node",require_all=False)).columns)
     int_colms2 = set(res_df.select(pl.selectors.matches("/Node")).columns)-int_colms1
-    float_colms = set(res_df.select(pl.selectors.matches("Axial|Shear|Torsion|Moment|FX|FY|FZ|MX|MY|MZ|DX|DY|DZ|RX|RY|RZ|Level|Height|Displacement|Maximum/Average|Elements|Drift|Factor")).columns)-str_colms-int_colms1-int_colms2
+    float_colms = set(res_df.select(pl.selectors.matches("Axial|Shear|Torsion|Moment|FX|FY|FZ|MX|MY|MZ|DX|DY|DZ|RX|RY|RZ|Level|Height|Displacement|Maximum/Average|Elements|Drift|Factor|Frequency|TRAN|ROTN|Period|Tolerance")).columns)-str_colms-int_colms1-int_colms2
     
     res_type_df = res_df.with_columns([
         pl.selectors.by_name(*str_colms,require_all=False).cast(pl.String),
@@ -78,6 +78,43 @@ def _JSToDF_ResTable(js_json,excelLoc,sheetName,cellLoc="A1"):
         _write_df_to_existing_excel(res_type_df,(excelLoc,sheetName, cellLoc))
 
     return(res_type_df)
+
+
+
+
+
+#---- INPUT: JSON -> OUTPUT : Data FRAME --------- ---------
+def JSON2DF(json_data):
+    ''' CONVERTS JSON DATA WITH HEAD AND DATA KEYS TO POLARS DATAFRAME'''
+    # Check for SS_Table existence
+
+    import polars as pl
+
+        
+    res_json = {}
+    c=0
+    
+    # Check for HEAD and DATA existence
+    if "HEAD" not in json_data or "DATA" not in json_data:
+        print('⚠️  Error: "HEAD" or "DATA" not found in "SS_Table".')
+        return pl.DataFrame() # Return empty DataFrame
+        
+    for heading in json_data["HEAD"]:
+        for dat in json_data["DATA"]:
+            try:
+                res_json[heading].append(dat[c])
+            except:
+                res_json[heading]=[]
+                res_json[heading].append(dat[c])
+
+        c+=1
+
+    res_df = pl.DataFrame(res_json) # Final DF
+
+    res_type_df = _convertColm2DataType(res_df)
+
+    return(res_type_df)
+
 
 
 def _Head_Data_2_DF_JSON(head,data):

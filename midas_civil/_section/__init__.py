@@ -1,6 +1,6 @@
 from ._pscSS import _SS_PSC_12CELL,_SS_PSC_I,_SS_PSC_Value
 from ._dbSecSS import _SS_DBUSER,_SS_DB_SECTION , _SS_VALUE
-from ._offsetSS import Offset
+from ._offsetSS import Offset ,Shape
 from ._unSupp import _SS_UNSUPP,_SS_STD_DB
 from ._compositeSS_PSC import _SS_COMP_PSC_I,_SS_COMP_PSC_VALUE
 from ._compositeSS_Steel import _SS_COMP_STEEL_I_TYPE1,_SS_COMP_STEEL_TUB_TYPE1
@@ -12,13 +12,23 @@ from ._tapPSCValue import _SS_TAP_PSC_Value
 
 from._Tap_CompPSC import _SS_TAP_COMP_PSC_I
 
-from midas_civil import MidasAPI
-from typing import Literal
+# from ._sectpropLIb import _SS_SECTPROP
+
+from ._genSec import _SS_GENERAL
+from .._utils import utils
+
+from .._mapi import MidasAPI
+from typing import Literal,TypeVar
+
+
+# _sectionProp = TypeVar('sectionproperties.analysis.Section')
 
 _dbsection = Literal["L","C","H","T","B","P","2L","2C","SB","SR","OCT"]
 _variation = Literal["LINEAR","POLY"]
 _symplane = Literal["i","j"]
 _Section = Literal["Section"]
+
+_AS_ST19 = Literal["T1","T2","T3","T4","T5"]
 
 class _helperSECTION:
     ID, NAME, SHAPE, TYPE, OFFSET, USESHEAR, USE7DOF = 0,0,0,0,0,0,0
@@ -73,7 +83,7 @@ def off_JS2Obj(js):
 
     return Offset(OffsetPoint,CenterLocation,HOffset,HOffOpt,VOffset,VOffOpt,UsrOffOpt)
 
-# -------------------  FUNCTION TO CREATE OBJECT used in ELEMENT SYNC  --------------------------
+# ----------  FUNCTION TO CREATE OBJECT used in ELEMENT SYNC  ----------
 def _JS2OBJ(id,js):
     name = js['SECT_NAME']
     type = js['SECTTYPE']
@@ -95,7 +105,7 @@ def _JS2OBJ(id,js):
     elif type == 'COMPOSITE':
         if shape in ['CI']: obj = _SS_COMP_PSC_I._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
         elif shape in ['I']: obj = _SS_COMP_STEEL_I_TYPE1._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
-        elif shape in ['PC']: obj = _SS_COMP_PSC_VALUE._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
+        # elif shape in ['PC']: obj = _SS_COMP_PSC_VALUE._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
         elif shape in ['Tub']: obj = _SS_COMP_STEEL_TUB_TYPE1._objectify(id,name,type,shape,offset,uShear,u7DOF,js)
         else: obj = _SS_UNSUPP(id,name,type,shape,offset,uShear,u7DOF,js)
 
@@ -260,7 +270,8 @@ class Section:
 
 
 
-#---------------------------------     S E C T I O N S    ---------------------------------------------
+#---------------------------------     S E C T I O N    ---------------------------------------------
+
 
     #---------------------     D B   U S E R    --------------------
     @staticmethod
@@ -294,7 +305,9 @@ class Section:
         sect_Obj = _SS_DBUSER(**args)
         _SectionADD(sect_Obj)
         return sect_Obj
-    
+ 
+
+    #---------------------     D B   --------------------
     @staticmethod
     def DB(Name:str='',Shape:_dbsection='',DB_Name:str='',Sect_Name:str='',Offset=Offset(),useShear:bool=True,use7Dof:bool=False,id:int=None):
         """Create a section sourced from a codal steel/section database.
@@ -324,7 +337,9 @@ class Section:
         sect_Obj = _SS_DB_SECTION(**args)
         _SectionADD(sect_Obj)
         return sect_Obj
-    
+
+
+    #---------------------     V A L U E    --------------------    
     @staticmethod
     def VALUE(Name:str='',Shape:_dbsection='',parameters:list=[],
                  Area=None,Ixx=None,Iyy=None,Izz=None,Offset=Offset(),useShear:bool=True,use7Dof:bool=False,id:int=None):
@@ -341,9 +356,34 @@ class Section:
         _SectionADD(sect_Obj)
         return sect_Obj
     
+    # @staticmethod
+    # def fromSectPropLib(section:_sectionProp,Name:str='',Offset=Offset(),useShear:bool=True,use7Dof:bool=False,id:int=None):
+    #     """Create a section from sectionproperties library
+    #     """
+    #     args = locals()
+    #     sect_Obj = _SS_SECTPROP(**args)
+    #     _SectionADD(sect_Obj)
+    #     return sect_Obj
+    
+
+    #---------------------     General    --------------------
+    @staticmethod
+    def FromShape(shape1:Shape,shape2:Shape=None,shape3:Shape=None,shape4:Shape=None, 
+                 Name:str='',Offset:Offset=Offset(),useShear:bool=True,use7Dof:bool=False,id:int=None):
+        """Create general section , simple to Composite section
+        """
+        args = locals()
+        sect_Obj = _SS_GENERAL(**args)
+        _SectionADD(sect_Obj)
+        return sect_Obj
+    
+
+
     class PSC:
         """Factory methods for prestressed concrete (PSC) sections."""
 
+
+    #---------------------     C E L 1 2  (PSC)  --------------------
         @staticmethod
         def CEL12(Name='', Shape='1CEL', Joint=[0,0,0,0,0,0,0,0],
                     HO1=0,HO2=0,HO21=0,HO22=0,HO3=0,HO31=0,
@@ -359,10 +399,10 @@ class Section:
                     double-cell box girder.
                 Joint (list[int]): 8-element joint flag list controlling the
                     haunch geometry at top/bottom corners.
-                HO1–HO31 (float): Outer height dimensions (top flange region).
-                BO1–BO3 (float): Outer width dimensions (top flange region).
-                HI1–HI5 (float): Inner height dimensions (web / bottom region).
-                BI1–BI4 (float): Inner width dimensions (web / bottom region).
+                HO1-HO31 (float): Outer height dimensions (top flange region).
+                BO1-BO3 (float): Outer width dimensions (top flange region).
+                HI1-HI5 (float): Inner height dimensions (web / bottom region).
+                BI1-BI4 (float): Inner width dimensions (web / bottom region).
                 Offset (Offset): Cross-section offset. Defaults to centroid (CC).
                 useShear (bool): Include shear deformation. Default ``True``.
                 use7Dof (bool): Include warping effect. Default ``False``.
@@ -375,7 +415,9 @@ class Section:
             sect_Obj = _SS_PSC_12CELL(**args)
             _SectionADD(sect_Obj)
             return sect_Obj
+ 
 
+    #---------------------     I  (PSC) --------------------
         @staticmethod
         def I(Name='', Symm=True, Joint=[0,0,0,0,0,0,0,0,0],
                 H1=0,
@@ -394,10 +436,10 @@ class Section:
                 Symm (bool): If ``True``, right-side dimensions mirror left-side.
                 Joint (list[int]): 9-element joint flag list.
                 H1 (float): Total height of the section.
-                HL1–HL5 (float): Left-side height dimensions.
-                BL1–BL4 (float): Left-side width dimensions.
-                HR1–HR5 (float): Right-side height dimensions (used when ``Symm=False``).
-                BR1–BR4 (float): Right-side width dimensions (used when ``Symm=False``).
+                HL1-HL5 (float): Left-side height dimensions.
+                BL1-BL4 (float): Left-side width dimensions.
+                HR1-HR5 (float): Right-side height dimensions (used when ``Symm=False``).
+                BR1-BR4 (float): Right-side width dimensions (used when ``Symm=False``).
                 Offset (Offset): Cross-section offset. Defaults to centroid (CC).
                 useShear (bool): Include shear deformation. Default ``True``.
                 use7Dof (bool): Include warping effect. Default ``False``.
@@ -411,46 +453,98 @@ class Section:
             _SectionADD(sect_Obj)
             return sect_Obj
 
-        @staticmethod
-        def Value(Name: str,
+
+    #---------------------     V A L U E  (PSC)  --------------------
+        # @staticmethod
+        # def Value(Name: str,
+        #             OuterPolygon: list, InnerPolygon: list = [],
+        #             T1: float = 0.1, T2: float = 0.1, BT: float = 0.1, HT: float = 0.1,
+        #             Z1: float = 0, Z2: float = 0, Z3: float = 0,
+        #             thk_torsion: float = 0,
+        #             Offset: Offset = Offset.CC(), useShear: bool = True, use7Dof: bool = False, id: int = None):
+        #     """Create a PSC section defined by polygon vertex coordinates.
+
+        #     Args:
+        #         Name (str): Section name.
+        #         OuterPolygon (list[list[float]]): List of ``[y, z]`` vertices
+        #             defining the outer boundary (closed polygon).
+        #         InnerPolygon (list[list[float]]): List of ``[y, z]`` vertices
+        #             defining the inner void (closed polygon). Empty for solid.
+        #         T1 (float): Top slab thickness at reference position 1.
+        #         T2 (float): Bottom slab thickness at reference position 2.
+        #         BT (float): Effective width for top slab design.
+        #         HT (float): Haunch thickness.
+        #         Z1 (float): Shear check position 1 (from top).
+        #         Z2 (float): Shear check position 2.
+        #         Z3 (float): Shear check position 3.
+        #         thk_torsion (float): Equivalent wall thickness for torsion.
+        #         Offset (Offset): Cross-section offset. Defaults to centroid (CC).
+        #         useShear (bool): Include shear deformation. Default ``True``.
+        #         use7Dof (bool): Include warping effect. Default ``False``.
+        #         id (int | None): Section ID. Auto-assigned when ``None``.
+
+        #     Returns:
+        #         _SS_PSC_Value: The created section object.
+        #     """
+        #     args = locals()
+        #     sect_Obj = _SS_PSC_Value(**args)
+        #     _SectionADD(sect_Obj)
+        #     return sect_Obj
+        
+        class Value:
+
+            def __new__(self,Name: str,
                     OuterPolygon: list, InnerPolygon: list = [],
                     T1: float = 0.1, T2: float = 0.1, BT: float = 0.1, HT: float = 0.1,
                     Z1: float = 0, Z2: float = 0, Z3: float = 0,
                     thk_torsion: float = 0,
                     Offset: Offset = Offset.CC(), useShear: bool = True, use7Dof: bool = False, id: int = None):
-            """Create a PSC section defined by polygon vertex coordinates.
+                """Create a PSC section defined by polygon vertex coordinates.
 
-            Args:
-                Name (str): Section name.
-                OuterPolygon (list[list[float]]): List of ``[y, z]`` vertices
-                    defining the outer boundary (closed polygon).
-                InnerPolygon (list[list[float]]): List of ``[y, z]`` vertices
-                    defining the inner void (closed polygon). Empty for solid.
-                T1 (float): Top slab thickness at reference position 1.
-                T2 (float): Bottom slab thickness at reference position 2.
-                BT (float): Effective width for top slab design.
-                HT (float): Haunch thickness.
-                Z1 (float): Shear check position 1 (from top).
-                Z2 (float): Shear check position 2.
-                Z3 (float): Shear check position 3.
-                thk_torsion (float): Equivalent wall thickness for torsion.
-                Offset (Offset): Cross-section offset. Defaults to centroid (CC).
-                useShear (bool): Include shear deformation. Default ``True``.
-                use7Dof (bool): Include warping effect. Default ``False``.
-                id (int | None): Section ID. Auto-assigned when ``None``.
+                Args:
+                    Name (str): Section name.
+                    OuterPolygon (list[list[float]]): List of ``[y, z]`` vertices
+                        defining the outer boundary (closed polygon).
+                    InnerPolygon (list[list[float]]): List of ``[y, z]`` vertices
+                        defining the inner void (closed polygon). Empty for solid.
+                    T1 (float): Top slab thickness at reference position 1.
+                    T2 (float): Bottom slab thickness at reference position 2.
+                    BT (float): Effective width for top slab design.
+                    HT (float): Haunch thickness.
+                    Z1 (float): Shear check position 1 (from top).
+                    Z2 (float): Shear check position 2.
+                    Z3 (float): Shear check position 3.
+                    thk_torsion (float): Equivalent wall thickness for torsion.
+                    Offset (Offset): Cross-section offset. Defaults to centroid (CC).
+                    useShear (bool): Include shear deformation. Default ``True``.
+                    use7Dof (bool): Include warping effect. Default ``False``.
+                    id (int | None): Section ID. Auto-assigned when ``None``.
 
-            Returns:
-                _SS_PSC_Value: The created section object.
-            """
-            args = locals()
-            sect_Obj = _SS_PSC_Value(**args)
-            _SectionADD(sect_Obj)
-            return sect_Obj
-        
-    
+                Returns:
+                    _SS_PSC_Value: The created section object.
+                """
+                    
+                args = locals()
+                # print(args)
+                del args["self"]
+                sect_Obj = _SS_PSC_Value(**args)
+                _SectionADD(sect_Obj)
+                return sect_Obj
+            
+            @staticmethod
+            def AS_SuperT_RMS2019(Name='AS_SuperT',type:_AS_ST19='T1',
+                               Offset: Offset = Offset.CC(), useShear: bool = True, use7Dof: bool = False, id: int = None):
+                sect_Obj = Section.PSC.Value(Name,Shape.AS_SuperT_RMS2019(type),[],0.1,0.1,0.1,0.1,0,0,0,0,Offset,useShear,use7Dof,id)
+                return sect_Obj
+                
+                
+
+
     class Composite:
         """Factory methods for composite sections (steel or PSC girder + concrete slab)."""
 
+
+    #---------------------     D B   U S E R  (COMPOSITE)  --------------------
         @staticmethod
         def PSCI(Name='', Symm=True, Joint=[0,0,0,0,0,0,0,0,0],
                     Bc=0, tc=0, Hh=0,
@@ -496,7 +590,9 @@ class Section:
             sect_Obj = _SS_COMP_PSC_I(**args)
             _SectionADD(sect_Obj)
             return sect_Obj
+ 
 
+    #---------------------     S T E E L   I   T Y P E   1  (COMPOSITE)  --------------------
         @staticmethod
         def SteelI_Type1(Name='', Bc=0, tc=0, Hh=0, Hw=0, B1=0, tf1=0, tw=0, B2=0, tf2=0,
                 EsEc=0, DsDc=0, Ps=0, Pc=0, TsTc=0,
@@ -535,7 +631,9 @@ class Section:
             sect_Obj = _SS_COMP_STEEL_I_TYPE1(**args)
             _SectionADD(sect_Obj)
             return sect_Obj
+    
 
+    #---------------------     S T E E L   T U B   T Y P E   1  (COMPOSITE)  --------------------
         @staticmethod
         def SteelTub_Type1(Name='',
                 Bc=0, tc=0, Hh=0,
@@ -581,7 +679,9 @@ class Section:
             sect_Obj = _SS_COMP_STEEL_TUB_TYPE1(**args)
             _SectionADD(sect_Obj)
             return sect_Obj
+   
 
+   #---------------------     P S C   V A L U E  (COMPOSITE)  --------------------
         @staticmethod
         def PSC_Value(Name: str, Bc: float, tc: float, Hh: float,
                         OuterPolygon: list, InnerPolygon: list = [],
@@ -620,9 +720,15 @@ class Section:
             _SectionADD(sect_Obj)
             return sect_Obj
     
+
+
+
+
     class Tapered:
         """Factory methods for tapered sections whose shape varies from I-end to J-end."""
+   
 
+    #---------------------     DB USER (TAPERED)   --------------------
         @staticmethod
         def DBUSER(Name: str = '', Shape: _dbsection = '', params_I: list = [], params_J: list = [],
                    Offset=Offset(), useShear: bool = True, use7Dof: bool = False, id: int = None):
@@ -646,9 +752,11 @@ class Section:
             sect_Obj = _SS_TAPERED_DBUSER(**args)
             _SectionADD(sect_Obj)
             return sect_Obj
+   
 
+   #---------------------     PSC BOX 12 CELL (TAPERED)   --------------------
         @staticmethod
-        def PSC12CEL(Name='', Shape='1CEL', Joint=[0,0,0,0,0,0,0,0],
+        def PSC12CEL(Name:str='', Shape='1CEL', Joint=[0,0,0,0,0,0,0,0],
                     HO1_I=0,HO2_I=0,HO21_I=0,HO22_I=0,HO3_I=0,HO31_I=0,
                     BO1_I=0,BO11_I=0,BO12_I=0,BO2_I=0,BO21_I=0,BO3_I=0,
                     HI1_I=0,HI2_I=0,HI21_I=0,HI22_I=0,HI3_I=0,HI31_I=0,HI4_I=0,HI41_I=0,HI42_I=0,HI5_I=0,
@@ -668,14 +776,14 @@ class Section:
                 Name (str): Section name.
                 Shape (str): ``'1CEL'`` or ``'2CEL'``.
                 Joint (list[int]): 8-element joint flag list (shared by both ends).
-                HO1_I–HO31_I (float): I-end outer height dimensions.
-                BO1_I–BO3_I (float): I-end outer width dimensions.
-                HI1_I–HI5_I (float): I-end inner height dimensions.
-                BI1_I–BI4_I (float): I-end inner width dimensions.
-                HO1_J–HO31_J (float): J-end outer height dimensions.
-                BO1_J–BO3_J (float): J-end outer width dimensions.
-                HI1_J–HI5_J (float): J-end inner height dimensions.
-                BI1_J–BI4_J (float): J-end inner width dimensions.
+                HO1_I-HO31_I (float): I-end outer height dimensions.
+                BO1_I-BO3_I (float): I-end outer width dimensions.
+                HI1_I-HI5_I (float): I-end inner height dimensions.
+                BI1_I-BI4_I (float): I-end inner width dimensions.
+                HO1_J-HO31_J (float): J-end outer height dimensions.
+                BO1_J-BO3_J (float): J-end outer width dimensions.
+                HI1_J-HI5_J (float): J-end inner height dimensions.
+                BI1_J-BI4_J (float): J-end inner width dimensions.
                 Offset (Offset): Cross-section offset. Defaults to centroid (CC).
                 useShear (bool): Include shear deformation. Default ``True``.
                 use7Dof (bool): Include warping effect. Default ``False``.
@@ -688,9 +796,11 @@ class Section:
             sect_Obj = _SS_TAP_PSC_12CELL(**args)
             _SectionADD(sect_Obj)
             return sect_Obj
+   
 
+    #---------------------     STEEL TUB TYPE 1 (TAPERED)  --------------------
         @staticmethod
-        def SteelTub_Type1(Name='',
+        def SteelTub_Type1(Name:str='',
                 Bc=0, tc=0, Hh=0,
                 params_I=[0,0,0,0,0,0,0,0,0,0],
                 params_J=[0,0,0,0,0,0,0,0,0,0],
@@ -732,7 +842,9 @@ class Section:
             sect_Obj = _SS_TAP_COMP_STEEL_TUB_TYPE1(**args)
             _SectionADD(sect_Obj)
             return sect_Obj
+   
 
+    #---------------------     PSC VALUE (TAPERED)  --------------------
         @staticmethod
         def PSC_Value(Name: str,
                     OuterPolygon_I: list, OuterPolygon_J: list,
@@ -774,7 +886,9 @@ class Section:
             sect_Obj = _SS_TAP_PSC_Value(**args)
             _SectionADD(sect_Obj)
             return sect_Obj
+   
 
+    #---------------------     BY SHAPE (TAPERED)   --------------------
         @staticmethod
         def bySHAPE(Name: str, Sect_I: _Section, Sect_J: _Section,
                     Offset=Offset(), useShear: bool = True, use7Dof: bool = False, id: int = None):
@@ -866,8 +980,9 @@ class Section:
 
             _SectionADD(sect_Obj)
             return sect_Obj
-        
+   
 
+    #---------------------     COMPOSTIE PSC I  (TAPERED)  --------------------        
         @staticmethod
         def Composite_PSC_I(Name='', Symm=True, Joint=[0,0,0,0,0,0,0,0,0],
                     Bc=0, tc=0, Hh=0,
@@ -1054,7 +1169,7 @@ class Section:
                 individual ``TaperedGroup`` constructors manually to set
                 polynomial variation.
             """
-            from midas_civil import Element
+            from .._element import Element
             _tapSectElems = {}
             _tapSectIDs = []
             cls.clear()
@@ -1072,7 +1187,6 @@ class Section:
             #GENERATE TAPERED GROUP
             for sectID in _tapSectIDs:
                 Section.TaperedGroup(f"TG_SecID{sectID}",_tapSectElems[sectID])
-
         
         @classmethod
         def get(cls):

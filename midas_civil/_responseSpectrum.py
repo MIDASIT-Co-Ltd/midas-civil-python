@@ -1,5 +1,4 @@
 from ._mapi import MidasAPI
-from ._model import Model
 from typing import Literal
 
 _SpecType = Literal["Normalized Accel" ,  "Acceleration", "Velocity", "Displacement" ]
@@ -226,7 +225,6 @@ class RS:
                                           jsData['aFUNCNAME'],jsData['INTERP'],None,None,jsData['DESC']
                                           ,id=int(id))
 
-
     class Function:
         functions = []
         _ids = [0]
@@ -240,7 +238,7 @@ class RS:
         
         @classmethod
         def create(cls):
-            if RS.Function.functions:
+            if cls.functions:
                 MidasAPI('PUT','/db/SPFC',cls.json())
 
 
@@ -248,6 +246,7 @@ class RS:
             def __init__(self,name,RSdata = [(0,0),(0.1,0.1)],spectral_type:_SpecType='Normalized Accel',scaling=1,max_value=None,gravity=None,damping_rat = 0.05,desc="",id=None):
                 
                 if gravity==None:
+                    from ._model import Model
                     gravity = Model.gravity()
                 
                 
@@ -307,6 +306,7 @@ class RS:
             def __init__(self,name,code:_INCode='IS1893(2002)',soilType:_INSoil='Hard',zone:_INZone='IV',imp_factor=1.0,RRF=1.5,max_period=6,spectral_type='Normalized Accel',scaling=1,max_value=None,gravity=None,damping_rat = 0.05,desc="",id=None):
                 
                 if gravity==None:
+                    from ._model import Model
                     gravity = Model.gravity()
 
                 if isinstance(spectral_type,str):
@@ -412,6 +412,7 @@ class RS:
             def __init__(self,name,zone:int=1,soilType:_PeruSoil='S0',usage_cat:_PeruUse='A1',RRF=1.5,max_period=6,spectral_type='Normalized Accel',scaling=1,max_value=None,gravity=None,damping_rat = 0.05,desc="",id=None):
                 
                 if gravity==None:
+                    from ._model import Model
                     gravity = Model.gravity()
 
                 if isinstance(spectral_type,str):

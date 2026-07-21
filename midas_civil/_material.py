@@ -1747,47 +1747,49 @@ class TDMatLink:
                     TDMatLink(a['TMAT'][j], int(j))
 
 #-------------------------------------------------------------------------------------------------
+class _ChangeProperty:
+    ELEM_ID,TYPE,VALUE = 0,0,0
+ 
 
 class ChangeProperty:
-    mats = {}
-    def __init__(self,matID,CnSName='',CompName=''):
+    data:list[_ChangeProperty] = []
+    def __init__(self,elmID:int,notional_size:float=None,vol_srf_rat:float=None):
+        ''' ENTER ELEMENT ID and corresponding value '''
+        self.ELEM_ID = elmID
+        self.TYPE = "NSM"
+        self.VALUE = 0
+        if notional_size:
+            self.TYPE = "NSM"
+            self.VALUE = notional_size
+        if vol_srf_rat:
+            self.TYPE = "VSR"
+            self.VALUE = vol_srf_rat
 
-        TDMatLink.mats[str(matID)]={
-            "TDMT_NAME": CnSName,
-            "TDME_NAME": CompName
-        }
-    
+        ChangeProperty.data.append(self)
+
     @classmethod
     def json(cls):
-        json = {"Assign": TDMatLink.mats}
+        json = {"Assign": {}}
+        for dat in cls.data:
+            json["Assign"][dat.ELEM_ID] = { "TYPE": dat.TYPE, "H_VS": dat.VALUE }
         return json
     
-    @staticmethod
-    def create():
-        MidasAPI("PUT","/db/TMAT",TDMatLink.json())
+    @classmethod
+    def create(cls):
+        MidasAPI("PUT","/db/EDMP",cls.json())
         
     @staticmethod
     def get():
-        return MidasAPI("GET","/db/TMAT")
+        return MidasAPI("GET","/db/EDMP")
     
     
     @staticmethod
     def delete():
-        MidasAPI("DELETE","/db/TMAT")
+        MidasAPI("DELETE","/db/EDMP")
         TDMatLink.clear()
 
     @staticmethod
     def clear():
-        TDMatLink.mats={}
-
-    @staticmethod
-    def sync():
-        a = TDMatLink.get()
-        if a != {'message': ''}:
-            if list(a['TMAT'].keys()) != []:
-                TDMatLink.mats = []
-                TDMatLink.ids=[]
-                for j in a['TMAT'].keys():
-                    TDMatLink(a['TMAT'][j], int(j))
+        ChangeProperty.data=[]
 
 #-------------------------------------------------------------------------------------------------

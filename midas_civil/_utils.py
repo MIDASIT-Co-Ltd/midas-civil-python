@@ -4,6 +4,7 @@ from __future__ import annotations
 from math import hypot,sqrt
 import numpy as np
 from typing import Literal
+from ._mapi import NX,MidasAPI
 
 _falloffType = Literal['Linear','Parabolic','Smooth']
 
@@ -125,6 +126,7 @@ def _longestList(A,B):
     if nA >= nB:
         return (A , B + [B[-1]] * (nA - nB))
     return (A + [A[-1]] * (nB - nA),B)
+
 
 
 _alignType = Literal['cubic','akima','makima','pchip']
@@ -307,7 +309,9 @@ class utils:
             :param bElement: If beta angle of element should be modified
             :type bElement: bool
             '''
-            from midas_civil import Node,Element,MidasAPI,nodeByID
+            from ._node import Node,MidasAPI,nodeByID
+            from ._element import Element
+
             if bSync:
                 Node.sync()
                 if bElement: Element.sync()
@@ -474,7 +478,11 @@ class utils:
         mat_E : float, optional
             Modulus of elasticity of the material (default is 30,000,000).
         """
-        from midas_civil import Model,Material,Section,Offset,nodesInGroup,Element,Boundary,Load,elemsInGroup,Node,Group
+        from ._model import Model,Material,Section,Element,Boundary,Load,Group
+        from ._node import Node,nodesInGroup
+        from ._section import Offset
+        from ._element import elemsInGroup
+
         import math
 
         Model.units()
@@ -622,3 +630,4 @@ class utils:
             _softSelect_data[nID] = falloffFn(dist,_selectRadius)
 
         return list(_softSelect_data.items())
+

@@ -1,7 +1,7 @@
 import requests
 from colorama import Fore,Style
 from ._mapi import NX,MidasAPI,MAPI_KEY,MAPI_BASEURL,MAPI_COUNTRY,Midas_help
-_version_ = "1.6.8"
+_version_ = "1.6.9"
 
 
 print('\n╭────────────────────────────────────────────────────────────────────────────────────╮')
@@ -31,9 +31,9 @@ from ._load import Load,Load_Case   # Revise it
 from ._loadcomb import LoadCombination
 
 
-from ._material import Material,CompStrength,CreepShrinkage,TDMatLink
+from ._material import Material,CompStrength,CreepShrinkage,TDMatLink,ChangeProperty
 
-from ._section import Section,Offset
+from ._section import Section,Offset,Shape
 
 from ._construction import CS
 from ._thickness import Thickness
@@ -47,7 +47,7 @@ from ._settlement import Settlement
 from ._analysiscontrol import AnalysisControl
 from ._BoundaryChangeAssignment import BoundaryChangeAssignment         # <=== NEEDS A REVIEW (UNNECESSARY CALL)
 
-from ._result_table import Result,TableOptions
+from ._result_table import Result,TableOptions , JSON2DF
 
 
 from ._responseSpectrum import RS

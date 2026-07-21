@@ -48,10 +48,16 @@ def _ADD_BeamLoad(self):
                       self.ECCEN_DIR,self.ECCEN_TYPE,self.IECC,self.JECC,self.USE_H,self.I_H,self.J_H,self.ID)
 
 def _ADD_LoadCase(self):
-    Load_Case.maxID = max(max(self.ID),Load_Case.maxID)
-    Load_Case.maxNO = max(max(self.NO),Load_Case.maxNO)
     for i in range(len(self.ID)):
-        Load_Case.cases.append(_LoadCase(self.TYPE,self.NAME[i],self.ID[i],self.NO[i]))
+        if self.ID[i] == None: 
+            Load_Case.maxID+=1
+            self.ID[i] = Load_Case.maxID
+        if self.NO[i] == None: 
+            Load_Case.maxNO+=1
+            self.NO[i] = Load_Case.maxNO
+        Load_Case.cases.append(_LoadCase(self.TYPE,self.NAME[i],self.ID[i],self.NO[i],self.DESC[i]))
+        Load_Case.maxID = max(Load_Case.maxID,self.ID[i])
+        Load_Case.maxNO = max(Load_Case.maxNO,self.NO[i])
         
 def _ADD_NodalMass(self):
     if isinstance(self.NODE_ID,int):
@@ -71,12 +77,12 @@ def _ADD_SpDisp(self):
 #     ID, NAME, TYPE , NO= 0,0,0,0
 
 class _LoadCase:
-    def __init__(self, type, name , id , no):
+    def __init__(self, type, name , id , no, desc):
         self.TYPE = type
         self.NAME = name
         self.ID = id
         self.NO = no
-        self.DESC = ""
+        self.DESC = desc
 
 #11 Class to define Load Cases:
 class Load_Case:
@@ -88,18 +94,17 @@ class Load_Case:
     types = ["USER", "D", "DC", "DW", "DD", "EP", "EANN", "EANC", "EAMN", "EAMC", "EPNN", "EPNC", "EPMN", "EPMC", "EH", "EV", "ES", "EL", "LS", "LSC", 
             "L", "LC", "LP", "IL", "ILP", "CF", "BRK", "BK", "CRL", "PS", "B", "WP", "FP", "SF", "WPR", "W", "WL", "STL", "CR", "SH", "T", "TPG", "CO",
             "CT", "CV", "E", "FR", "IP", "CS", "ER", "RS", "GE", "LR", "S", "R", "LF", "RF", "GD", "SHV", "DRL", "WA", "WT", "EVT", "EEP", "EX", "I", "EE"]
-    def __init__(self, type:_LCType, *name):
+    def __init__(self, type:_LCType, *name:str ,id:int=None,no:int=None,desc=""):
         self.TYPE = type
         self.NAME = name
         self.ID = []
         self.NO = []
+        self.DESC = []
         for i in range(len(self.NAME)):
-            if Load_Case.cases == []: 
-                self.ID.append(i+1)
-                self.NO.append(i+1)
-            if Load_Case.cases != []: 
-                self.ID.append(Load_Case.maxID + i + 1)
-                self.NO.append(Load_Case.maxNO + i + 1)
+            self.ID.append(id)
+            self.NO.append(no)
+            self.DESC.append(desc)
+
         _ADD_LoadCase(self)
     
     @classmethod
@@ -134,14 +139,8 @@ class Load_Case:
         if a != {'message': ''}:
             if list(a['STLD'].keys()) != []:
                 for j in a['STLD'].keys():
-                    lc = Load_Case(a['STLD'][j]['TYPE'], a['STLD'][j]['NAME'])
-                    lcID = int(j)
-                    lCNO = int(a['STLD'][j]['NO'])
-                    lc.ID = [lcID]
-                    lc.NO = [lCNO]
-
-                    Load_Case.maxID = max(Load_Case.maxID ,lcID )
-                    Load_Case.maxNO = max(Load_Case.maxNO ,lCNO )
+                    Load_Case(a['STLD'][j]['TYPE'], a['STLD'][j]['NAME'],id=int(j),no=a['STLD'][j]['NO'],desc = a['STLD'][j]['DESC'])
+                    # print("---> MAX NO",Load_Case.maxNO)
     
     @classmethod
     def delete(cls):
@@ -171,6 +170,7 @@ class Load:
         if cls.Misc.PreCompositeSection.loadCases : cls.Misc.PreCompositeSection.create()
         if cls.PlaneLoad_Define.data: cls.PlaneLoad_Define.create()
         if cls.PlaneLoad_Assign.data : cls.PlaneLoad_Assign.create()
+        if cls.LoadToMass.data : cls.LoadToMass.create()
     
     @classmethod
     def clear(cls):
@@ -184,6 +184,7 @@ class Load:
         cls.Misc.PreCompositeSection.clear()
         cls.PlaneLoad_Assign.clear()
         cls.PlaneLoad_Define.clear()
+        cls.LoadToMass.clear()
         
 
     class SW:
@@ -643,6 +644,10 @@ class Load:
         def delete(cls):
             cls.data = []
             return MidasAPI("DELETE", "/db/ltom")
+
+        @classmethod
+        def clear(cls):
+            cls.data = []
         
         @classmethod
         def sync(cls):

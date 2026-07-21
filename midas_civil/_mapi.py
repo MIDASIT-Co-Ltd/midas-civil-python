@@ -221,6 +221,7 @@ class NX:
     PRODUCT = 'CIVIL'
     SOLVER = 'FES'
     _MEC_VERSIONS = ['9.7.5']
+    _isSyncUnit = False
 
     units = {
         "FORCE": "KN",
@@ -399,6 +400,7 @@ def MidasAPI(method:_httpMethod, command:str, body:dict={})->dict:
 
     if MAPI_KEY.count == 1:
         MAPI_KEY.count =0
+
         if NX.user_print:
             _checkUSER()
 

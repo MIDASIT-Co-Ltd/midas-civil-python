@@ -1236,12 +1236,6 @@ class Element():
 
                 return _createPlateExtrude(nID_A,nID_B,nDiv,id)
             
-
-            
-
-
-
-            
             
             # if inpType in ('NODE_ID','XYZ'):
             #     return _createPlateExtrude(nID_A,nID_B,nDiv,id)
