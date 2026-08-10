@@ -117,6 +117,8 @@ class Model:
     @staticmethod
     def gravity():
         g_SI = 9.806
+        if NX._isSyncUnit == False:
+            Model.syncUnits()
 
         len_unit =NX.units['DIST']
         len_multi = {
@@ -453,10 +455,10 @@ class Model:
     @staticmethod
     def save(location=None):
         """Saves the model\nFor the first save, provide location - \nModel.save("D:\\model2.mcb")"""
-        if location=="":
+        if location==None:
             MidasAPI("POST","/doc/SAVE",{"Argument":{}})
         else:
-            if location.endswith('.mcb') or location.endswith('.mcbz'):
+            if location.endswith(('.mcb','.mcbz','.mgb','.mgbx')):
                 MidasAPI("POST","/doc/SAVEAS",{"Argument":str(location)})#Dumy location
             else:
                 print('⚠️  File extension is missing')
@@ -578,27 +580,83 @@ class Model:
         node_connectivity = dict(node_connectivity)
         return node_connectivity
 
+    # @staticmethod
+    # def visualise():
+    #     if NX.visualiser:
+    #         try:
+    #             from ._visualise import displayWindow
+    #             displayWindow()
+    #         except:
+    #             pass
+
+    # @staticmethod
+    # def snap():
+    #     if NX.visualiser:
+    #         try:
+    #             from ._visualise import take_snapshot
+    #             take_snapshot()
+    #         except:
+    #             pass
+
+    @staticmethod
+    def stFigure(bGrid=True,bSupport=True,bPointSpring=False,bElink=False, bRigidLink=False,bNode=False,bNodeID=False,bElementID=True):
+        # if NX.visualiser:
+        try:
+            from ._visualise import stVisual
+            return stVisual(bGrid,bSupport,bPointSpring,bElink, bRigidLink,bNode,bNodeID,bElementID)
+        except:
+            print("   ⚠️   ERROR OCCURED WHILE GENERATING PLOTLY STRUCTURE ...")
+            return None
+
     @staticmethod
     def visualise():
-        if NX.visualiser:
-            try:
-                from ._visualise import displayWindow
-                displayWindow()
-            except:
-                pass
+        try:
+            from ._visualise import stVisual
+            stVisual(True,True,True,True,True,True,True,True).show()
+        except:
+            print("   ⚠️   ERROR OCCURED WHILE GENERATING PLOTLY STRUCTURE ...")
+            return None
+        
+    @staticmethod
+    def Snap(bGrid=True, bSupport=True, bPointSpring=False, bElink=False, bRigidLink=False, bNode=False, bNodeID=False, bElementID=True):
+        """
+        Takes a snapshot of the current model state and stores it in memory.
+        Returns the _Snap instance.
+        """
+        try:
+            from ._visualise import _Snap
+            return _Snap(bGrid, bSupport, bPointSpring, bElink, bRigidLink, bNode, bNodeID, bElementID)
+        except:
+            print("   ⚠️   ERROR OCCURRED WHILE TAKING SNAPSHOT ...")
+            return None
+    
+    @staticmethod
+    def getSnap(ID=None):
+        """Retrieves a specific snapshot by ID. If no ID is passed, returns the latest snapshot."""
+        try:
+            from ._visualise import _Snap
+            return _Snap.get(ID)
+        except:
+            print("   ⚠️   ERROR OCCURRED WHILE RETRIEVING SNAPSHOT ...")
+            return None
 
     @staticmethod
-    def snap():
-        if NX.visualiser:
-            try:
-                from ._visualise import take_snapshot
-                take_snapshot()
-            except:
-                pass
+    def clearSnaps():
+        """Clears all stored snapshots."""
+        try:
+            from ._visualise import _Snap
+            _Snap.clear()
+        except:
+            pass
 
-
-
-
+    @staticmethod
+    def listSnapIDs():
+        """Returns a list of all available snapshot IDs."""
+        try:
+            from ._visualise import _Snap
+            return _Snap.ListIDs()
+        except:
+            return []
 
     class Select:
 
@@ -908,7 +966,7 @@ class Model:
 
 
     @staticmethod
-    def IMAGE(location:str='',image_size:tuple = None , view:str='pre',CS_StageName:str='',_bOutputImage:bool=True):
+    def IMAGE(location:str='',image_size:tuple = None , view:str='pre',CS_StageName:str='',bOutputImage:bool=True):
         ''' 
         Capture the image in the viewport
             Location - image location
@@ -950,7 +1008,7 @@ class Model:
                 __img_file.write(bs64_img)  # Decode and write data.
                 __img_file.close()
 
-            if _bOutputImage:
+            if bOutputImage:
                 from PIL import Image as ImagePIL
                 from io import BytesIO
                 # return bs64_img
@@ -992,7 +1050,7 @@ class Model:
                 # Save the image
                 image.save(location)
             
-            if _bOutputImage:
+            if bOutputImage:
                 return image 
         
 
