@@ -214,7 +214,7 @@ class NX:
     debug_requestJSON = False
     debug_response = False
     onlyNode = False
-    visualiser = False
+    visualiser = True
     modelIDs = {} # Handles the fast MAX ID
     autoTaperGroup = False
     dispWarning = True

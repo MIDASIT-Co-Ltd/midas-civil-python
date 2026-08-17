@@ -18,17 +18,18 @@ _MT_CompDisp = Literal["DX","DY","DZ","RX","RY","RZ","RW"]
 _CompReact = Literal["FX", "FY", "FZ", "FXYZ", "MX", "MY", "MZ", "MXYZ", "Mb"]
 _CompVib = Literal["Md-X", "Md-Y", "Md-Z", "Md-XY", "Md-YZ", "Md-XZ", "Md-XYZ"]
 _CompPlateForce = Literal["Fxx", "Mxx", "MMax", "Wood Armer Moment", "Mvector", "Fvector"]
+_CompPlateStress = Literal["Sig-xx", "Sig-yy", "Sig-zz", "Sig-xy", "Sig-yz", "Sig-xz", "Sig-max", "Sig-min", "Sig-eff", "Max-Shear"]
 _CompTruss = Literal["All", "Tens.", "Comp."]
 _CompBeamStress = Literal["Sax", "Ssy", "Ssz", "Sby", "Sbz", "Combined", "7thDOF"]
 _FidelityType = Literal["Exact", "5 Points"]
 _FillType = Literal["No", "Line", "Solid"]
-_OutputLocType = Literal["Max", "MinMax", "All", "I", "J"]
+_OutputLocType = Literal["Abs Max", "Min/Max", "All",]
 _TRUSS_OutputLocType = Literal["I", "J", "Max", "All"]
 _BEAM_OutputLocType = Literal["Max", "All"]
 _WoodArmerMoment_POS = Literal["Top","Bottom"]
 _WoodArmerMoment_DIR = Literal["Dir.1","Dir.2"]
-
-
+_cutting_Mode = Literal['line','plane']
+_CLWP_DirType = Literal["NORMAL", "PLANE"]
 
 class View:
     '''
@@ -214,6 +215,7 @@ class View:
                                     }
             MidasAPI("POST","/view/DISPLAY",jsData)
 
+
 class ResultGraphic:
     '''
     Contains Result Graphics type and options for Result Graphics display   
@@ -337,10 +339,55 @@ class ResultGraphic:
             }
             return json_body
     
+    class CuttingDiagram:
+        '''
+        **use** - ( True or False ) Shows Deformation in the Result Image   
+        **scale**  - Deformation scale factor  
+        '''
+        use = False
+        mode = 'line'
+        cutting_names = []
+        scale = 1.0
+        bNormal = True
+        bReverse = False
+        bValueOutput = True
+        bMinMaxOnly = True
+
+
+        def __new__(cls, use: bool = False, mode:_cutting_Mode='line' , cutting_names:list[str]=[], scale: float = 1.0, bNormal=True, bReverse=False, bValueOutput=True, bMinMaxOnly=True ):
+            cls.use = use
+            cls.mode = mode
+            cls.cutting_names = cutting_names
+            cls.scale = scale
+            cls.bNormal = bNormal
+            cls.bReverse = bReverse
+            cls.bValueOutput = bValueOutput
+            cls.bMinMaxOnly = bMinMaxOnly
+
+        @classmethod
+        def _json(cls):
+            json_body = {
+                "OPT_CHECK": cls.use,
+                "CUTTING_MODE": cls.mode,
+                "CUTTING_NAME": cls.cutting_names,
+                "NORMAL_TO_PLANE": cls.bNormal,
+                "SCALE_FACTOR": cls.scale,
+                "REVERSE": cls.bReverse,
+                "VALUE_OUTPUT": cls.bValueOutput,
+                "MINMAX_ONLY": cls.bMinMaxOnly
+            }
+            return json_body
+
+    
+    @staticmethod
+    def Preview(ResultGraphic):
+        _JS = {"Argument": ResultGraphic}
+        MidasAPI('POST',"/view/RESULTGRAPHIC",_JS)
+
     @staticmethod
     def BeamDiagram(lcase_type: _LCaseType, lcase_name: str, lcase_minmax: _MinMaxType = "Max",
                     part: _PartType = "total", component: _CompBeamForce = "My",
-                    fidelity: _FidelityType = "Exact", fill: _FillType = "Solid", scale: float = 1.0,output_loc:_OutputLocType='Max') -> dict:
+                    fidelity: _FidelityType = "Exact", fill: _FillType = "Solid", scale: float = 1.0,output_loc:_OutputLocType='Abs Max') -> dict:
         '''
         Generates JSON for Beam Diagrams Result Graphic.
         
@@ -386,7 +433,11 @@ class ResultGraphic:
                     "OPT_CUR_STEP_FORCE": False
                 },
                 "OUTPUT_SECT_LOCATION": {
-                    "OPT_MAX_ALL": output_loc
+                    "OPT_I": False,
+                    "OPT_CENTER_MID": False,
+                    "OPE_J": False,
+                    "OPT_MAX_MINMAX_ALL": output_loc,
+                    "OPT_BY_MEMBER": False
                 }
             }
         return json_body
@@ -733,7 +784,7 @@ class ResultGraphic:
 
     @staticmethod
     def PlateForcesMoments(lcase_type: _LCaseType, lcase_name: str, lcase_minmax: _MinMaxType = "Max",
-                           component: _CompPlateForce = "MMax", local_ucs_type: str = "Local", avg_nodal_type: str = "Element",
+                           component: _CompPlateForce = "MMax", local_ucs_type: str = "UCS", ucs_name:str = "CurrentUCS" , avg_nodal_type: str = "Element",
                            wood_armer_pos: _WoodArmerMoment_POS = "Top", wood_armer_dir: _WoodArmerMoment_DIR = "Dir.1",
                            vector_opt_pos: bool = True, vector_opt_neg: bool = False) -> dict:
 
@@ -745,7 +796,7 @@ class ResultGraphic:
             lcase_name (str): Load Case/Combination Name.
             lcase_minmax (str): Load Type ("Max", "Min", "All"). Defaults to "Max".
             component (str): Component ("Fxx", "Mxx", "MMax", "WoodArmerMoment", "Mvector"). Defaults to "MMax".
-            local_ucs_type (str): Coordinate System ("Local", "UCS"). Defaults to "Local".
+            local_ucs_type (str): Coordinate System ("Local", "UCS"). Defaults to "UCS".
             avg_nodal_type (str): Avg. Calculation ("Element", "Avg.Nodal"). Defaults to "Element".
             wood_armer_pos (str): For "WoodArmerMoment" ("Top", "Bottom"). Defaults to "Top".
             wood_armer_dir (str): For "WoodArmerMoment" ("Dir.1", "Dir.2"). Defaults to "Dir.1".
@@ -872,7 +923,7 @@ class ResultGraphic:
                 "LEGEND": ResultGraphic.Legend._json()
             },
             "OUTPUT_SECT_LOCATION": {
-                "OPT_MAX_ALL": output_loc
+                "OPT_MAX_MINMAX_ALL": output_loc
             }
         }
         return json_body
@@ -928,6 +979,221 @@ class ResultGraphic:
             }
         }
         return json_body
+
+    @staticmethod
+    def PlateStress(lcase_type: _LCaseType, lcase_name: str, lcase_minmax: _MinMaxType = "Max",
+                           component: _CompPlateStress = 'Sig-eff', local_ucs_type: str = "UCS", ucs_name:str = "CurrentUCS", avg_nodal_type: str = "Element", res_surface:str = 'Top',
+                           ) -> dict:
+
+        '''
+        Generates JSON for Plate Forces/Moments Result Graphic.
+
+        Args:
+            lcase_type (str): Load Case Type ("ST", "CS", ...).
+            lcase_name (str): Load Case/Combination Name.
+            lcase_minmax (str): Load Type ("Max", "Min", "All"). Defaults to "Max".
+            component (str): Component ("Fxx", "Mxx", "MMax", "WoodArmerMoment", "Mvector"). Defaults to "MMax".
+            local_ucs_type (str): Coordinate System ("Local", "UCS"). Defaults to "UCS".
+            avg_nodal_type (str): Avg. Calculation ("Element", "Avg.Nodal"). Defaults to "Element".
+
+        '''
+        
+        components_json = {"COMP": component}
+
+        json_body = {
+            "CURRENT_MODE": "Plane-Stress/PlateStresses",
+            "LOAD_CASE_COMB": {
+                "TYPE": lcase_type,
+                "MINMAX": lcase_minmax,
+                "NAME": lcase_name,
+                "STEP_INDEX": 2
+            },
+            "OPTIONS": {
+                "LOCAL_UCS": {
+                    "TYPE": local_ucs_type,
+                    "UCS_NAME": ucs_name
+                    # Can be expanded to include UCS_NAME, OPT_PRINT_UCS_AXIS
+                },
+                "AVERAGE_NODAL": {
+                    "TYPE": avg_nodal_type
+                    # Can be expanded to include OPT_ACTIVE_ONLY
+                },
+                "SURFACE": res_surface
+            },
+            "COMPONENTS": components_json,
+            "TYPE_OF_DISPLAY": {
+                "CONTOUR": ResultGraphic.Contour._json(),
+                "DEFORM": ResultGraphic.Deform._json(),
+                "UNDEFORMED": { "OPT_CHECK": True },
+                "VALUES": ResultGraphic.Values._json(),
+                "LEGEND": ResultGraphic.Legend._json(),
+                "CUTTING_DIAGRAM" : ResultGraphic.CuttingDiagram._json(),
+            }
+        }
+        return json_body
+
+
+
+
+
+
+    class CuttingLine:
+        lines = []
+        _ids = [0]
+
+        def __init__(self,Name,Pt1,Pt2,id=None):
+            self.NAME = Name
+            self.POINT_1 = Pt1
+            self.POINT_2 = Pt2
+            self.COLOR = (255,0,0)
+
+            if id is None:
+                self.ID = max(ResultGraphic.CuttingLine._ids) + 1
+            else:
+                self.ID = id
+
+            ResultGraphic.CuttingLine._ids.append(self.ID)
+            ResultGraphic.CuttingLine.lines.append(self)
+
+        def _json(self):
+            js = {
+                    "NAME": self.NAME,
+                    "DIR": "NORMAL",
+                    "PT1X": self.POINT_1[0],
+                    "PT1Y": self.POINT_1[1],
+                    "PT1Z": self.POINT_1[2],
+                    "PT2X": self.POINT_2[0],
+                    "PT2Y": self.POINT_2[1],
+                    "PT2Z": self.POINT_2[2],
+                    "R": self.COLOR[0],
+                    "G": self.COLOR[1],
+                    "B": self.COLOR[2],
+                    "TYPE": 0
+                  }
+            return js
+        
+        @classmethod
+        def json(cls):
+            _JS = {"Assign":{}}
+            for line in cls.lines:
+                _JS["Assign"][line.ID] = line._json()
+
+            return _JS
+        
+        @classmethod
+        def create(cls):
+            MidasAPI('PUT','/db/CUTL',cls.json())
+
+
+    class CuttingPlane:
+        
+        planes = []
+        _ids = [0]
+
+        @classmethod
+        def json(cls):
+            js_data = {"Assign": {}}
+            for item in cls.planes:
+                js_data["Assign"][str(item.ID)] = item.__json()
+            return js_data
+        
+        @classmethod
+        def create(cls):
+            if cls.planes:
+                MidasAPI('PUT', '/db/CLWP', cls.json())
+
+        def __json(self):
+            return {
+                "NAME": self.NAME,
+                "DIR": self.DIR,
+                "PT1X": self.POINT_1[0],
+                "PT1Y": self.POINT_1[1],
+                "PT1Z": self.POINT_1[2],
+                "PT2X": self.POINT_2[0],
+                "PT2Y": self.POINT_2[1],
+                "PT2Z": self.POINT_2[2],
+                "PT3X": self.POINT_3[0],
+                "PT3Y": self.POINT_3[1],
+                "PT3Z": self.POINT_3[2],
+                "R": self.COLOR[0],
+                "G": self.COLOR[1],
+                "B": self.COLOR[2]
+            }
+
+        @staticmethod
+        def get():
+            return MidasAPI('GET', '/db/CLWP')
+
+        @staticmethod
+        def clear():
+            """Delete data from Python"""
+            ResultGraphic.CuttingPlane.planes = []
+            ResultGraphic.CuttingPlane._ids = [0]
+
+        @staticmethod
+        def delete():
+            MidasAPI("DELETE", "/db/CLWP")
+            ResultGraphic.CuttingPlane.clear()
+
+        def __init__(self, Name: str, Direction: _CLWP_DirType, Point1: tuple, Point2: tuple, Point3: tuple, id=None):
+            
+            self.NAME = Name
+            self.DIR = Direction
+            self.POINT_1 = Point1
+            self.POINT_2 = Point2
+            self.POINT_3 = Point3
+            self.COLOR = (255,0,0)
+ 
+            if id is None:
+                self.ID = max(ResultGraphic.CuttingPlane._ids) + 1
+            else:
+                self.ID = id
+
+            ResultGraphic.CuttingPlane.planes.append(self)
+            ResultGraphic.CuttingPlane._ids.append(self.ID)
+
+        @classmethod
+        def sync(cls):
+            cls.planes = []
+            cls._ids = [0]
+            
+            a = cls.get()
+            
+            if a and 'CLWP' in a and a != {'message': ''}:
+                for item_id, item_data in a['CLWP'].items():
+                    name = item_data.get('NAME')
+                    direction = item_data.get('DIR')
+                    
+                    pt1 = (item_data.get('PT1X', 0.0), item_data.get('PT1Y', 0.0), item_data.get('PT1Z', 0.0))
+                    pt2 = (item_data.get('PT2X', 0.0), item_data.get('PT2Y', 0.0), item_data.get('PT2Z', 0.0))
+                    pt3 = (item_data.get('PT3X', 0.0), item_data.get('PT3Y', 0.0), item_data.get('PT3Z', 0.0))
+                    
+                    color = (item_data.get('R', 0), item_data.get('G', 0), item_data.get('B', 0))
+                    
+                    cls(Name=name, Direction=direction, Point1=pt1, Point2=pt2, Point3=pt3, Color=color, id=int(item_id))
+                    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # class Image:

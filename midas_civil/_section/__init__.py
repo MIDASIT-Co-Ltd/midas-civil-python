@@ -344,12 +344,6 @@ class Section:
     def VALUE(Name:str='',Shape:_dbsection='',parameters:list=[],
                  Area=None,Ixx=None,Iyy=None,Izz=None,Offset=Offset(),useShear:bool=True,use7Dof:bool=False,id:int=None):
         """Create a Value type section.
-
-            _SS_DBUSER: The created section object.
-
-        Example::
-
-            Section.DBUSER("MainGirder", "H", [1000, 300, 200, 300, 20, 20, 15, 0])
         """
         args = locals()
         sect_Obj = _SS_VALUE(**args)
@@ -368,8 +362,8 @@ class Section:
 
     #---------------------     General    --------------------
     @staticmethod
-    def FromShape(shape1:Shape,shape2:Shape=None,shape3:Shape=None,shape4:Shape=None, 
-                 Name:str='',Offset:Offset=Offset(),useShear:bool=True,use7Dof:bool=False,id:int=None):
+    def FromShape(Name:str,shape1:Shape,shape2:Shape=None,shape3:Shape=None,shape4:Shape=None, 
+                 Offset:Offset=Offset(),useShear:bool=True,use7Dof:bool=False,id:int=None):
         """Create general section , simple to Composite section
         """
         args = locals()

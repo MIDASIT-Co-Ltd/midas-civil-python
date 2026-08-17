@@ -23,7 +23,7 @@ def _transformSecPT(pts,ox,oy,angle):
     return rounded.tolist()
 
 def _createArc(loc,radius,nSides,angS,angE,bFillet=True):
-    angles = np.linspace(np.deg2rad(angS), np.deg2rad(angE), nSides, endpoint=True)
+    angles = np.linspace(np.deg2rad(angS), np.deg2rad(angE), nSides+1, endpoint=True)
     points = np.column_stack((
         radius * np.cos(angles),
         radius * np.sin(angles)
@@ -297,6 +297,38 @@ class Shape:
                     *_createArc((tw,-0.5*H+tf2),r1,nSides,270,180),
                     *_createArc((tw,0.5*H-tf1),r1,nSides,180,90),
                     *_createArc((B1,0.5*H-tf1),r2,nSides,-90,0),
+                ]
+
+        return _transformSecPT(points,origin_X,origin_Y,angle)
+
+    @staticmethod
+    def angle_shape(H,B,tw,tf,r1=0,r2=0,nSides=8,
+            origin_X:float=0,origin_Y:float=0,angle:float=0):
+        
+        r2 = min(r2,0.95*tf,0.95*tw)
+
+        points = [
+                    (B,0),(0,0),(0,-H),
+                    *_createArc((tw,-H),r2,nSides,-90,0),
+                    *_createArc((tw,-tf),r1,nSides,180,90),
+                    *_createArc((B,-tf),r2,nSides,-90,0),
+                ]
+
+        return _transformSecPT(points,origin_X,origin_Y,angle)
+    
+    @staticmethod
+    def t_shape(H,B,tw,tf,r1=0,r2=0,nSides=8,
+            origin_X:float=0,origin_Y:float=0,angle:float=0):
+        
+
+        r2 = min(r2,0.95*tf)
+        points = [
+                    (0.5*B,0.5*H),(-0.5*B,0.5*H),
+                    *_createArc((-0.5*B,0.5*H-tf),r2,nSides,180,270),
+                    *_createArc((-0.5*tw,0.5*H-tf),r1,nSides,90,0),
+                    (-0.5*tw,-0.5*H),(0.5*tw,-0.5*H),
+                    *_createArc((0.5*tw,0.5*H-tf),r1,nSides,180,90),
+                    *_createArc((0.5*B,0.5*H-tf),r2,nSides,-90,0),
                 ]
 
         return _transformSecPT(points,origin_X,origin_Y,angle)

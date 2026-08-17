@@ -596,7 +596,7 @@ class utils:
         # Model.create()
 
     @staticmethod
-    def SoftSelection(location=(0,0,0),radius:float=5,falloffType:_falloffType='Linear'):
+    def SoftSelection(location=(0,0,0),radius:float=5,falloffType:_falloffType='Linear',):
         from ._node import Node,nodesInRadius
         # LINEAR MAPPING --------------------------
         def _linearWeight(dist,Radius):

@@ -292,9 +292,6 @@ class Model:
         NX._isSyncUnit = True
         return NX.units
 
-
-
-
     @staticmethod
     def maxID(dbNAME:_dbNames = 'NODE' , fast:bool=False) -> int :
         ''' 
@@ -453,9 +450,9 @@ class Model:
         MidasAPI("PUT","/db/STYP",js)
 
     @staticmethod
-    def save(location=None):
+    def save(location=""):
         """Saves the model\nFor the first save, provide location - \nModel.save("D:\\model2.mcb")"""
-        if location==None:
+        if location=="":
             MidasAPI("POST","/doc/SAVE",{"Argument":{}})
         else:
             if location.endswith(('.mcb','.mcbz','.mgb','.mgbx')):
@@ -598,65 +595,99 @@ class Model:
     #         except:
     #             pass
 
-    @staticmethod
-    def stFigure(bGrid=True,bSupport=True,bPointSpring=False,bElink=False, bRigidLink=False,bNode=False,bNodeID=False,bElementID=True):
-        # if NX.visualiser:
-        try:
-            from ._visualise import stVisual
-            return stVisual(bGrid,bSupport,bPointSpring,bElink, bRigidLink,bNode,bNodeID,bElementID)
-        except:
-            print("   ⚠️   ERROR OCCURED WHILE GENERATING PLOTLY STRUCTURE ...")
-            return None
+    # @staticmethod
+    # def stFigure(bGrid=True,bSupport=True,bPointSpring=False,bElink=False, bRigidLink=False,bNode=False,bNodeID=False,bElementID=True):
+    #     # if NX.visualiser:
+    #     try:
+    #         from ._visualise import stVisual
+    #         return stVisual(bGrid,bSupport,bPointSpring,bElink, bRigidLink,bNode,bNodeID,bElementID)
+    #     except:
+    #         print("   ⚠️   ERROR OCCURED WHILE GENERATING PLOTLY STRUCTURE ...")
+    #         return None
 
-    @staticmethod
-    def visualise():
-        try:
-            from ._visualise import stVisual
-            stVisual(True,True,True,True,True,True,True,True).show()
-        except:
-            print("   ⚠️   ERROR OCCURED WHILE GENERATING PLOTLY STRUCTURE ...")
-            return None
+
+    # @staticmethod
+    # def visualise():
+    #     try:
+    #         from ._visualise import stVisual
+    #         stVisual(True,True,True,True,True,True,True,True).show()
+    #     except:
+    #         print("   ⚠️   ERROR OCCURED WHILE GENERATING PLOTLY STRUCTURE ...")
+    #         return None
         
     @staticmethod
-    def Snap(bGrid=True, bSupport=True, bPointSpring=False, bElink=False, bRigidLink=False, bNode=False, bNodeID=False, bElementID=True):
+    def visualise(id=None,bGrid=True,bNode=True,bNodeID=False,bElementID=False,bSupport=True,bPointSpring=True,bElink=True, bRigidLink=True):
+        '''Shows the model as a 3D plotly graph in browser '''
+        from ._visualise import _visualise,Snap
+        # _visualise(_snapshot(),bGrid,bSupport,bPointSpring,bElink,bRigidLink,bNode,bNodeID,bElementID).show()
+        # Snap()
+        if id is None:
+
+            Snap()
+            _visualise(Snap.snapshots[Snap.n_snap].SNAP_DATA,bGrid,bNode,bNodeID,bElementID,bSupport,bPointSpring,bElink,bRigidLink).show()
+
+
+        else:
+            _visualise(Snap.snapshots[id].SNAP_DATA,bGrid,bNode,bNodeID,bElementID,bSupport,bPointSpring,bElink,bRigidLink).show()
+
+        
+
+    @staticmethod
+    def goFigure(id=None,bGrid=True,bNode=True,bNodeID=True,bElementID=True,bSupport=True,bPointSpring=True,bElink=True, bRigidLink=True):
+        '''Return a Plotly GO figure object'''
+        from ._visualise import _visualise,Snap
+        if id is None:
+            Snap()
+            return _visualise(Snap.snapshots[Snap.n_snap].SNAP_DATA,bGrid,bNode,bNodeID,bElementID,bSupport,bPointSpring,bElink,bRigidLink)
+        else:
+
+            return _visualise(Snap.snapshots[id].SNAP_DATA,bGrid,bNode,bNodeID,bElementID,bSupport,bPointSpring,bElink,bRigidLink)
+
+        
+    @staticmethod
+    def snap(name=None):
         """
         Takes a snapshot of the current model state and stores it in memory.
-        Returns the _Snap instance.
         """
         try:
-            from ._visualise import _Snap
-            return _Snap(bGrid, bSupport, bPointSpring, bElink, bRigidLink, bNode, bNodeID, bElementID)
+            from ._visualise import Snap
+            Snap(name)
+            return True
         except:
             print("   ⚠️   ERROR OCCURRED WHILE TAKING SNAPSHOT ...")
             return None
     
-    @staticmethod
-    def getSnap(ID=None):
-        """Retrieves a specific snapshot by ID. If no ID is passed, returns the latest snapshot."""
-        try:
-            from ._visualise import _Snap
-            return _Snap.get(ID)
-        except:
-            print("   ⚠️   ERROR OCCURRED WHILE RETRIEVING SNAPSHOT ...")
-            return None
 
-    @staticmethod
-    def clearSnaps():
-        """Clears all stored snapshots."""
-        try:
-            from ._visualise import _Snap
-            _Snap.clear()
-        except:
-            pass
+    # @staticmethod
+    # def getSnap(ID=None):
+    #     """Retrieves a specific snapshot by ID. If no ID is passed, returns the latest snapshot."""
+    #     try:
+    #         from ._visualise import _Snap
+    #         return _Snap.get(ID)
+    #     except:
+    #         print("   ⚠️   ERROR OCCURRED WHILE RETRIEVING SNAPSHOT ...")
+    #         return None
+
+    # @staticmethod
+    # def clearSnaps():
+    #     """Clears all stored snapshots."""
+    #     try:
+    #         from ._visualise import _Snap
+    #         _Snap.clear()
+    #     except:
+    #         pass
 
     @staticmethod
     def listSnapIDs():
         """Returns a list of all available snapshot IDs."""
         try:
-            from ._visualise import _Snap
-            return _Snap.ListIDs()
+            from ._visualise import Snap
+            return Snap.ListIDs()
         except:
             return []
+
+
+
 
     class Select:
 
@@ -963,6 +994,138 @@ class Model:
             else: output_list = _temp_list
                 
             return output_list
+
+
+        # -------- POLYGON SELECT METHOD --------
+        @staticmethod
+        def __point_in_polygon(px:float, py:float, poly:list, tol:float=0.001) -> bool:
+            """
+            Even-odd ray-casting test, INCLUSIVE of the boundary.
+            Returns True if (px,py) is inside the polygon OR within `tol` of any edge.
+            `poly` is a list of (u, v) vertices (not required to be closed).
+            """
+            n = len(poly)
+            tol2 = tol * tol
+
+            # --- boundary test: on/near any edge counts as inside
+            j = n - 1
+            for i in range(n):
+                ui, vi = poly[i]
+                uj, vj = poly[j]
+                du, dv = uj - ui, vj - vi
+                seg2 = du * du + dv * dv
+                if seg2 == 0:                       # degenerate edge = a single point
+                    if (px - ui) ** 2 + (py - vi) ** 2 <= tol2:
+                        return True
+                else:
+                    t = ((px - ui) * du + (py - vi) * dv) / seg2
+                    t = max(0.0, min(1.0, t))       # clamp to the segment
+                    cu, cv = ui + t * du, vi + t * dv
+                    if (px - cu) ** 2 + (py - cv) ** 2 <= tol2:
+                        return True
+                j = i
+
+            # --- interior test: standard even-odd ray casting
+            inside = False
+            j = n - 1
+            for i in range(n):
+                ui, vi = poly[i]
+                uj, vj = poly[j]
+                if ((vi > py) != (vj > py)) and \
+                (px < (uj - ui) * (py - vi) / (vj - vi) + ui):
+                    inside = not inside
+                j = i
+
+            return inside
+        
+        @staticmethod
+        def Polygon(points:list,
+                    output:_SelectOutput='NODE_ID') -> set:
+            """
+            Select nodes/elements whose in-plane projection falls inside a polygon.
+
+            points    : ordered list of boundary vertices, e.g. [(x,y,z), (x,y,z), ...]
+                        (does not need to be closed; the last->first edge is implied)
+            plane_tol : half-thickness of the out-of-plane band a point must lie within
+            """
+            plane_tol = 0.001
+            output_list = []
+            # --- bounding box of the polygon over ALL 3 axes (for grid pre-filtering)
+            xs = [p[0] for p in points]
+            ys = [p[1] for p in points]
+            zs = [p[2] for p in points]
+
+            x1, x2 = min(xs) - plane_tol, max(xs) + plane_tol
+            y1, y2 = min(ys) - plane_tol, max(ys) + plane_tol
+            z1, z2 = min(zs) - plane_tol, max(zs) + plane_tol
+
+
+            # --- axis bookkeeping: which two indices are "in plane", which is "out"
+
+            # FINDING THE PLANE
+            xdif = x2-x1
+            ydif = y2-y1
+            zdif = z2-z1
+
+            if xdif < min(ydif,ydif):
+                plane = 'YZ'
+            elif ydif < min(xdif,zdif):
+                plane = 'XZ'
+            else:
+                plane = 'XY'
+
+            axes = {'XY': (0, 1, 2), 'YZ': (1, 2, 0), 'XZ': (0, 2, 1)}
+
+
+            a, b, c = axes[plane]            # a,b -> in-plane ; c -> out-of-plane
+
+
+            # 2D polygon in the chosen plane
+            poly = [(p[a], p[b]) for p in points]
+
+            # out-of-plane band the points must sit inside
+            c_vals = [p[c] for p in points]
+            c1, c2 = min(c_vals) - plane_tol, max(c_vals) + plane_tol
+
+            # --- output-mode selection (identical to Box)
+            bELEM = False
+            bID   = True
+            if output == 'ELEM_ID':
+                gridStr = set(Element.Grid.keys()); grid_complete = Element.Grid
+                bELEM, bID = True, True
+            elif output == 'ELEM':
+                gridStr = set(Element.Grid.keys()); grid_complete = Element.Grid
+                bELEM, bID = True, False
+            elif output == 'NODE':
+                gridStr = set(Node.Grid.keys()); grid_complete = Node.Grid
+                bID = False
+            else:
+                gridStr = set(Node.Grid.keys()); grid_complete = Node.Grid
+
+            # --- candidate grid cells from the polygon's 3D bounding box
+            possible_gridStr = set()
+            for i in np.arange(int(x1), int(x2) + 1, 1):
+                for j in np.arange(int(y1), int(y2) + 1, 1):
+                    for k in np.arange(int(z1), int(z2) + 1, 1):
+                        possible_gridStr.add(f"{i},{j},{k}")
+
+            common_gridStr = list(gridStr.intersection(possible_gridStr))
+
+            # --- exact test on the candidates
+            for eachAvailGrid in common_gridStr:
+                for elm in grid_complete[eachAvailGrid]:
+                    point = elm.CENTER if bELEM else elm.LOC
+
+                    # must lie within the out-of-plane band...
+                    if not (c1 <= point[c] <= c2):
+                        continue
+                    # ...and inside the polygon in-plane
+                    if Model.Select.__point_in_polygon(point[a], point[b], poly):
+                        output_list.append(elm.ID if bID else elm)
+
+            return set(output_list)
+
+
 
 
     @staticmethod

@@ -171,6 +171,7 @@ class Load:
         if cls.PlaneLoad_Define.data: cls.PlaneLoad_Define.create()
         if cls.PlaneLoad_Assign.data : cls.PlaneLoad_Assign.create()
         if cls.LoadToMass.data : cls.LoadToMass.create()
+        if cls.SpDisp.data: cls.SpDisp.create()
     
     @classmethod
     def clear(cls):
@@ -185,6 +186,7 @@ class Load:
         cls.PlaneLoad_Assign.clear()
         cls.PlaneLoad_Define.clear()
         cls.LoadToMass.clear()
+        cls.SpDisp.clear()
         
 
     class SW:
@@ -674,8 +676,7 @@ class Load:
                         gravity=item_data.get('GRAV')
                     )
 
-
-    #-----------------------------------------------------------NodalMass-----------------
+    #------------------------ Nodal Mass -----------------
 
     class NodalMass:
         """Creates nodal mass and converts to JSON format.
@@ -1022,7 +1023,8 @@ class Load:
                 if load_case in i.NAME:
                     chk = 1
             if chk == 0:
-                print(f"Warning: Load case '{load_case}' does not exist!")
+                Load_Case("D", load_case)
+                # print(f"Warning: Load case '{load_case}' does not exist!")
                 
             # Check if load group exists and create if specified
             if load_group != "":
@@ -1031,7 +1033,8 @@ class Load:
                 if load_group in a:
                     chk = 1
                 if chk == 0:
-                    print(f"Warning: Load group '{load_group}' does not exist!")
+                    Group.Load(load_group)
+                    # print(f"Warning: Load group '{load_group}' does not exist!")
             
             # Ensure values is a list of 6 elements [Dx, Dy, Dz, Rx, Ry, Rz]
             if not isinstance(values, list):
@@ -1091,12 +1094,16 @@ class Load:
         
         @classmethod
         def delete(cls):
-            cls.data = []
+            cls.clear()
             return MidasAPI("DELETE", "/db/sdsp")
         
         @classmethod
-        def sync(cls):
+        def clear(cls):
             cls.data = []
+        
+        @classmethod
+        def sync(cls):
+            cls.clear()
             response = cls.get()
             
             if response != {'message': ''}:
@@ -1116,7 +1123,6 @@ class Load:
                             values,
                             item['ID']
                         )
-
 
     class Line:
         def __init__(self, element_ids:list[int], load_case: str, load_group: str = "", D = [0, 1], P = [0, 0], direction:_beamLoadDir = "GZ",
@@ -1401,7 +1407,6 @@ class Load:
         def clear(cls):
             cls.data=[]
     
-
     class PlaneLoad_Assign:
         """
         Define Plane load to plates faces.

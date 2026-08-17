@@ -405,8 +405,6 @@ class RS:
 
                 return js_data
 
-                
-            
 
         class Peru:
             def __init__(self,name,zone:int=1,soilType:_PeruSoil='S0',usage_cat:_PeruUse='A1',RRF=1.5,max_period=6,spectral_type='Normalized Accel',scaling=1,max_value=None,gravity=None,damping_rat = 0.05,desc="",id=None):
@@ -516,7 +514,7 @@ class RS:
                     # Ecuación Sa = (Z * U * C * S) / R
                     Sa = (Z * U * C * S) / self.RRF
                         
-                    Rs.append({"PERIOD": round(Ti, 3), "VALUE": round(Sa, 4)})
+                    Rs.append({"PERIOD": float(round(Ti, 3)), "VALUE": float(round(Sa, 4))})
 
 
 

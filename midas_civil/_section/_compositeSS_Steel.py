@@ -46,7 +46,6 @@ class _SS_COMP_STEEL_I_TYPE1(_common):
     def __str__(self):
          return f'  >  ID = {self.ID}   |  STEEL COMPOSITE I SECTION \nJSON = {self.toJSON()}\n'
 
-
     def toJSON(sect):
         js =  {
                 "SECTTYPE": sect.TYPE,
@@ -94,6 +93,7 @@ class _SS_COMP_STEEL_I_TYPE1(_common):
                             secti['USE_MULTI_ELAST'],e1,e2,
                             offset,uShear,u7DOF,id)
 
+    
 
 
 class _SS_COMP_STEEL_TUB_TYPE1(_common):

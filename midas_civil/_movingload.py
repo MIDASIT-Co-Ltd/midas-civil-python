@@ -46,6 +46,7 @@ class MovingLoad:
 
     
     class Code:
+        name = None
         
         def __init__(self, code_name: str):
             """
@@ -74,6 +75,7 @@ class MovingLoad:
                     }
                 }
             }
+            MovingLoad.Code.name = code_name
             MidasAPI("PUT", "/db/mvcd", json_data)
 
         @classmethod
@@ -140,11 +142,12 @@ class MovingLoad:
                 self.Skew_end = Skew_end
                 
                 # Ensure the correct moving load code is active in the model
-                MovingLoad.Code(code)
-                
-                # Avoid duplicating lanes if syncing
-                if not any(lane.id == self.id for lane in MovingLoad.LineLane.lanes):
-                    MovingLoad.LineLane.lanes.append(self)
+                if MovingLoad.Code.name == code:
+                    # Avoid duplicating lanes if syncing
+                    if not any(lane.id == self.id for lane in MovingLoad.LineLane.lanes):
+                        MovingLoad.LineLane.lanes.append(self)
+                else:
+                    print(f"  ⚠️   Moving Load code is different than Lane code or not defined. Line Lane '{Lane_name}' will not be created.\n        Kindly use MovingLoad.Code('{code}')")
 
             # Definition of country-specific subclasses
             class India:

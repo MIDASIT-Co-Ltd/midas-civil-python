@@ -115,9 +115,9 @@ class Node:
         #     node_count = max(Node.ids)+1
         
         
-        self.X = round(x,6)
-        self.Y = round(y,6)
-        self.Z = round(z,6)
+        self.X = float(round(x,6))
+        self.Y = float(round(y,6))
+        self.Z = float(round(z,6))
         self.AXIS = [[0,0,0],[0,0,0],[0,0,0]]
 
         if id == 0 : self.ID = node_count

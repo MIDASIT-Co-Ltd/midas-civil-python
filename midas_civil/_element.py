@@ -434,7 +434,7 @@ def _JS2Obj(id, js):
     elif elem_type == 'COMPTR':
         Element.Compression(args['node'][0], args['node'][1], args['stype'], args['mat'], args['sect'], args['angle'], '', args['id'], tens, t_limit, non_len)
     elif elem_type == 'SOLID':
-        Element.Solid(nodes=args['node'][:nNodes], mat=args['mat'], sect=args['sect'],group='', id=args['id'])
+        Element.Solid(nodes=args['node'][:nNodes], mat=args['mat'],group='', id=args['id'])
 
 
 class _helperELEM:
@@ -1042,7 +1042,7 @@ class Element():
             id_new = None
             bHole = False
             import gmsh
-            gmsh.initialize()
+            gmsh.initialize(["-no_sig_handler", "-nopopup"],interruptible=False)
             gmsh.option.setNumber("General.Terminal", 0)
 
             surface_Main = _createSurface(points,meshSize,1)
@@ -1522,19 +1522,45 @@ class Element():
             self.TYPE = 'SOLID'
             self.MATL = mat
             self.SECT = 0 # Solid elements don't use section properties
-            self.NODE = nodes
-
-            _nodesLoc = [nodeByID(nId).LOC for nId in nodes]
+            _nodesObj = [nodeByID(nId) for nId in nodes]
+            _nodesLoc = [node.LOC for node in _nodesObj]
             self.CENTER = np.average(_nodesLoc,0)
+
+            z_Base = np.cross(np.subtract(_nodesObj[1].LOC,_nodesObj[0].LOC),np.subtract(_nodesObj[2].LOC,_nodesObj[1].LOC))
+
+            if len(nodes) == 4:
+                # TETRAHEDRAL
+                pointTop = np.subtract(_nodesObj[3].LOC,self.CENTER)
+                dotP = np.dot(pointTop,z_Base)
+                if dotP < 0:
+                    # Incorrect direction
+                    nodes[:3] = nodes[:3][::-1]
+            elif len(nodes) == 6:
+                # PRISM
+                pointTop = np.subtract(_nodesObj[3].LOC,self.CENTER)
+                dotP = np.dot(pointTop,z_Base)
+                if dotP < 0:
+                    # Incorrect direction
+                    nodes = nodes[3:] + nodes[:3]
+            elif len(nodes) == 8:
+                # HEXA
+                pointTop = np.subtract(_nodesObj[4].LOC,self.CENTER)
+                dotP = np.dot(pointTop,z_Base)
+                if dotP < 0:
+                    # Incorrect direction
+                    nodes = nodes[4:] + nodes[:4]
+
+            self.NODE = nodes
+            
 
             self._GROUP = group
             _ADD(self)
 
         @staticmethod
-        def extudeFromPlates(elmIDs,dir=[0,0,1],nDiv = 1, mat=1, group="", id=None, bDeletePlate=False):
+        def extrudeFromPlates(elmIDs,dir=[0,0,1],nDiv = 1, mat=1, group="", id=None, bDeletePlate=False):
             extrusion = [dir[0]/nDiv , dir[1]/nDiv , dir[2]/nDiv]
             id_new = None
-            if id!=Node: id_new = id-1
+            if id!=None: id_new = id-1
 
             plateElmIDs= [id for id in elmIDs if elemByID(id).TYPE in ['PLATE','WALL']]
             nPlates = len(plateElmIDs)
@@ -1564,7 +1590,8 @@ class Element():
         @staticmethod
         def fromPoints(facePts:list,meshSize:float=None,mat:int=1,group='',id:int=None):
             import gmsh
-            gmsh.initialize()
+            gmsh.initialize(["-no_sig_handler", "-nopopup"],interruptible=False)
+            # gmsh.initialize()
             gmsh.option.setNumber("General.Terminal", 0)
             gmsh.model.add("loft")
 
@@ -1630,7 +1657,7 @@ class Element():
         @staticmethod
         def fromMSHfile(fileLoc:str,mat:int=1,group='',id:int=None):
             import gmsh
-            gmsh.initialize()
+            gmsh.initialize(["-no_sig_handler", "-nopopup"],interruptible=False)
             gmsh.option.setNumber("General.Terminal", 0)
             gmsh.open(fileLoc)
 

@@ -1,347 +1,941 @@
-import pyvista as pv
-from midas_civil import Node,Element,Group
+# import pyvista as pv
+import plotly.graph_objects as go
+from ._model import Node,Element,Group,Model,Boundary
+from ._node import nodeByID
+
 import numpy as np
 
-class Visual:
-    n_snap = 0  # Goes from 1 to snaps taken
-    cur_snap = 0
-    visual_info = {}
-    plotter = pv.Plotter(window_size=[700,400],title="Sumit's Visualiser TEST")
+
+def _snapshot():
+    MODEL_DATA = {
+        "GRID":{},
+        "BOUNDING_MARKERS":{},
+        "NODE":{},
+        "ELEM_LINE":{},
+        "ELEM_PLATE":{},
+        "ELEM_ID":{},
+        "ELINK":{},
+        "RIGID_LINK":{},
+        "SUPPORT":{},
+        "POINT_SPRING":{},   
+        "ELEM_NUM" : 0
+        }
+
+    Model.getBounds()
+    y1 = Model.bounds['Y_min']-1
+    y2 = Model.bounds['Y_max']+1
+    z1 = Model.bounds['Z_min']-0.001
+    z2 = Model.bounds['Z_max']
+    x1 = Model.bounds['X_min']-1
+    x2 = Model.bounds['X_max']+1
+
+
+
+    minDim = min(x2-x1,y2-y1)
+    nLineX = int(((x2-x1)/minDim)*10)
+    nLineY = int(((y2-y1)/minDim)*10)
+
+    xs = np.linspace(x1, x2, nLineX)
+    ys = np.linspace(y1, y2, nLineY)
+
+
+    x_coords = []
+    y_coords = []
+    z_coords = []
+
+    # Vertical grid lines
+    for x in xs:
+        x_coords.extend([x, x, None])
+        y_coords.extend([y1, y2, None])
+        z_coords.extend([z1, z1, None])
+
+    # Horizontal grid lines
+    for y in ys:
+        x_coords.extend([x1, x2, None])
+        y_coords.extend([y, y, None])
+        z_coords.extend([z1, z1, None])
+
+    MODEL_DATA['GRID']["X_COORDS"] = x_coords
+    MODEL_DATA['GRID']["Y_COORDS"] = y_coords
+    MODEL_DATA['GRID']["Z_COORDS"] = z_coords
+
+#-------------------   MODEL BOUNDING POINTS -----------------------------
+
+    x = [x1,x1,x1,x1,x2,x2,x2,x2]
+    y = [y1,y2,y1,y2,y1,y2,y1,y2]
+    z = [z1,z1,z2,z2,z1,z1,z2,z2]
+
+    MODEL_DATA['BOUNDING_MARKERS']["X_COORDS"] = x
+    MODEL_DATA['BOUNDING_MARKERS']["Y_COORDS"] = y
+    MODEL_DATA['BOUNDING_MARKERS']["Z_COORDS"] = z
+
+
+#-------------------   MODEL LINE ELEMS -----------------------------
+
+    SECT_WISE_LINE_ELEM = {}
+
+    PLATE_ELEM = []
+
+    x_coords = []
+    y_coords = []
+    z_coords = []
+
+    for elem in Element.elements:
+        if elem.TYPE in ('BEAM','TRUSS'):
+            x1,y1,z1 = nodeByID(elem.NODE[0]).LOC
+            x2,y2,z2 = nodeByID(elem.NODE[1]).LOC
+            x_coords = (x1, x2, None)
+            y_coords = (y1, y2, None)
+            z_coords = (z1, z2, None)
+            if elem.SECT not in SECT_WISE_LINE_ELEM: 
+                SECT_WISE_LINE_ELEM[elem.SECT] = {"X":[],"Y":[],"Z":[]}
+                SECT_WISE_LINE_ELEM[elem.SECT]["COL"] = 'red'
+            SECT_WISE_LINE_ELEM[elem.SECT]["X"].extend(x_coords)
+            SECT_WISE_LINE_ELEM[elem.SECT]["Y"].extend(y_coords)
+            SECT_WISE_LINE_ELEM[elem.SECT]["Z"].extend(z_coords)
+        elif elem.TYPE in ('PLATE','WALL'):
+            l1 = nodeByID(elem.NODE[0]).LOC
+            l2 = nodeByID(elem.NODE[1]).LOC
+            l3 = nodeByID(elem.NODE[2]).LOC
+            if len(elem.NODE) > 3:
+                l4 = nodeByID(elem.NODE[3]).LOC
+                PLATE_ELEM.append([l1,l3,l4])
+            PLATE_ELEM.append([l1,l2,l3])
+
+
+    MODEL_DATA['ELEM_LINE'] = SECT_WISE_LINE_ELEM
+    MODEL_DATA['ELEM_PLATE'] = PLATE_ELEM
+    MODEL_DATA['ELEM_NUM'] = len(Element.elements)
+
+
+#-------------------   NODE POINTS -----------------------------
+
+    x = []
+    y = []
+    z = []
+    id = []
+
+    for cons in Node.nodes:
+        x.append(cons.X)
+        y.append(cons.Y)
+        z.append(cons.Z)
+        id.append(cons.ID)
     
-    # plotter.camera.clipping_range = (0.000001, 1e6)
-    plotter.set_background("white")
-    plotter.enable_parallel_projection()
-    plotter.show_axes()
-    # plotter.ren_win.SetBorders(0)
-    plotter.ren_win.SetPosition(600,100)
 
-    first_launch = True
-
-    min_z = 0
-    min_x = 0
-    max_x = 0
-    min_y = 0
-    max_y = 0
-
-    
-    toggle_NodeIDs = True
-    toggle_Beam = True
-    toggle_Plate = True
-    toggle_GroupNodeIDs = False
-    toggle_Grid = False
-
-def take_snapshot():
-    Visual.n_snap+=1
-    Visual.cur_snap+=1
-
-    points = []
-    point_ids = []
-
-    for nd in Node.nodes:
-        points.append([nd.X,nd.Y,nd.Z])
-        point_ids.append(nd.ID)
-    
-    point_Group_ids = ["." for _ in point_ids]
-
-    for grup in Group.Structure.Groups:
-        if grup.NLIST !=[]:
-            idx = 0
-            for nID in grup.NLIST:
-                n_idx = point_ids.index(nID)
-                point_Group_ids[n_idx] = str(idx)
-                idx+=1
+    MODEL_DATA['NODE']['X'] = x
+    MODEL_DATA['NODE']['Y'] = y
+    MODEL_DATA['NODE']['Z'] = z
+    MODEL_DATA['NODE']['ID'] = id
 
 
 
-    lines_point_pair =[]
-    lines_id_map = []
-    Qplates_point_pair = []
-    Qplates_id_map =[]
-    Tplates_point_pair = []
-    Tplates_id_map = []
+
+#-------------------   ELEMENT ID LABELS -----------------------------
+
+    elem_x = []
+    elem_y = []
+    elem_z = []
+    elem_ids = []
+
+    for elem in Element.elements:
+        if elem.TYPE in ['BEAM', 'TRUSS', 'PLATE', 'WALL']:
+            x, y, z = elem.CENTER
+            elem_x.append(x)
+            elem_y.append(y)
+            elem_z.append(z)
+            elem_ids.append(str(elem.ID))
+
+    MODEL_DATA['ELEM_ID']['X'] = elem_x
+    MODEL_DATA['ELEM_ID']['Y'] = elem_y
+    MODEL_DATA['ELEM_ID']['Z'] = elem_z
+    MODEL_DATA['ELEM_ID']['ID'] = elem_ids
+
+#-------------------   POINT SUPPORTS ELEMS -----------------------------
+
+    x = []
+    y = []
+    z = []
+
+    for cons in Boundary.Support.sups:
+        loc = nodeByID(cons.NODE).LOC
+        x.append(loc[0])
+        y.append(loc[1])
+        z.append(loc[2])
+
+    MODEL_DATA['SUPPORT']['X'] = x
+    MODEL_DATA['SUPPORT']['Y'] = y
+    MODEL_DATA['SUPPORT']['Z'] = z
 
 
-    for elm in Element.elements:
-        if elm.TYPE in ['BEAM','TRUSS']:
-            n1 = point_ids.index(elm.NODE[0])
-            n2 = point_ids.index(elm.NODE[1])
-            lines_point_pair.append([2,n1,n2])
-            lines_id_map.append(elm.ID)
 
-        elif elm.TYPE == 'PLATE':
-            n1 = point_ids.index(elm.NODE[0])
-            n2 = point_ids.index(elm.NODE[1])
-            n3 = point_ids.index(elm.NODE[2])
-            if elm._NPOINT == 3 :
-                Tplates_point_pair.append([3,n1,n2,n3])
-                Tplates_id_map.append(elm.ID)
-            elif elm._NPOINT == 4 :
-                # print("4 noded element")
-                n4 = point_ids.index(elm.NODE[3])
-                Qplates_point_pair.append([4,n1,n2,n3,n4])
-                Qplates_id_map.append(elm.ID)
 
-    Visual.visual_info[str(Visual.n_snap)] = {
-        "POINTS" : points,
-        "POINT_IDS" : point_ids,
-        "POINT_GROUP_IDS" : point_Group_ids,
-        "LINE_POINTS" : lines_point_pair,
-        "LINE_IDS" : lines_id_map,
-        "TRI_POINTS" : Tplates_point_pair,
-        "TRI_IDS" : Tplates_id_map,
-        "QUAD_POINTS" : Qplates_point_pair,
-        "QUAD_IDS" : Qplates_id_map
+    x = []
+    y = []
+    z = []
+
+    for cons in Boundary.PointSpring.springs:
+        loc = nodeByID(cons.NODE).LOC
+        x.append(loc[0])
+        y.append(loc[1])
+        z.append(loc[2])
+
+    MODEL_DATA['POINT_SPRING']['X'] = x
+    MODEL_DATA['POINT_SPRING']['Y'] = y
+    MODEL_DATA['POINT_SPRING']['Z'] = z
+
+
+
+#-------------------   LINKS LINE -----------------------------
+
+    x = []
+    y = []
+    z = []
+
+    for link in Boundary.ElasticLink.links:
+        loc1 = nodeByID(link.I_NODE).LOC
+        loc2 = nodeByID(link.J_NODE).LOC
+
+        x.extend((loc1[0],loc2[0],None))
+        y.extend((loc1[1],loc2[1],None))
+        z.extend((loc1[2],loc2[2],None))
+
+    MODEL_DATA['ELINK']['X'] = x
+    MODEL_DATA['ELINK']['Y'] = y
+    MODEL_DATA['ELINK']['Z'] = z
+
+
+
+    x = []
+    y = []
+    z = []
+
+    for link in Boundary.RigidLink.links:
+
+        loc1 = nodeByID(link.M_NODE).LOC
+        for nID in link.S_NODE:
+            loc2 = nodeByID(nID).LOC
+            x.extend((loc1[0],loc2[0],None))
+            y.extend((loc1[1],loc2[1],None))
+            z.extend((loc1[2],loc2[2],None))
+
+    MODEL_DATA['RIGID_LINK']['X'] = x
+    MODEL_DATA['RIGID_LINK']['Y'] = y
+    MODEL_DATA['RIGID_LINK']['Z'] = z
+
+
+    return MODEL_DATA
+
+def _visualise(MODEL_DATA,bGrid=True,bNode=False,bNodeID=False,bElementID=False,bSupport=True,bPointSpring=False,bElink=False, bRigidLink=False,):
+
+    #---------  GRID ------------------
+    fig = go.Figure()
+
+
+    if bGrid:
+        x_coords = MODEL_DATA['GRID']["X_COORDS"]
+        y_coords = MODEL_DATA['GRID']["Y_COORDS"]
+        z_coords = MODEL_DATA['GRID']["Z_COORDS"]
+
+        fig.add_trace(
+            go.Scatter3d(
+                x=x_coords,
+                y=y_coords,
+                z=z_coords,
+                mode="lines",
+                line=dict(color="lightgray", width=2),
+                hoverinfo="skip",
+                showlegend=False,
+            )
+        )
+
+#---------------------------------------------------------
+
+#-------------------   MODEL BOUNDING POINTS -----------------------------
+
+    x = MODEL_DATA['BOUNDING_MARKERS']["X_COORDS"]
+    y = MODEL_DATA['BOUNDING_MARKERS']["Y_COORDS"]
+    z = MODEL_DATA['BOUNDING_MARKERS']["Z_COORDS"]
+
+
+    fig.add_trace(go.Scatter3d(
+        x=x,
+        y=y,
+        z=z,
+        mode="markers",
+        hoverinfo="skip",
+        marker=dict(
+            size=0,
+            opacity = 0,
+            color="blue",
+        )
+    ))
+
+#-------------------   MODEL LINE ELEMS -----------------------------
+    _COL_ID = {
+        1: "#0BAEEE",
+        2: "#3D5AFF",
+        3: "#8344F8",
+        4: "#D858FF",
+        5: "#3FBE50",
+        6: "#CC4848",
     }
 
-    # print("TAKING SNAP SHOT ................")
-    # print(Visual.n_snap)
-    # print(len(points))
-    # print(len(Qplates_id_map))
-    # print("---------- D O N E -------------")
+    SECT_WISE_LINE_ELEM = MODEL_DATA['ELEM_LINE']
 
-def changeDataBack(checked):
-        # print("DATA Change....")
-        Visual.cur_snap = max(Visual.cur_snap-1,1)
-        # print(Visual.cur_snap)
-        displayWindow()
+    PLATE_ELEM = MODEL_DATA['ELEM_PLATE']
 
-def changeDataForw(checked):
-        # print("DATA Change....")
-        Visual.cur_snap = min(Visual.cur_snap+1,Visual.n_snap)
-        # print(Visual.cur_snap)
-        displayWindow()
 
-def displayWindow():
-    if Visual.first_launch == True:
-        take_snapshot()
-        dPlotter = showVisual(Visual.plotter)
-        Visual.first_launch = False
+
+
+    for secID in SECT_WISE_LINE_ELEM:
+        col = _COL_ID.get(int(secID%7),'red')
+        fig.add_trace(
+            go.Scatter3d(
+                x=SECT_WISE_LINE_ELEM[secID]["X"],
+                y=SECT_WISE_LINE_ELEM[secID]["Y"],
+                z=SECT_WISE_LINE_ELEM[secID]["Z"],
+                mode="lines",
+                line=dict(color=col, width=4),
+                hoverinfo="skip",
+                showlegend=False,
+            )
+        )
+
+#-------------------   MODEL PLATE ELEMS -----------------------------
+
+    
+    x, y, z = [], [], []
+    i, j, k = [], [], []
+
+    offset = 0
+    for plate in PLATE_ELEM:
+        # Add vertices
+        for p in plate:
+            x.append(p[0])
+            y.append(p[1])
+            z.append(p[2])
+
+            i.append(offset)
+            j.append(offset + 1)
+            k.append(offset + 2)
+
+        offset += 3
+
+    fig.add_trace(
+        go.Mesh3d(
+            x=x,
+            y=y,
+            z=z,
+            i=i,
+            j=j,
+            k=k,
+            colorscale=[[0, "#7758FF"],
+                    [1, "#AF2EFA"]],
+            intensity = np.linspace(0, 1, len(x), endpoint=True),
+            opacity=1,
+            flatshading=True,
+            hoverinfo="skip",
+            showlegend=False,
+            showscale=False,
+        )
+    )
+
+#-------------------   NODE POINTS -----------------------------
+    if bNode:
+        x = MODEL_DATA['NODE']['X']
+        y = MODEL_DATA['NODE']['Y']
+        z = MODEL_DATA['NODE']['Z']
+
+
+        fig.add_trace(go.Scatter3d(
+            x=x,
+            y=y,
+            z=z,
+            mode="markers",
+            hoverinfo="skip",
+            marker=dict(
+                size=4,
+                opacity = 1,
+                color="#1296e2",
+                symbol="circle"
+            )
+        ))
+
+#-------------------   NODE ID LABELS -----------------------------
+    if bNodeID:
+        x_ids = MODEL_DATA['NODE']['X']
+        y_ids = MODEL_DATA['NODE']['Y']
+        z_ids = MODEL_DATA['NODE']['Z']
+        text_ids = MODEL_DATA['NODE']['ID']
+
+
+        fig.add_trace(go.Scatter3d(
+            x=x_ids,
+            y=y_ids,
+            z=z_ids,
+            mode="text",
+            text=text_ids,
+            textposition="top center", 
+            hoverinfo="skip",
+            textfont=dict(
+                size=12,
+                color="#000000"
+            ),
+            showlegend=False
+        ))
+
+#-------------------   ELEMENT ID LABELS -----------------------------
+    if bElementID:
+        elem_x = MODEL_DATA['ELEM_ID']['X']
+        elem_y = MODEL_DATA['ELEM_ID']['Y']
+        elem_z = MODEL_DATA['ELEM_ID']['Z']
+        elem_ids = MODEL_DATA['ELEM_ID']['ID']
+
+        fig.add_trace(go.Scatter3d(
+            x=elem_x,
+            y=elem_y,
+            z=elem_z,
+            mode='text',
+            text=elem_ids,
+            textposition='middle center',
+            name='Element IDs',
+            textfont=dict(
+                color="#5A7DD7",
+                size=12
+            ),
+            hoverinfo='text'
+        ))
+
+#-------------------   POINT SUPPORTS ELEMS -----------------------------
+    if bSupport:
+        x = MODEL_DATA['SUPPORT']['X']
+        y = MODEL_DATA['SUPPORT']['Y']
+        z = MODEL_DATA['SUPPORT']['Z']
+
+
+        fig.add_trace(go.Scatter3d(
+            x=x,
+            y=y,
+            z=z,
+            mode="markers",
+            hoverinfo="skip",
+            marker=dict(
+                size=5,
+                opacity = 1,
+                color="#87ce03",
+                symbol="diamond"
+            )
+        ))
+
+    if bPointSpring:
+        x = MODEL_DATA['POINT_SPRING']['X']
+        y = MODEL_DATA['POINT_SPRING']['Y']
+        z = MODEL_DATA['POINT_SPRING']['Z']
+
+        fig.add_trace(go.Scatter3d(
+            x=x,
+            y=y,
+            z=z,
+            mode="markers",
+            hoverinfo="skip",
+            marker=dict(
+                size=5,
+                opacity = 1,
+                color="#e21284",
+                symbol="circle"
+            )
+        ))
+
+#-------------------   LINKS LINE -----------------------------
+    if bElink:
+        x = MODEL_DATA['ELINK']['X']
+        y = MODEL_DATA['ELINK']['Y']
+        z = MODEL_DATA['ELINK']['Z']
+
+        fig.add_trace(go.Scatter3d(
+            x=x,
+            y=y,
+            z=z,
+            mode="lines",
+            hoverinfo="skip",
+            line=dict(color="#ff7272", width=4, dash="longdash"),
+            showlegend=False,
+        ))
+
+    if bRigidLink:
+        x = MODEL_DATA['RIGID_LINK']['X']
+        y = MODEL_DATA['RIGID_LINK']['Y']
+        z = MODEL_DATA['RIGID_LINK']['Z']
+
+        fig.add_trace(go.Scatter3d(
+            x=x,
+            y=y,
+            z=z,
+            mode="lines",
+            hoverinfo="skip",
+            line=dict(color="#03e428", width=4, dash="dot"),
+            showlegend=False,
+        ))
+                
+    view_height = MODEL_DATA['BOUNDING_MARKERS']["Z_COORDS"][-1]
+
+    fig.update_layout(
+        margin=dict(l=0, r=0, t=0, b=0),
+        showlegend=False,
+        scene=dict(
+            aspectmode="data",
+            yaxis=dict(visible=False),
+            xaxis=dict(visible=False),
+            zaxis=dict(visible=False),
+            camera=dict(
+                projection=dict(type="orthographic"),   # no perspective foreshortening
+                eye=dict(x=-1.5, y=-1.5),
+            ),
+        ),
+    )
+
+    return fig
+
+# def stVisual(bGrid=True,bSupport=True,bPointSpring=False,bElink=False, bRigidLink=False,bNode=False,bNodeID=False,bElementID=False):
+
+#     #---------  GRID ------------------
+#     fig = go.Figure()
+
+#     Model.getBounds()
+#     y1 = Model.bounds['Y_min']-1
+#     y2 = Model.bounds['Y_max']+1
+#     z1 = Model.bounds['Z_min']-0.001
+#     z2 = Model.bounds['Z_max']
+#     x1 = Model.bounds['X_min']-1
+#     x2 = Model.bounds['X_max']+1
+
+#     if bGrid:
+#         minDim = min(x2-x1,y2-y1)
+#         nLineX = int(((x2-x1)/minDim)*10)
+#         nLineY = int(((y2-y1)/minDim)*10)
+
+#         xs = np.linspace(x1, x2, nLineX)
+#         ys = np.linspace(y1, y2, nLineY)
+
+
+#         x_coords = []
+#         y_coords = []
+#         z_coords = []
+
+#         # Vertical grid lines
+#         for x in xs:
+#             x_coords.extend([x, x, None])
+#             y_coords.extend([y1, y2, None])
+#             z_coords.extend([z1, z1, None])
+
+#         # Horizontal grid lines
+#         for y in ys:
+#             x_coords.extend([x1, x2, None])
+#             y_coords.extend([y, y, None])
+#             z_coords.extend([z1, z1, None])
+
+#         fig.add_trace(
+#             go.Scatter3d(
+#                 x=x_coords,
+#                 y=y_coords,
+#                 z=z_coords,
+#                 mode="lines",
+#                 line=dict(color="lightgray", width=2),
+#                 hoverinfo="skip",
+#                 showlegend=False,
+#             )
+#         )
+
+# #---------------------------------------------------------
+
+# #-------------------   MODEL BOUNDING POINTS -----------------------------
+
+#     x = [x1,x1,x1,x1,x2,x2,x2,x2]
+#     y = [y1,y2,y1,y2,y1,y2,y1,y2]
+#     z = [z1,z1,z2,z2,z1,z1,z2,z2]
+
+#     fig.add_trace(go.Scatter3d(
+#         x=x,
+#         y=y,
+#         z=z,
+#         mode="markers",
+#         hoverinfo="skip",
+#         marker=dict(
+#             size=0,
+#             opacity = 0,
+#             color="blue",
+#         )
+#     ))
+
+# #-------------------   MODEL LINE ELEMS -----------------------------
+#     _COL_ID = {
+#         1: "#0BAEEE",
+#         2: "#3D5AFF",
+#         3: "#8344F8",
+#         4: "#D858FF",
+#         5: "#3FBE50",
+#         6: "#CC4848",
+#     }
+
+#     SECT_WISE_LINE_ELEM = {}
+
+#     PLATE_ELEM = []
+
+#     x_coords = []
+#     y_coords = []
+#     z_coords = []
+
+#     for elem in Element.elements:
+#         if elem.TYPE in ('BEAM','TRUSS'):
+#             x1,y1,z1 = nodeByID(elem.NODE[0]).LOC
+#             x2,y2,z2 = nodeByID(elem.NODE[1]).LOC
+#             x_coords = (x1, x2, None)
+#             y_coords = (y1, y2, None)
+#             z_coords = (z1, z2, None)
+#             if elem.SECT not in SECT_WISE_LINE_ELEM: 
+#                 SECT_WISE_LINE_ELEM[elem.SECT] = {"X":[],"Y":[],"Z":[]}
+#                 SECT_WISE_LINE_ELEM[elem.SECT]["COL"] = 'red'
+#             SECT_WISE_LINE_ELEM[elem.SECT]["X"].extend(x_coords)
+#             SECT_WISE_LINE_ELEM[elem.SECT]["Y"].extend(y_coords)
+#             SECT_WISE_LINE_ELEM[elem.SECT]["Z"].extend(z_coords)
+#         elif elem.TYPE in ('PLATE','WALL'):
+#             l1 = nodeByID(elem.NODE[0]).LOC
+#             l2 = nodeByID(elem.NODE[1]).LOC
+#             l3 = nodeByID(elem.NODE[2]).LOC
+#             if len(elem.NODE) > 3:
+#                 l4 = nodeByID(elem.NODE[3]).LOC
+#                 PLATE_ELEM.append([l1,l3,l4])
+#             PLATE_ELEM.append([l1,l2,l3])
+
+
+
+#     for secID in SECT_WISE_LINE_ELEM:
+#         col = _COL_ID.get(int(secID%7),'red')
+#         fig.add_trace(
+#             go.Scatter3d(
+#                 x=SECT_WISE_LINE_ELEM[secID]["X"],
+#                 y=SECT_WISE_LINE_ELEM[secID]["Y"],
+#                 z=SECT_WISE_LINE_ELEM[secID]["Z"],
+#                 mode="lines",
+#                 line=dict(color=col, width=4),
+#                 hoverinfo="skip",
+#                 showlegend=False,
+#             )
+#         )
+
+# #-------------------   MODEL PLATE ELEMS -----------------------------
+
+    
+#     x, y, z = [], [], []
+#     i, j, k = [], [], []
+
+#     offset = 0
+#     for plate in PLATE_ELEM:
+#         # Add vertices
+#         for p in plate:
+#             x.append(p[0])
+#             y.append(p[1])
+#             z.append(p[2])
+
+#             i.append(offset)
+#             j.append(offset + 1)
+#             k.append(offset + 2)
+
+#         offset += 3
+
+#     fig.add_trace(
+#         go.Mesh3d(
+#             x=x,
+#             y=y,
+#             z=z,
+#             i=i,
+#             j=j,
+#             k=k,
+#             colorscale=[[0, "#7758FF"],
+#                     [1, "#AF2EFA"]],
+#             intensity = np.linspace(0, 1, len(x), endpoint=True),
+#             opacity=1,
+#             flatshading=True,
+#             hoverinfo="skip",
+#             showlegend=False,
+#             showscale=False,
+#         )
+#     )
+
+# #-------------------   NODE POINTS -----------------------------
+#     if bNode:
+#         x = []
+#         y = []
+#         z = []
+
+#         for cons in Node.nodes:
+#             loc = cons.LOC
+#             x.append(loc[0])
+#             y.append(loc[1])
+#             z.append(loc[2])
+
+#         fig.add_trace(go.Scatter3d(
+#             x=x,
+#             y=y,
+#             z=z,
+#             mode="markers",
+#             hoverinfo="skip",
+#             marker=dict(
+#                 size=5,
+#                 opacity = 1,
+#                 color="#1296e2",
+#                 symbol="circle"
+#             )
+#         ))
+
+# #-------------------   NODE ID LABELS -----------------------------
+#     if bNodeID:
+#         x_ids = []
+#         y_ids = []
+#         z_ids = []
+#         text_ids = []
+
+#         for cons in Node.nodes:
+#             loc = cons.LOC
+#             x_ids.append(loc[0])
+#             y_ids.append(loc[1])
+#             z_ids.append(loc[2])
+#             text_ids.append(str(cons.ID))
+
+#         fig.add_trace(go.Scatter3d(
+#             x=x_ids,
+#             y=y_ids,
+#             z=z_ids,
+#             mode="text",
+#             text=text_ids,
+#             textposition="top center", 
+#             hoverinfo="skip",
+#             textfont=dict(
+#                 size=12,
+#                 color="#000000"
+#             ),
+#             showlegend=False
+#         ))
+
+# #-------------------   ELEMENT ID LABELS -----------------------------
+#     if bElementID:
+#         elem_x = []
+#         elem_y = []
+#         elem_z = []
+#         elem_ids = []
+
+#         for elem in Element.elements:
+#             if elem.TYPE in ['BEAM', 'TRUSS', 'PLATE', 'WALL']:
+#                 x, y, z = elem.CENTER
+#                 elem_x.append(x)
+#                 elem_y.append(y)
+#                 elem_z.append(z)
+#                 elem_ids.append(str(elem.ID))
+
+#         fig.add_trace(go.Scatter3d(
+#             x=elem_x,
+#             y=elem_y,
+#             z=elem_z,
+#             mode='text',
+#             text=elem_ids,
+#             textposition='middle center',
+#             name='Element IDs',
+#             textfont=dict(
+#                 color="#5A7DD7",
+#                 size=12
+#             ),
+#             hoverinfo='text'
+#         ))
+
+# #-------------------   POINT SUPPORTS ELEMS -----------------------------
+#     if bSupport:
+#         x = []
+#         y = []
+#         z = []
+
+#         for cons in Boundary.Support.sups:
+#             loc = nodeByID(cons.NODE).LOC
+#             x.append(loc[0])
+#             y.append(loc[1])
+#             z.append(loc[2])
+
+#         fig.add_trace(go.Scatter3d(
+#             x=x,
+#             y=y,
+#             z=z,
+#             mode="markers",
+#             hoverinfo="skip",
+#             marker=dict(
+#                 size=5,
+#                 opacity = 1,
+#                 color="#1296e2",
+#                 symbol="diamond"
+#             )
+#         ))
+
+#     if bPointSpring:
+#         x = []
+#         y = []
+#         z = []
+
+#         for cons in Boundary.PointSpring.springs:
+#             loc = nodeByID(cons.NODE).LOC
+#             x.append(loc[0])
+#             y.append(loc[1])
+#             z.append(loc[2])
+
+#         fig.add_trace(go.Scatter3d(
+#             x=x,
+#             y=y,
+#             z=z,
+#             mode="markers",
+#             hoverinfo="skip",
+#             marker=dict(
+#                 size=5,
+#                 opacity = 1,
+#                 color="#1296e2",
+#                 symbol="circle"
+#             )
+#         ))
+
+# #-------------------   LINKS LINE -----------------------------
+#     if bElink:
+#         x = []
+#         y = []
+#         z = []
+
+#         for link in Boundary.ElasticLink.links:
+#             loc1 = nodeByID(link.I_NODE).LOC
+#             loc2 = nodeByID(link.J_NODE).LOC
+
+#             x.extend((loc1[0],loc2[0],None))
+#             y.extend((loc1[1],loc2[1],None))
+#             z.extend((loc1[2],loc2[2],None))
+
+#         fig.add_trace(go.Scatter3d(
+#             x=x,
+#             y=y,
+#             z=z,
+#             mode="lines",
+#             hoverinfo="skip",
+#             line=dict(color="#ff7272", width=4, dash="longdash"),
+#             showlegend=False,
+#         ))
+
+#     if bRigidLink:
+#         x = []
+#         y = []
+#         z = []
+
+#         for link in Boundary.RigidLink.links:
+
+#             loc1 = nodeByID(link.M_NODE).LOC
+#             for nID in link.S_NODE:
+#                 loc2 = nodeByID(nID).LOC
+#                 x.extend((loc1[0],loc2[0],None))
+#                 y.extend((loc1[1],loc2[1],None))
+#                 z.extend((loc1[2],loc2[2],None))
+
+#         fig.add_trace(go.Scatter3d(
+#             x=x,
+#             y=y,
+#             z=z,
+#             mode="lines",
+#             hoverinfo="skip",
+#             line=dict(color="#03e428", width=4, dash="dot"),
+#             showlegend=False,
+#         ))
+                
+
+# #--------------   FINAL LAYOUT ----------------
+
+#     # fig.update_layout(
+#     #     margin=dict(l=0, r=0, t=0, b=0),
+#     #     showlegend=False,
+#     #     uirevision="scene",
+#     #     scene=dict(
+#     #         aspectmode="data",
+#     #         yaxis=dict(visible=False),
+#     #         xaxis=dict(visible=False),
+#     #         zaxis=dict(visible=False),
+#     #         camera=dict(
+#     #             projection=dict(type="orthographic"),   # no perspective foreshortening
+#     #             eye=dict(x=1.6, y=1.6, z=0.9),
+#     #         ),
+#     #     ),
+#     # )
+
+#     fig.update_layout(
+#         margin=dict(l=0, r=0, t=0, b=0),
+#         showlegend=False,
+#         uirevision="constant_viewpoint_key",
+#         scene=dict(
+#             aspectmode="data",
+#             yaxis=dict(visible=False),
+#             xaxis=dict(visible=False),
+#             zaxis=dict(visible=False),
+#             camera=dict(
+#                 projection=dict(type="orthographic"),   # no perspective foreshortening
+#             ),
+#         ),
+#     )
+
+#     return fig
+
+
+
+
+#--------------- SNAP FEATURE FOR PLOTLY IMPLEMENTATION ------------------
+class Snap:
+    snapshots = {}
+    n_snap = 0
+
+    def __init__(self,name=None):
+        Snap.n_snap+=1
+
+        self.NAME = name
+        self.SNAP_DATA = _snapshot()
+        self.ID = Snap.n_snap
         
-        dPlotter.view_xy()
-        dPlotter.show()
-    else:
-        Visual.plotter.clear_actors()
-        dPlotter = showVisual(Visual.plotter)
-        dPlotter.render()
+        Snap.snapshots[self.ID] = self
 
+    @staticmethod
+    def clear():
+        Snap.snapshots = {}
+        Snap.n_snap = 0
 
-def showVisual(plotter):
-
-    if Visual.first_launch:
-        min_z = 0
-        min_x = 0
-        max_x = 0
-        min_y = 0
-        max_y = 0
-        for nd in Node.nodes:
-            min_z = min(min_z,nd.Z)
-            min_x = min(min_x,nd.X)
-            max_x = max(max_x,nd.X)
-            min_y = min(min_y,nd.Y)
-            max_y = max(max_y,nd.Y)
-        min_z = int(min_z)
-        min_x = int(min_x)
-        max_x = int(max_x)
-        min_y = int(min_y)
-        max_y = int(max_y)
-
-        Visual.min_x = min_x
-        Visual.max_x = max_x
-        Visual.min_y = min_y
-        Visual.max_y = max_y
-        Visual.min_z = min_z
-    else :
-        min_x = Visual.min_x
-        max_x = Visual.max_x
-        min_y = Visual.min_y
-        max_y = Visual.max_y
-        min_z = Visual.min_z
-
-
-    points = Visual.visual_info[str(Visual.cur_snap)]["POINTS"]
-    point_ids = Visual.visual_info[str(Visual.cur_snap)]["POINT_IDS"]
-    point_Group_ids = Visual.visual_info[str(Visual.cur_snap)]["POINT_GROUP_IDS"]
-
-    lines_point_pair =Visual.visual_info[str(Visual.cur_snap)]["LINE_POINTS"]
-    lines_id_map = Visual.visual_info[str(Visual.cur_snap)]["LINE_IDS"]
-
-    Tplates_point_pair = Visual.visual_info[str(Visual.cur_snap)]["TRI_POINTS"]
-    Tplates_id_map = Visual.visual_info[str(Visual.cur_snap)]["TRI_IDS"]
-
-    Qplates_point_pair = Visual.visual_info[str(Visual.cur_snap)]["QUAD_POINTS"]
-    Qplates_id_map =Visual.visual_info[str(Visual.cur_snap)]["QUAD_IDS"]
-
-
-
-    if lines_point_pair!=[] and Visual.toggle_Beam:
-        msh = pv.PolyData(points , lines=lines_point_pair)
-        msh.cell_data["ids"] = lines_id_map
-        plotter.add_mesh(msh, scalars="ids", cmap="plasma", line_width=4,show_edges=False,opacity=0.95,show_scalar_bar=False,name="Lines")
-
-    if Qplates_point_pair!=[] and Visual.toggle_Plate:
-        Qmesh = pv.PolyData(points, Qplates_point_pair)
-        Qmesh.cell_data["ids"] = Qplates_id_map
-        plotter.add_mesh(Qmesh, scalars="ids", cmap="rainbow", show_edges=True,opacity=0.8,edge_opacity=0.3,show_scalar_bar=False,name="QPlates")
-
-    if Tplates_point_pair!=[] and Visual.toggle_Plate:
-        Tmesh = pv.PolyData(points, Tplates_point_pair)
-        Tmesh.cell_data["ids"] = Tplates_id_map
-        plotter.add_mesh(Tmesh, scalars="ids", cmap="rainbow", show_edges=True,opacity=0.8,edge_opacity=0.3,show_scalar_bar=False,name="TPlates")
-
-
-
-
-
-
-    # SHOW NODE ID ---------------------------------------------------------------------------------------
-    if Visual.toggle_NodeIDs and points!=[]:
-        plotter.add_point_labels(points, point_ids, 
-                                    always_visible=True,shape=None,show_points=True,
-                                    fill_shape=False,
-                                    point_size=10,point_color="red",
-                                    font_size=15, name="LABEL_ID"
-                                    )
-
+    @staticmethod
+    def get(ID=None):
+        maxID = 0
+        minID = 0
+        try:
+            maxID = max(Snap.snapshots.keys())
+            minID = min(Snap.snapshots.keys())
+        except:
+            return
+        if ID is None:
+            ID = max(minID, min(ID, maxID)) 
+        return Snap.snapshots.get(ID,None)
     
-    #----------------------------------------------------------------------------------------------------
-    
-    #GROUP NODE ID ------------------------------------------------------------------------------------
-    if Visual.toggle_GroupNodeIDs and points!=[]:
-        plotter.add_point_labels(points, point_Group_ids, 
-                                    always_visible=True,shape=None,show_points=True,
-                                    fill_shape=False,
-                                    point_size=10,point_color="orange",
-                                    font_size=17, name="GLABEL_ID"
-                                    )
+    @staticmethod
+    def minimumID():
+        try:
+            minID = min(Snap.snapshots.keys())
+            return minID
+        except:
+            print("⚠️ Error: no snapshots taken")
+            return
 
-    
+    @staticmethod
+    def maximumID():
+        try:
+            maxID = max(Snap.snapshots.keys())
+            return maxID
+        except:
+            print("⚠️ Error: no snapshots taken")
+            return
 
-   # -----------------------------------------------------------------------------------------------------
-
-
-
-    # GRID ----------------------------------------------------------------------------------------------
-    x_offset = 0.2*(max_x-min_x)+1
-    y_offset = 0.2*(max_y-min_y)+1
-    x = np.linspace(min_x-x_offset, max_x+x_offset, 21)
-    y = np.linspace(min_y-y_offset, max_y+y_offset, 21)
-
-
-    lines = []
-    z_off = 1
-
-    for xi in x:
-        lines.append([[xi, y[0], min_z-z_off], [xi, y[-1], min_z-z_off]])  # vertical lines
-
-    for yi in y:
-        lines.append([[x[0], yi, min_z-z_off], [x[-1], yi, min_z-z_off]])  # horizontal lines
-
-
-    grid_lines = pv.PolyData()
-    for line in lines:
-        grid_lines += pv.Line(line[0], line[1])
-
-    
-    if Visual.toggle_Grid:
-        plotter.add_mesh(grid_lines, color='gray', line_width=1,name="Grid",opacity=0.3)
-
-
-#--------------------------------------------------------------------------------------------------------------
-
-
-    def toggle_GridLines(checked):
-        if checked:
-            Visual.toggle_Grid = True
-            plotter.add_mesh(grid_lines, color='gray', line_width=1,name="Grid",opacity=0.3)
-        else:
-            Visual.toggle_Grid = False
-            plotter.remove_actor("Grid")
-        plotter.render()
-
-
-    def toggle_GroupNodeID(checked):
-        if checked:
-            Visual.toggle_GroupNodeIDs = True
-            plotter.add_point_labels(points, point_Group_ids, 
-                                always_visible=True,shape=None,show_points=True,
-                                fill_shape=False,
-                                point_size=10,point_color="orange",
-                                font_size=17, name="GLABEL_ID"
-                                )
-        else:
-            Visual.toggle_GroupNodeIDs = False
-            plotter.remove_actor("GLABEL_ID")        
+    @staticmethod
+    def ListIDs():
+        return list(Snap.snapshots.keys())
         
-        plotter.render()
-
-
-
-    def toggle_Beams(checked):
-        if checked:
-            Visual.toggle_Beam = True
-            if lines_point_pair!=[]: plotter.add_mesh(msh, scalars="ids", cmap="plasma", line_width=4,show_edges=False,opacity=0.95,show_scalar_bar=False,name="Lines")
-        else:
-            Visual.toggle_Beam = False
-            plotter.remove_actor("Lines")
-        plotter.render()
-
-    def toggle_Plates(checked):
-        if checked:
-            Visual.toggle_Plate = True
-            if Qplates_point_pair!=[]:plotter.add_mesh(Qmesh, scalars="ids", cmap="rainbow", show_edges=True,opacity=0.8,edge_opacity=0.3,show_scalar_bar=False,name="QPlates")
-            if Tplates_point_pair!=[]:plotter.add_mesh(Tmesh, scalars="ids", cmap="rainbow", show_edges=True,opacity=0.8,edge_opacity=0.3,show_scalar_bar=False,name="TPlates")
-        else:
-            Visual.toggle_Plate = False
-            plotter.remove_actor("QPlates")
-            plotter.remove_actor("TPlates")
-        plotter.render()
-
-    def toggle_nodeID(checked):
-        if checked:
-            Visual.toggle_NodeIDs = True
-            plotter.add_point_labels(points, point_ids, 
-                                always_visible=True,shape=None,show_points=True,
-                                fill_shape=False,
-                                point_size=10,point_color="red",
-                                font_size=15, name="LABEL_ID"
-                                )
-        else:
-            Visual.toggle_NodeIDs = False
-            plotter.remove_actor("LABEL_ID")
-
-        plotter.render()
-
-    
-    cbox_NodeID_pos = (50,10)
-    plotter.add_checkbox_button_widget(toggle_nodeID, value=Visual.toggle_NodeIDs, position=cbox_NodeID_pos, size=20)
-    plotter.add_text("Node ID", font_size=6, color='black',position=(cbox_NodeID_pos[0]+25,cbox_NodeID_pos[1]+3))
-
-    cbox_GrupNodeID_pos = (150,10)
-    plotter.add_checkbox_button_widget(toggle_GroupNodeID, value=Visual.toggle_GroupNodeIDs, position=cbox_GrupNodeID_pos, size=20)
-    plotter.add_text("Group Node ID", font_size=6, color='black',position=(cbox_GrupNodeID_pos[0]+25,cbox_GrupNodeID_pos[1]+3))
-
-    cbox_DispBeam_pos = (280,10)
-    plotter.add_checkbox_button_widget(toggle_Beams, value=Visual.toggle_Beam, position=cbox_DispBeam_pos, size=20)
-    plotter.add_text("Beams", font_size=6, color='black',position=(cbox_DispBeam_pos[0]+25,cbox_DispBeam_pos[1]+3))
-
-    cbox_DispPlate_pos = (370,10)
-    plotter.add_checkbox_button_widget(toggle_Plates, value=Visual.toggle_Plate, position=cbox_DispPlate_pos, size=20)
-    plotter.add_text("Plates", font_size=6, color='black',position=(cbox_DispPlate_pos[0]+25,cbox_DispPlate_pos[1]+3))
-
-    cbox_GridDispl_pos = (450,10)
-    plotter.add_checkbox_button_widget(toggle_GridLines, value=Visual.toggle_Grid, position=cbox_GridDispl_pos, size=20)
-    plotter.add_text("Grid", font_size=6, color='black',position=(cbox_GridDispl_pos[0]+25,cbox_GridDispl_pos[1]+3))
-
-    cbox_Animate_pos = (580,10)
-    plotter.add_checkbox_button_widget(changeDataBack, value=True, position=cbox_Animate_pos, size=20)
-    plotter.add_text("<<", font_size=6, color='red',position=(cbox_Animate_pos[0]+25,cbox_Animate_pos[1]+3))
-
-    cbox_Animate_pos = (640,10)
-    plotter.add_checkbox_button_widget(changeDataForw, value=True, position=cbox_Animate_pos, size=20)
-    plotter.add_text(">>", font_size=6, color='green',position=(cbox_Animate_pos[0]+25,cbox_Animate_pos[1]+3))
-
-    
-    #--------------------------------------------------------------------------------------------------------------
-
-
-    return plotter
