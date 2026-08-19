@@ -208,7 +208,7 @@ def Midas_help():
 
 
 class NX:
-    version_check = True    # CHANGE IT TO FALSE TO SKIP VERSION CHECK OF LIBRARY
+    version_check = False    # CHANGE IT TO FALSE TO SKIP VERSION CHECK OF LIBRARY
     user_print = True
     debug_request = False
     debug_requestJSON = False
@@ -222,6 +222,7 @@ class NX:
     SOLVER = 'FES'
     _MEC_VERSIONS = ['9.7.5']
     _isSyncUnit = False
+    save_debug_log = False
 
     units = {
         "FORCE": "KN",
@@ -403,6 +404,10 @@ def MidasAPI(method:_httpMethod, command:str, body:dict={})->dict:
 
         if NX.user_print:
             _checkUSER()
+
+        if NX.save_debug_log:
+            sys.stdout = open("midas_civil_debug_log.txt", "w", encoding="utf-8")
+
 
 
 

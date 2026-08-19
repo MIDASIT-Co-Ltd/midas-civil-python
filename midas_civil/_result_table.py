@@ -41,17 +41,20 @@ def _convertColm2DataType(res_df):
 
     ])
 
-    res_type_df = res_type_df.with_columns(
-        pl.col("Node")
-        .map_elements(
-            lambda x: int(x) if str(x).isdigit() else str(x),
-            return_dtype=pl.Object,
-        )
-)
+    if "Node" in res_type_df.columns:
+        res_type_df = res_type_df.with_columns(
+            pl.col("Node")
+            .map_elements(
+                lambda x: int(x) if str(x).isdigit() else str(x),
+                return_dtype=pl.Object,
+                )
+            )
+
+            
     return res_type_df
 
 #---- INPUT: JSON -> OUTPUT : Data FRAME --------- ---------
-def _JSToDF_ResTable(js_json,excelLoc,sheetName,cellLoc="A1"):
+def _JSToDF_ResTable(js_json,excelLoc,sheetName,cellLoc="A1",outputFormat='Polars'):
     # Check for SS_Table existence
     import polars as pl
     if "SS_Table" not in js_json:
@@ -87,7 +90,12 @@ def _JSToDF_ResTable(js_json,excelLoc,sheetName,cellLoc="A1"):
     if excelLoc:
         _write_df_to_existing_excel(res_type_df,(excelLoc,sheetName, cellLoc))
 
-    return(res_type_df)
+    if outputFormat=='JSON':
+        return res_type_df.to_dict(as_series=False)
+    elif outputFormat=='Polars':
+        return(res_type_df)
+    else:
+        return(res_type_df)
 
 #---- INPUT: JSON -> OUTPUT : Data FRAME --------- ---------
 def _JSToDF_ResTable_TEXT(table_type, js_json, excelLoc, sheetName, cellLoc="A1"):
@@ -210,37 +218,37 @@ def _JSToDF_ResTable_Eigen(js_json, output, excelLoc, sheetName, cellLoc="A1"):
 
 
 
-#---- INPUT: JSON -> OUTPUT : Data FRAME --------- ---------
-def JSON2DF(json_data):
-    ''' CONVERTS JSON DATA WITH HEAD AND DATA KEYS TO POLARS DATAFRAME'''
-    # Check for SS_Table existence
+# #---- INPUT: JSON -> OUTPUT : Data FRAME --------- ---------
+# def JSON2DF(json_data):
+#     ''' CONVERTS JSON DATA WITH HEAD AND DATA KEYS TO POLARS DATAFRAME'''
+#     # Check for SS_Table existence
 
-    import polars as pl
+#     import polars as pl
 
         
-    res_json = {}
-    c=0
+#     res_json = {}
+#     c=0
     
-    # Check for HEAD and DATA existence
-    if "HEAD" not in json_data or "DATA" not in json_data:
-        print('⚠️  Error: "HEAD" or "DATA" not found in "SS_Table".')
-        return pl.DataFrame() # Return empty DataFrame
+#     # Check for HEAD and DATA existence
+#     if "HEAD" not in json_data or "DATA" not in json_data:
+#         print('⚠️  Error: "HEAD" or "DATA" not found in "SS_Table".')
+#         return pl.DataFrame() # Return empty DataFrame
         
-    for heading in json_data["HEAD"]:
-        for dat in json_data["DATA"]:
-            try:
-                res_json[heading].append(dat[c])
-            except:
-                res_json[heading]=[]
-                res_json[heading].append(dat[c])
+#     for heading in json_data["HEAD"]:
+#         for dat in json_data["DATA"]:
+#             try:
+#                 res_json[heading].append(dat[c])
+#             except:
+#                 res_json[heading]=[]
+#                 res_json[heading].append(dat[c])
 
-        c+=1
+#         c+=1
 
-    res_df = pl.DataFrame(res_json) # Final DF
+#     res_df = pl.DataFrame(res_json) # Final DF
 
-    res_type_df = _convertColm2DataType(res_df)
+#     res_type_df = _convertColm2DataType(res_df)
 
-    return(res_type_df)
+#     return(res_type_df)
 
 
 
@@ -466,9 +474,10 @@ class TableOptions:
     EXCEL_FILE_LOC = None
     EXCEL_SHEET_NAME = None
     EXCEL_CELL_POS = "end"
+    OUTPUT_FORMAT = 'Polars'
 
     def __init__(self,force_unit:_forceType=None,len_unit:_lengthType=None,num_format:_numFormat=None,decimal_place:int=None,
-                 JSONFileLoc=None,ExcelFileLoc=None , ExcelSheetName = None,ExcelCellPos = None):
+                 JSONFileLoc=None,ExcelFileLoc=None , ExcelSheetName = None,ExcelCellPos = None , outputFormat = None):
         
         # existing_excel_input -> excel file , sheet , cell
 
@@ -489,6 +498,7 @@ class TableOptions:
         self.EXCEL_FILE_LOC = ExcelFileLoc or TableOptions.EXCEL_FILE_LOC
         self.EXCEL_SHEET_NAME = ExcelSheetName or TableOptions.EXCEL_SHEET_NAME
         self.EXCEL_CELL_POS = ExcelCellPos or TableOptions.EXCEL_CELL_POS
+        self.OUTPUT_FORMAT = outputFormat or TableOptions.OUTPUT_FORMAT
 
     @property
     def Style(self):
@@ -534,7 +544,7 @@ class Result :
             js_dat = _generate(tabletype,keys,loadcase,[],cs_stage,options)
 
             ResultJSON = _changeUNITandGetData(js_dat,options.FORCE_UNIT,options.LEN_UNIT,options.JSON_FILE_LOC,tabletype)
-            polarDF = _JSToDF_ResTable(ResultJSON,options.EXCEL_FILE_LOC,sheetName,options.EXCEL_CELL_POS)
+            polarDF = _JSToDF_ResTable(ResultJSON,options.EXCEL_FILE_LOC,sheetName,options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
             return polarDF
         
             # ---------- User defined TABLE (Dynamic Report Table) ------------------------------
@@ -600,7 +610,7 @@ class Result :
             js_dat = _generate(table_type,keys,loadcase,components,cs_stage,options)
 
             ResultJSON = _changeUNITandGetData(js_dat,options.FORCE_UNIT,options.LEN_UNIT,options.JSON_FILE_LOC,table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON,options.EXCEL_FILE_LOC,sheetName,options.EXCEL_CELL_POS)
+            polarDF = _JSToDF_ResTable(ResultJSON,options.EXCEL_FILE_LOC,sheetName,options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
             return polarDF
 
         @staticmethod
@@ -636,7 +646,7 @@ class Result :
                 js_dat["Argument"]["DISP_OPT"] = displacement_type
 
             ResultJSON = _changeUNITandGetData(js_dat,options.FORCE_UNIT,options.LEN_UNIT,options.JSON_FILE_LOC,table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON,options.EXCEL_FILE_LOC,sheetName,options.EXCEL_CELL_POS)
+            polarDF = _JSToDF_ResTable(ResultJSON,options.EXCEL_FILE_LOC,sheetName,options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
             return polarDF
     
         @staticmethod
@@ -660,7 +670,7 @@ class Result :
             js_dat = _generate(table_type, keys, loadcase, components, cs_stage, options)
             
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
             return polarDF
 
         @staticmethod
@@ -684,7 +694,7 @@ class Result :
             js_dat = _generate(table_type, keys, loadcase, components, cs_stage, options)
             
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
             return polarDF
 
         @staticmethod
@@ -712,7 +722,7 @@ class Result :
                 js_dat["Argument"]["PARTS"] = parts
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
             return polarDF
 
         @staticmethod
@@ -744,7 +754,7 @@ class Result :
                 js_dat["Argument"]['ITEM_TO_DISPLAY'] = items
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
             return polarDF
 
         @staticmethod
@@ -773,7 +783,7 @@ class Result :
                 js_dat["Argument"]["PARTS"] = parts
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
             return polarDF
 
         @staticmethod
@@ -801,7 +811,7 @@ class Result :
                 js_dat["Argument"]["PARTS"] = parts
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
             return polarDF
 
         @staticmethod
@@ -833,7 +843,7 @@ class Result :
                 js_dat["Argument"]['ITEM_TO_DISPLAY'] = items
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
             return polarDF
 
         @staticmethod
@@ -866,7 +876,7 @@ class Result :
                 js_dat["Argument"]["SECTION_POSITION"] = section_position
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
             return polarDF
 
         @staticmethod
@@ -899,7 +909,7 @@ class Result :
                 js_dat["Argument"]["SECTION_POSITION"] = section_position
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
             return polarDF
 
         @staticmethod
@@ -932,7 +942,7 @@ class Result :
                 js_dat["Argument"]["SECTION_POSITION"] = section_position
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
             return polarDF
 
         @staticmethod
@@ -966,7 +976,7 @@ class Result :
                 js_dat["Argument"]["AVERAGE_NODAL_RESULT"] = True
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
             return polarDF
 
         @staticmethod
@@ -999,7 +1009,7 @@ class Result :
                 js_dat["Argument"]["SECTION_POSITION"] = section_position
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
             return polarDF
 
         @staticmethod
@@ -1041,7 +1051,7 @@ class Result :
                 js_dat["Argument"]["AVERAGE_NODAL_RESULT"] = True
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
             return polarDF
 
         @staticmethod
@@ -1088,7 +1098,7 @@ class Result :
                 js_dat["Argument"]["AVERAGE_NODAL_RESULT"] = True
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
             return polarDF
 
         @staticmethod
@@ -1125,7 +1135,7 @@ class Result :
                 js_dat["Argument"]["AVERAGE_NODAL_RESULT"] = True
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
             return polarDF
         
         @staticmethod
@@ -1159,7 +1169,7 @@ class Result :
             }
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
             return polarDF
         
                 
@@ -1190,7 +1200,7 @@ class Result :
             
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
             return polarDF
         
         @staticmethod
@@ -1226,7 +1236,7 @@ class Result :
             js_dat["Argument"]['SET_STORY_DRIFT_PARAMS']['ALLOWABLE_RATIO']  = allowable_ratio
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
             return polarDF
 
         @staticmethod
@@ -1260,7 +1270,7 @@ class Result :
             }
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
             return polarDF
 
         @staticmethod
@@ -1284,7 +1294,7 @@ class Result :
             js_dat["Argument"].pop("LOAD_CASE_NAMES")
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
             return polarDF
 
         @staticmethod
@@ -1308,7 +1318,7 @@ class Result :
             js_dat["Argument"].pop("LOAD_CASE_NAMES")
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
             return polarDF
 
         @staticmethod
@@ -1332,7 +1342,7 @@ class Result :
             js_dat["Argument"].pop("LOAD_CASE_NAMES")
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
             return polarDF
 
         @staticmethod
@@ -1356,7 +1366,7 @@ class Result :
             js_dat["Argument"].pop("LOAD_CASE_NAMES")
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
             return polarDF
         
         @staticmethod

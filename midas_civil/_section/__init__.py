@@ -341,7 +341,7 @@ class Section:
 
     #---------------------     V A L U E    --------------------    
     @staticmethod
-    def VALUE(Name:str='',Shape:_dbsection='',parameters:list=[],
+    def VALUE(Name:str='',Shape:_dbsection='SB',parameters:list=[0.1,0.1],
                  Area=None,Ixx=None,Iyy=None,Izz=None,Offset=Offset(),useShear:bool=True,use7Dof:bool=False,id:int=None):
         """Create a Value type section.
         """

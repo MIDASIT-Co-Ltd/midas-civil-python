@@ -200,29 +200,30 @@ class Shape:
             self.N_INNER = len(outerPTs)
             self.OUTER = outerPTs
 
-    def createSHAPE(shape,col=None):
+
+    def __createSHAPE__(shape,col=None):
         import matplotlib.pyplot as plt
-        def createPoly(pts,col=col):
+        def __createPoly__(pts,col=col):
             ptsList = list(pts)
             ptsList.append(pts[0])
 
             x, y = zip(*ptsList)
             # Scatter plot
-            plt.fill(x, y,facecolor=col,edgecolor='black',)
+            plt.fill(x, y,facecolor=col,edgecolor="#5C86F1",)
 
         for outerPts in shape.OUTER:
-            createPoly(outerPts,col)
+            __createPoly__(outerPts,"#A7C3FF")
 
         for holePts in shape.INNER:
-            createPoly(holePts,"#ffffff75")
+            __createPoly__(holePts,"#ffffff75")
 
     def plot(shape):
         import matplotlib.pyplot as plt
         
-        shape.createSHAPE()
+        shape.__createSHAPE__()
         # If you want to connect the points:
         # plt.plot(x, y, '-o')
-        plt.grid(True)
+        plt.grid(False)
         plt.axis('equal')   # Optional: equal scaling on both axes
         plt.show()
 

@@ -136,12 +136,14 @@ class Material:
 
         # ----------------------------------  DB MATERIAL ---------------------------------------------------
 
-        def __init__(self,name='',standard:_dbConc='',db='',id:int=None,):
+        def __init__(self,name='',standard:_dbConc='',db='',spec_heat:float=0,heat_conduct:float=0,id:int=None,):
             if id == None: id =0  
             js =  {
                 "TYPE": "CONC",
                 "NAME": name,
                 "DAMP_RAT": 0.05,
+                "HE_SPEC": spec_heat,
+                "HE_COND": heat_conduct,
                 "PARAM": [
                     {
                         "P_TYPE": 1,
@@ -159,12 +161,14 @@ class Material:
         # ----------------------------------  USER MATERIAL ---------------------------------------------------
 
         class User:
-            def __init__(self,name='',E=0,pois=0,den=0,mass=0,therm=0,id:int=None,):
+            def __init__(self,name='',E=0,pois=0,den=0,mass=0,therm=0,spec_heat:float=0,heat_conduct:float=0,id:int=None,):
                 if id == None: id =0
                 js =  {
                     "TYPE": "CONC",
                     "NAME": name,
                     "DAMP_RAT": 0.05,
+                    "HE_SPEC": spec_heat,
+                    "HE_COND": heat_conduct,
                     "PARAM": [
                         {
                             "P_TYPE": 2,
@@ -188,12 +192,14 @@ class Material:
 
         # ----------------------------------  DB MATERIAL ---------------------------------------------------
 
-        def __init__(self,name='',standard='',db='',id:int=None,):
+        def __init__(self,name='',standard='',db='',spec_heat:float=0,heat_conduct:float=0,id:int=None,):
             if id == None: id =0
             js =  {
                 "TYPE": "STEEL",
                 "NAME": name,
                 "DAMP_RAT": 0.05,
+                "HE_SPEC": spec_heat,
+                "HE_COND": heat_conduct,
                 "PARAM": [
                     {
                         "P_TYPE": 1,
@@ -211,12 +217,14 @@ class Material:
         # ----------------------------------  USER MATERIAL ---------------------------------------------------
 
         class User:
-            def __init__(self,name='',E=0,pois=0,den=0,mass=0,therm=0,id:int=None,):
+            def __init__(self,name='',E=0,pois=0,den=0,mass=0,therm=0,spec_heat:float=0,heat_conduct:float=0,id:int=None,):
                 if id == None: id =0
                 js =  {
                     "TYPE": "STEEL",
                     "NAME": name,
                     "DAMP_RAT": 0.05,
+                    "HE_SPEC": spec_heat,
+                    "HE_COND": heat_conduct,
                     "PARAM": [
                         {
                             "P_TYPE": 2,
@@ -239,12 +247,14 @@ class Material:
 
     class USER:
 
-        def __init__(self,name='',E=0,pois=0,den=0,mass=0,therm=0,id:int=None,):
+        def __init__(self,name:str='',E:float=0,pois:float=0,den:float=0,mass:float=0,therm:float=0,spec_heat:float=0,heat_conduct:float=0,id:int=None,):
             if id == None: id =0
             js =  {
                 "TYPE": "USER",
                 "NAME": name,
                 "DAMP_RAT": 0.05,
+                "HE_SPEC": spec_heat,
+                "HE_COND": heat_conduct,
                 "PARAM": [
                     {
                         "P_TYPE": 2,

@@ -1,6 +1,6 @@
 from ._mapi import MidasAPI
 # from ._model import *
-from ._node import Node
+# from ._node import Node
 from ._group import Group
 from typing import Literal
 
@@ -124,16 +124,18 @@ class Boundary:
         def json(cls):
             """Creates JSON from Supports objects defined in Python"""
             json = {"Assign":{}}
-            ng = []
             for i in Boundary.Support.sups:
-                if i.NODE in Node.ids:
-                    json["Assign"][i.NODE] = {"ITEMS":
-                            [{"ID": i.ID,
-                            "CONSTRAINT":i.CONST,
-                            "GROUP_NAME": i.GROUP}]
-                            }
-                if i.NODE not in Node.ids: ng.append(i.NODE)
-            if len(ng) > 0: print("These nodes are not defined: ", ng)
+
+                if i.NODE not in list(json["Assign"].keys()):
+                    json["Assign"][i.NODE] = {"ITEMS": []}
+
+                json["Assign"][i.NODE]["ITEMS"].append({
+                    "ID": i.ID,
+                    "GROUP_NAME": i.GROUP,
+                    "CONSTRAINT": i.CONST
+                })
+
+            # REMOVED NODE CHECK FOR SUPPORTS - NODE ID UPTO USER
             return json
         
         @staticmethod

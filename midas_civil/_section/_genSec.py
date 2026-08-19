@@ -64,10 +64,10 @@ class _SS_GENERAL(_common):
     def plot(sect):
         import matplotlib.pyplot as plt
 
-        if sect.PART_1 !=None: sect.PART_1.createSHAPE("#c394f840")
-        if sect.PART_2 !=None: sect.PART_2.createSHAPE("#8ee6d740")
-        if sect.PART_3 !=None: sect.PART_3.createSHAPE("#e26d9040")
-        if sect.PART_4 !=None: sect.PART_4.createSHAPE("#dd986040")
+        if sect.PART_1 !=None: sect.PART_1.__createSHAPE__("#c394f840")
+        if sect.PART_2 !=None: sect.PART_2.__createSHAPE__("#8ee6d740")
+        if sect.PART_3 !=None: sect.PART_3.__createSHAPE__("#e26d9040")
+        if sect.PART_4 !=None: sect.PART_4.__createSHAPE__("#dd986040")
 
 
         plt.grid(False)

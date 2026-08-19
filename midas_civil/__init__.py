@@ -47,7 +47,7 @@ from ._settlement import Settlement
 from ._analysiscontrol import AnalysisControl
 from ._BoundaryChangeAssignment import BoundaryChangeAssignment         # <=== NEEDS A REVIEW (UNNECESSARY CALL)
 
-from ._result_table import Result,TableOptions , JSON2DF
+from ._result_table import Result,TableOptions
 
 
 from ._responseSpectrum import RS

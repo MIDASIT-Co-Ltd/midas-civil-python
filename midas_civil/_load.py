@@ -257,6 +257,7 @@ class Load:
         
         @staticmethod
         def sync():
+            Load.SW.clear()
             a = Load.SW.get()
             if a != {'message': ''}:
                 for i in list(a['BODF'].keys()):
