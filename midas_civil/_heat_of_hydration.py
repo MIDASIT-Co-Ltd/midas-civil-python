@@ -12,6 +12,17 @@ _Reverse_Map_Stress_Components = {0: 'Sig_xx', 1: 'Sig_yy', 2: 'Sig_zz', 3: 'Max
 
 class HoH:
 
+    @staticmethod
+    def create():
+        if HoH.PipeCooling.data: HoH.PipeCooling.create()
+        if HoH.PrescribedTemperature.data: HoH.PrescribedTemperature.create()
+        if HoH.Ambient_Temperature_Function.functions: HoH.Ambient_Temperature_Function.create()
+        if HoH.Convection.Coefficient_Function.functions: HoH.Convection.Coefficient_Function.create()
+        if HoH.Convection.Boundary.data: HoH.Convection.Boundary.create()
+        if HoH.HeatSource.Function.functions: HoH.HeatSource.Function.create()
+        if HoH.HeatSource.AssignHeatSource.data: HoH.HeatSource.AssignHeatSource.create()
+        if HoH.CS.STAGE.stages: HoH.CS.STAGE.create()
+
     class PipeCooling:
 
         data: list['HoH.PipeCooling'] = []
@@ -1237,20 +1248,11 @@ class HoH:
                     if csa.bINITAL_TEMP:
                         stage_data["INITIAL_TEMP"] = csa.INITIAL_TEMP
                     
-                    if csa.act_structure_groups:
-                        stage_data["ACT_ELEM"] = csa.act_structure_groups
-                        
-                    if csa.act_boundary_groups:
-                        stage_data["ACT_BNGR"] = csa.act_boundary_groups
-                        
-                    if csa.deact_boundary_groups:
-                        stage_data["DACT_BNGR"] = csa.deact_boundary_groups
-                        
-                    if csa.act_load_groups:
-                        stage_data["ACT_LOAD"] = csa.act_load_groups
-                        
-                    if csa.deact_load_groups:
-                        stage_data["DACT_LOAD"] = csa.deact_load_groups
+                    stage_data["ACT_ELEM"] = csa.act_structure_groups
+                    stage_data["ACT_BNGR"] = csa.act_boundary_groups
+                    stage_data["DACT_BNGR"] = csa.deact_boundary_groups
+                    stage_data["ACT_LOAD"] = csa.act_load_groups
+                    stage_data["DACT_LOAD"] = csa.deact_load_groups
                         
                     json_payload["Assign"][str(csa.ID)] = stage_data
                 

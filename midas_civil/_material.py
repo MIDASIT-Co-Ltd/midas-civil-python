@@ -113,6 +113,7 @@ class Material:
         if CreepShrinkage.mats!=[] : CreepShrinkage.create()
         if CompStrength.mats!=[] : CompStrength.create()
         if TDMatLink.json()!={'Assign':{}} : TDMatLink.create()
+        if ChangeProperty.data: ChangeProperty.create()
         
     
     @staticmethod
@@ -120,12 +121,14 @@ class Material:
         Material.delete()
         CreepShrinkage.delete()
         CompStrength.delete()
+        ChangeProperty.delete()
 
     @staticmethod
     def clearAll():
         Material.clear()
         CreepShrinkage.clear()
         CompStrength.clear()
+        ChangeProperty.clear()
         
 
 

@@ -31,7 +31,7 @@ def _convertColm2DataType(res_df):
     str_colms = set(res_df.select(pl.selectors.matches("Load|Part|Remark")).columns)
     int_colms1 = set(res_df.select(pl.selectors.by_name("Index","Elem",require_all=False)).columns)
     int_colms2 = set(res_df.select(pl.selectors.matches("/Node")).columns)-int_colms1
-    float_colms = set(res_df.select(pl.selectors.matches("Axial|Shear|Torsion|Moment|FX|FY|FZ|MX|MY|MZ|DX|DY|DZ|RX|RY|RZ|Level|Height|Displacement|Maximum/Average|Elements|Drift|Factor|Frequency|TRAN|ROTN|Period|Tolerance|Sig-")).columns)-str_colms-int_colms1-int_colms2
+    float_colms = set(res_df.select(pl.selectors.matches("Axial|Shear|Torsion|Moment|FX|FY|FZ|MX|MY|MZ|DX|DY|DZ|RX|RY|RZ|Fx|Fy|Fz|Mx|My|Mz|Dx|Dy|Dz|Rx|Ry|Rz|Level|Height|Displacement|Maximum/Average|Elements|Drift|Factor|Frequency|TRAN|ROTN|Period|Tolerance|Sig-|Time/Step|")).columns)-str_colms-int_colms1-int_colms2
     
     res_type_df = res_df.with_columns([
         pl.selectors.by_name(*str_colms,require_all=False).cast(pl.String),
@@ -98,7 +98,7 @@ def _JSToDF_ResTable(js_json,excelLoc,sheetName,cellLoc="A1",outputFormat='Polar
         return(res_type_df)
 
 #---- INPUT: JSON -> OUTPUT : Data FRAME --------- ---------
-def _JSToDF_ResTable_TEXT(table_type, js_json, excelLoc, sheetName, cellLoc="A1"):
+def _JSToDF_ResTable_TEXT(table_type, js_json, excelLoc, sheetName, cellLoc="A1",outputFormat='Polars'):
     # Check for result key existence
     import polars as pl
     if table_type not in js_json:
@@ -149,7 +149,7 @@ def _format_modes(modes):
 
 
 #---- INPUT: JSON (Eigen result with SUB_TABLES) -> OUTPUT : Data FRAME ----
-def _JSToDF_ResTable_Eigen(js_json, output, excelLoc, sheetName, cellLoc="A1"):
+def _JSToDF_ResTable_Eigen(js_json, output, excelLoc, sheetName, cellLoc="A1",outputFormat='Polars'):
     import polars as pl
 
     if "SS_Table" not in js_json:
@@ -278,7 +278,7 @@ def _Head_Data_2_DF_JSON(head,data):
     return res_json
     
 
-def _JSToDF_UserDefined(tableName,js_json,summary,excelLoc,sheetName,cellLoc="A1"):
+def _JSToDF_UserDefined(tableName,js_json,summary,excelLoc,sheetName,cellLoc="A1",outputFormat='Polars'):
     import polars as pl
     if 'message' in js_json:
         print(f'⚠️  {tableName} table name does not exist.')

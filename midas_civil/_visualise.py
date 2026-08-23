@@ -99,7 +99,7 @@ def _snapshot():
             l3 = nodeByID(elem.NODE[2]).LOC
             if len(elem.NODE) > 3:
                 l4 = nodeByID(elem.NODE[3]).LOC
-                PLATE_ELEM.append([l1,l3,l4])
+                PLATE_ELEM.append([l3,l4,l1])
             PLATE_ELEM.append([l1,l2,l3])
 
 
@@ -329,14 +329,39 @@ def _visualise(MODEL_DATA,bGrid=True,bNode=False,bNodeID=False,bElementID=False,
             i=i,
             j=j,
             k=k,
-            colorscale=[[0, "#7758FF"],
-                    [1, "#AF2EFA"]],
-            intensity = np.linspace(0, 1, len(x), endpoint=True),
+            color="#A7DEF0",
             opacity=1,
             flatshading=True,
             hoverinfo="skip",
             showlegend=False,
             showscale=False,
+        )
+    )
+
+    # Triangle edges
+    edge_x, edge_y, edge_z = [], [], []
+
+    for n in range(0, len(x), 3):
+        # vertices: n, n+1, n+2
+        verts = [n, n + 1, n+2]
+
+        for a, b in zip(verts[:-1], verts[1:]):
+            edge_x.extend([x[a], x[b], None])
+            edge_y.extend([y[a], y[b], None])
+            edge_z.extend([z[a], z[b], None])
+
+    fig.add_trace(
+        go.Scatter3d(
+            x=edge_x,
+            y=edge_y,
+            z=edge_z,
+            mode="lines",
+            line=dict(
+                color="#403685",
+                width=1,
+            ),
+            hoverinfo="skip",
+            showlegend=False,
         )
     )
 

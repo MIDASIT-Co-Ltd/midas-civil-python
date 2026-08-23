@@ -77,6 +77,8 @@ class Node:
     Grid = {}
     __nodeDic__ = {}
 
+    ## TEMP DATA TO SPEED UP SELECTION FUNCTIONS
+
     def __init__(self, x: float, y: float, z: float, id: int = None, group: str = '', merge: bool = True):
         """Create (or retrieve) a node at the given coordinates.
 
@@ -662,13 +664,8 @@ def nodesInRadius(point_location, radius: float = 0, output: Literal['ID','NODE'
     gridStr = set(Node.Grid.keys())
     grid_complete = Node.Grid
 
-    possible_gridStr = set()
-    for i in np.arange(minX,maxX+1,1):
-        for j in np.arange(minY,maxY+1,1):
-            for k in np.arange(minZ,maxZ+1,1):
-                possible_gridStr.add(f"{i},{j},{k}")
-    
-    common_gridStr = list(gridStr.intersection(possible_gridStr))
+    from ._model import _returnCommonGrid_
+    common_gridStr = _returnCommonGrid_(gridStr,minX,maxX,minY,maxY,minZ,maxZ)
 
     for eachAvailGrid in common_gridStr:
         for nd in grid_complete[eachAvailGrid]:

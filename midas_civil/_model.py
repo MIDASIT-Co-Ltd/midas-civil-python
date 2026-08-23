@@ -20,6 +20,7 @@ from ._temperature import Temperature
 from ._construction import CS
 from._analysiscontrol import AnalysisControl
 from ._responseSpectrum import RS
+from ._heat_of_hydration import HoH
 
 from ._view import View
 
@@ -48,6 +49,46 @@ _dbMapping = {
 _SelectOutput = Literal['NODE_ID','NODE','ELEM_ID','ELEM']
 _SelectOutputElem = Literal['ELEM_ID','ELEM']
 _getSelectOutput = Literal['ELEM_ID','NODE_ID']
+
+
+def _returnCommonGrid_(gridStr:set,x1,x2,y1,y2,z1,z2):
+
+    n_total_methodA = int(1+x2-x1)*int(1+y2-y1)*int(1+z2-z1)
+    n_total_methodB = len(gridStr)
+
+    # print(" TOTAL GRIDS IN MODEL = ",n_total_methodB , "   |   GRID COMBINATION POSSIBLE = ",n_total_methodA)
+    
+
+    if n_total_methodA < n_total_methodB:
+        # print("Brute Force selected | All combination is checked")
+
+    # ----------- OLD APPROACH -------------
+
+        possible_gridStr = set()
+        for i in np.arange(int(x1),int(x2)+1,1):
+            for j in np.arange(int(y1),int(y2)+1,1):
+                for k in np.arange(int(z1),int(z2)+1,1):
+                    possible_gridStr.add(f"{i},{j},{k}")
+        
+        common_gridStr = list(gridStr.intersection(possible_gridStr))
+        return common_gridStr
+
+    # -------------- NEW APPROACH ----------
+    else:
+        # print("Checking model grids only...")
+
+        possible_gridStr = []
+
+        for gridSt in gridStr:
+            x,y,z = map(int,gridSt.split(","))
+            if x1 <= x <= x2 and y1 <= y <= y2 and z1 <= z <= z2 :
+                possible_gridStr.append(gridSt)
+
+        common_gridStr = list(gridStr.intersection(set(possible_gridStr)))
+
+        return common_gridStr
+
+    
 
 class Model:
 
@@ -331,7 +372,7 @@ class Model:
 
         
         from tqdm import tqdm
-        pbar = tqdm(total=15,desc="Creating Model...")
+        pbar = tqdm(total=16,desc="Creating Model...")
 
         if Material.mats!=[]: Material.create()
         pbar.update(1)
@@ -379,6 +420,8 @@ class Model:
         if 'Eigen' in AnalysisControl._Controls: AnalysisControl._Controls["Eigen"]._execute()
         RS.Function.create()
         RS.Case.create()
+        pbar.update(1)
+        HoH.create()
         pbar.update(1)
         pbar.set_description_str("Creating Load Combination...")
         LoadCombination.create()
@@ -723,13 +766,7 @@ class Model:
                 gridStr = set(Node.Grid.keys())
                 grid_complete = Node.Grid
             
-            possible_gridStr = set()
-            for i in np.arange(int(x1),int(x2)+1,1):
-                for j in np.arange(int(y1),int(y2)+1,1):
-                    for k in np.arange(int(z1),int(z2)+1,1):
-                        possible_gridStr.add(f"{i},{j},{k}")
-            
-            common_gridStr = list(gridStr.intersection(possible_gridStr))
+            common_gridStr = _returnCommonGrid_(gridStr,x1,x2,y1,y2,z1,z2)
 
             for eachAvailGrid in common_gridStr:
                 for elm in grid_complete[eachAvailGrid]:
@@ -787,13 +824,9 @@ class Model:
                 gridStr = set(Node.Grid.keys())
                 grid_complete = Node.Grid
             
-            possible_gridStr = set()
-            for i in np.arange(int(x1),int(x2)+1,1):
-                for j in np.arange(int(y1),int(y2)+1,1):
-                    for k in np.arange(int(z1),int(z2)+1,1):
-                        possible_gridStr.add(f"{i},{j},{k}")
-            
-            common_gridStr = list(gridStr.intersection(possible_gridStr))
+            common_gridStr = _returnCommonGrid_(gridStr,x1,x2,y1,y2,z1,z2)
+
+
             for eachAvailGrid in common_gridStr:
                 for elm in grid_complete[eachAvailGrid]:
                     point = elm.CENTER if bELEM else elm.LOC
@@ -851,13 +884,10 @@ class Model:
                 grid_complete = Node.Grid
             
 
-            possible_gridStr = set()
-            for i in np.arange(int(x1),int(x2)+1,1):
-                for j in np.arange(int(y1),int(y2)+1,1):
-                    for k in np.arange(int(z1),int(z2)+1,1):
-                        possible_gridStr.add(f"{i},{j},{k}")
-            
-            common_gridStr = list(gridStr.intersection(possible_gridStr))
+
+            common_gridStr = _returnCommonGrid_(gridStr,x1,x2,y1,y2,z1,z2)
+
+
 
             for eachAvailGrid in common_gridStr:
                 for elm in grid_complete[eachAvailGrid]:
@@ -913,13 +943,7 @@ class Model:
                 grid_complete = Node.Grid
             
 
-            possible_gridStr = set()
-            for i in np.arange(int(x1),int(x2)+1,1):
-                for j in np.arange(int(y1),int(y2)+1,1):
-                    for k in np.arange(int(z1),int(z2)+1,1):
-                        possible_gridStr.add(f"{i},{j},{k}")
-            
-            common_gridStr = list(gridStr.intersection(possible_gridStr))
+            common_gridStr = _returnCommonGrid_(gridStr,x1,x2,y1,y2,z1,z2)
 
             for eachAvailGrid in common_gridStr:
                 for elm in grid_complete[eachAvailGrid]:
@@ -1102,14 +1126,7 @@ class Model:
             else:
                 gridStr = set(Node.Grid.keys()); grid_complete = Node.Grid
 
-            # --- candidate grid cells from the polygon's 3D bounding box
-            possible_gridStr = set()
-            for i in np.arange(int(x1), int(x2) + 1, 1):
-                for j in np.arange(int(y1), int(y2) + 1, 1):
-                    for k in np.arange(int(z1), int(z2) + 1, 1):
-                        possible_gridStr.add(f"{i},{j},{k}")
-
-            common_gridStr = list(gridStr.intersection(possible_gridStr))
+            common_gridStr = _returnCommonGrid_(gridStr,x1,x2,y1,y2,z1,z2)
 
             # --- exact test on the candidates
             for eachAvailGrid in common_gridStr:

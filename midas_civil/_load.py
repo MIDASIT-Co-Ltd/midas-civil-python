@@ -172,6 +172,7 @@ class Load:
         if cls.PlaneLoad_Assign.data : cls.PlaneLoad_Assign.create()
         if cls.LoadToMass.data : cls.LoadToMass.create()
         if cls.SpDisp.data: cls.SpDisp.create()
+        if cls.NodalMass.data: cls.NodalMass.create()
     
     @classmethod
     def clear(cls):
@@ -186,6 +187,7 @@ class Load:
         cls.PlaneLoad_Assign.clear()
         cls.PlaneLoad_Define.clear()
         cls.LoadToMass.clear()
+        cls.NodalMass.clear()
         cls.SpDisp.clear()
         
 
@@ -725,17 +727,21 @@ class Load:
         
         @classmethod
         def create(cls):
-            return MidasAPI("PUT", "/db/nmas", cls.json())
+            return MidasAPI("PUT", "/db/NMAS", cls.json())
         
         @classmethod
         def get(cls):
-            MidasAPI("GET", "/db/nmas")
+            return MidasAPI("GET", "/db/NMAS")
         
         @classmethod
         def delete(cls):
             cls.data = []
-            MidasAPI("DELETE", "/db/nmas")
+            return MidasAPI("DELETE", "/db/NMAS")
         
+        @classmethod
+        def clear(cls):
+            cls.data = []
+
         @classmethod
         def sync(cls):
             cls.data = []
@@ -1251,9 +1257,9 @@ class Load:
                     "VECTORS" : i.VECTOR,
                     "FORCES": i.PRES
                 }
-                if isinstance(i.PRES,(float,int)): newP = [i.PRES,0,0,0,0]
-                elif isinstance(i.PRES,list):
-                    trimP = i.PRES[:4]
+                if len(i.PRES)==1: newP = [i.PRES[0],0,0,0,0]
+                else:
+                    trimP = (i.PRES+[0]*4)[:4]
                     newP = [0] + trimP
                 js["FORCES"] = newP
                 if i.bPROJ:
