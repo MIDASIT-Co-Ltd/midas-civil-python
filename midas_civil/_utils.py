@@ -298,7 +298,7 @@ class utils:
         @staticmethod
         def modifyNXModel(initial_align:utils.Alignment,final_align:utils.Alignment,bElement:bool=True,bUpdateModel=True,bSync=True):
             '''
-            Modifies CIVIL NX model as per new alignment.  
+            Modifies MIDAS CIVIL NX model as per new alignment.  
             Meant for **standalone** use  
             Use transformPoint in other cases
             
@@ -429,7 +429,7 @@ class utils:
                 division based on meshSize(in meter) -> **nDiv = 0**   
         **bRigdLnk** - Whether to create Rigid links at the span ends  
         **meshSize** - Mesh size(in meter) of the plate elements   
-        **elemList** - Element list which are to be converted . If None is passed, element are taken from selected elements in CIVIL NX  
+        **elemList** - Element list which are to be converted . If None is passed, element are taken from selected elements in MIDAS CIVIL NX  
         **reverse** - Treats I, J end in opposite way , used for conversion of tapered sections   
 
         '''
@@ -442,7 +442,7 @@ class utils:
         
         """
         RC Grillage Utility wizard
-        Use Model.create() to create model in CIVIL NX
+        Use Model.create() to create model in MIDAS CIVIL NX
         
         Parameters
         ----------

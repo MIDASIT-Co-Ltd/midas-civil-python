@@ -23,6 +23,28 @@ class HoH:
         if HoH.HeatSource.AssignHeatSource.data: HoH.HeatSource.AssignHeatSource.create()
         if HoH.CS.STAGE.stages: HoH.CS.STAGE.create()
 
+    @staticmethod
+    def clear():
+        HoH.PipeCooling.clear()
+        HoH.PrescribedTemperature.clear()
+        HoH.Ambient_Temperature_Function.clear()
+        HoH.Convection.Coefficient_Function.clear()
+        HoH.Convection.Boundary.clear()
+        HoH.HeatSource.Function.clear()
+        HoH.HeatSource.AssignHeatSource.clear()
+        HoH.CS.STAGE.clear()
+
+    @staticmethod
+    def delete():
+        HoH.PipeCooling.delete()
+        HoH.PrescribedTemperature.delete()
+        HoH.Ambient_Temperature_Function.delete()
+        HoH.Convection.Coefficient_Function.delete()
+        HoH.Convection.Boundary.delete()
+        HoH.HeatSource.Function.delete()
+        HoH.HeatSource.AssignHeatSource.delete()
+        HoH.CS.STAGE.delete()
+
     class PipeCooling:
 
         data: list['HoH.PipeCooling'] = []
@@ -130,18 +152,18 @@ class HoH:
 
         @classmethod
         def create(cls):
-            """Sends the PUT request to create all stored PipeCooling objects in Midas."""
+            """Sends the PUT request to create all stored PipeCooling objects in MIDAS CIVIL NX."""
             if cls.data:
                 MidasAPI("PUT", "/db/HPCE", cls.json())
 
         @staticmethod
         def get():
-            """Retrieves the PipeCooling configuration from Midas."""
+            """Retrieves the PipeCooling configuration from MIDAS CIVIL NX."""
             return MidasAPI("GET", "/db/HPCE")
 
         @classmethod
         def sync(cls):
-            """Fetches data from Midas and reconstructs the local class instances."""
+            """Fetches data from MIDAS CIVIL NX and reconstructs the local class instances."""
             resp = cls.get()
             if resp and 'HPCE' in resp and resp['HPCE']:
                 cls.clear()
@@ -164,7 +186,7 @@ class HoH:
 
         @staticmethod
         def delete():
-            """Deletes all pipe cooling objects from the active Midas database."""
+            """Deletes all pipe cooling objects from the active MIDAS CIVIL NX database."""
             MidasAPI("DELETE", "/db/HPCE")
             HoH.PipeCooling.clear()
 
@@ -237,18 +259,18 @@ class HoH:
 
         @classmethod
         def create(cls):
-            """Sends the PUT request to create all stored PrescribedTemperature objects in Midas."""
+            """Sends the PUT request to create all stored PrescribedTemperature objects in MIDAS CIVIL NX."""
             if cls.data:
                 MidasAPI("PUT", "/db/HSPT", cls.json())
 
         @staticmethod
         def get():
-            """Retrieves the PrescribedTemperature configuration from Midas."""
+            """Retrieves the PrescribedTemperature configuration from MIDAS CIVIL NX."""
             return MidasAPI("GET", "/db/HSPT")
 
         @classmethod
         def sync(cls):
-            """Fetches data from Midas and reconstructs the local class instances."""
+            """Fetches data from MIDAS CIVIL NX and reconstructs the local class instances."""
             resp = cls.get()
             if resp and 'HSPT' in resp and resp['HSPT'] and resp['HSPT'] != {'message': ''}:
                 cls.clear()
@@ -264,7 +286,7 @@ class HoH:
 
         @staticmethod
         def delete():
-            """Deletes all prescribed temperature objects from the active Midas database."""
+            """Deletes all prescribed temperature objects from the MIDAS CIVIL NX database."""
             MidasAPI("DELETE", "/db/HSPT")
             HoH.PrescribedTemperature.clear()
 
@@ -289,18 +311,18 @@ class HoH:
         
         @classmethod
         def create(cls):
-            """Sends the PUT request to create all stored Ambient Temperature Functions in Midas."""
+            """Sends the PUT request to create all stored Ambient Temperature Functions in MIDAS CIVIL NX."""
             if cls.functions:
                 MidasAPI('PUT', '/db/ETFC', cls.json())  
 
         @staticmethod
         def get():
-            """Retrieves the Ambient Temperature Functions configuration from Midas."""
+            """Retrieves the Ambient Temperature Functions configuration from MIDAS CIVIL NX."""
             return MidasAPI('GET', '/db/ETFC')
 
         @classmethod
         def sync(cls):
-            """Fetches data from Midas and reconstructs the local class instances."""
+            """Fetches data from MIDAS CIVIL NX and reconstructs the local class instances."""
             resp = cls.get()
             if resp and 'ETFC' in resp and resp['ETFC']:
                 cls.clear()
@@ -331,7 +353,7 @@ class HoH:
 
         @staticmethod
         def delete():
-            """Deletes all Ambient Temperature Functions from the active Midas database."""
+            """Deletes all Ambient Temperature Functions from the MIDAS CIVIL NX database."""
             MidasAPI("DELETE", "/db/ETFC")
             HoH.Ambient_Temperature_Function.clear()
 
@@ -461,6 +483,11 @@ class HoH:
         def create():
             HoH.Convection.Coefficient_Function.create()
             HoH.Convection.Boundary.create()
+        
+        @staticmethod
+        def sync():
+            HoH.Convection.Coefficient_Function.sync()
+            HoH.Convection.Boundary.sync()
 
         class Coefficient_Function:
 
@@ -477,7 +504,7 @@ class HoH:
             
             @classmethod
             def create(cls):
-                """Sends the PUT request to create all stored Convection Coefficient Functions in Midas."""
+                """Sends the PUT request to create all stored Convection Coefficient Functions in MIDAS CIVIL NX."""
                 if cls.functions:
                     MidasAPI('PUT', '/db/CCFC', cls.json())  
 
@@ -706,6 +733,27 @@ class HoH:
 
 
     class HeatSource:
+
+        @staticmethod
+        def clear():
+            HoH.HeatSource.Function.clear()
+            HoH.HeatSource.AssignHeatSource.clear()
+
+        @staticmethod
+        def delete():
+            HoH.HeatSource.Function.delete()
+            HoH.HeatSource.AssignHeatSource.delete()
+
+        @staticmethod
+        def create():
+            HoH.HeatSource.Function.create()
+            HoH.HeatSource.AssignHeatSource.create()
+        
+        @staticmethod
+        def sync():
+            HoH.HeatSource.Function.sync()
+            HoH.HeatSource.AssignHeatSource.sync()
+
         class Function:
 
             functions: list['HoH.HeatSource.Function'] = []
@@ -1132,6 +1180,16 @@ class HoH:
         @staticmethod
         def clear():
             HoH.CS.STAGE.clear()
+
+        @staticmethod
+        def delete():
+            HoH.CS.STAGE.delete()
+        
+        @staticmethod
+        def sync():
+            HoH.CS.STAGE.sync()
+        
+
 
         class STAGE:
             stages: list['HoH.CS.STAGE'] = []

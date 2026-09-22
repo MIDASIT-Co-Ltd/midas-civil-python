@@ -270,16 +270,12 @@ def _ADD(self):
     # ------------  ID assignment -----------------------
     if NX.onlyNode == False :
         id = int(self.ID)
-        # if not Element.ids:
-        #     count = 1
-        # else:
-        #     count = max(Element.ids) + 1
 
         count = Element.maxID+1
         if id == 0:
             self.ID = count
             Element.elements.append(self)
-            Element.ids.append(int(self.ID))
+            Element.ids.add(int(self.ID))
             Element.maxID+= 1
         elif id in Element.ids:
             self.ID = int(id)
@@ -289,7 +285,7 @@ def _ADD(self):
         else:
             self.ID = id
             Element.elements.append(self)
-            Element.ids.append(int(self.ID))
+            Element.ids.add(int(self.ID))
             if id > Element.maxID:
                 Element.maxID = id
         Element.__elemDIC__[str(self.ID)] = self
@@ -454,7 +450,7 @@ class Element():
     Plates, Tension/Compression-only elements, and Solids.
     """
     elements:list[_helperELEM] = []
-    ids:list[int] = []
+    ids:set[int] = set()
     maxID:int = 0
     __elemDIC__ = {}
     Grid ={}    # Node object in cube grid
@@ -487,23 +483,24 @@ class Element():
     @classmethod
     def create(cls):
         if cls.elements:
-            __maxNos__ = 20_000  #20_000 elements can be sent in a single request
-            __numItem__ = len(cls.elements)
-            __nTime__ = int(__numItem__/__maxNos__)+1
+            MidasAPI("PUT", "/db/ELEM", Element.json())
+            # __maxNos__ = 20_000  #20_000 elements can be sent in a single request
+            # __numItem__ = len(cls.elements)
+            # __nTime__ = int(__numItem__/__maxNos__)+1
 
-            if __nTime__ == 1:
-                MidasAPI("PUT", "/db/ELEM", Element.json())
-            else:
-                __remainItem__ = __numItem__
-                for n in range(__nTime__):
-                    json = {"Assign":{}}
-                    __nElem_c__ = min(__maxNos__,__remainItem__)
-                    for q in range(__nElem_c__):
-                        elem=cls.elements[n*__maxNos__+q]
-                        js = _Obj2JS(elem)
-                        json["Assign"][elem.ID] = js
-                    MidasAPI("PUT","/db/ELEM",json)
-                    __remainItem__ -= __maxNos__
+            # if __nTime__ == 1:
+            #     MidasAPI("PUT", "/db/ELEM", Element.json())
+            # else:
+            #     __remainItem__ = __numItem__
+            #     for n in range(__nTime__):
+            #         json = {"Assign":{}}
+            #         __nElem_c__ = min(__maxNos__,__remainItem__)
+            #         for q in range(__nElem_c__):
+            #             elem=cls.elements[n*__maxNos__+q]
+            #             js = _Obj2JS(elem)
+            #             json["Assign"][elem.ID] = js
+            #         MidasAPI("PUT","/db/ELEM",json)
+            #         __remainItem__ -= __maxNos__
         
 
     @staticmethod
@@ -528,7 +525,7 @@ class Element():
     @staticmethod
     def clear():
         Element.elements = []
-        Element.ids = []
+        Element.ids = set()
         Element.__elemDIC__={}
         Element.maxID = 0
         # _curve.curves = []
@@ -1906,6 +1903,175 @@ class Element():
             """
             cls.data = []
             return MidasAPI("DELETE", "/db/essf")
+
+
+    class Wall_StiffnessScaleFactor:
+    
+        data = []
+        
+        def __init__(self, 
+                    element_id,
+                    shear_sf = 1,
+                    bending_sf = 1,
+                    axial_sf = None,
+                    torsion_outplane_sf = None,
+                    shear_outplane_sf = None,
+                    bending_outplane_sf = None,
+                    group: str = "",
+                    id: int = None):
+            """
+                element_id: Element ID(s) where scale factor is applied (can be int or list)
+                shear_sf: Inplane Shear scale factor
+                bending_sf: Inplane Bending and Axial scale factor
+                group: Group name (default "")
+                id: Scale factor ID (optional, auto-assigned if None)
+            
+            Examples:
+                StiffnessScaleFactor(908, area_sf=0.5, asy_sf=0.6, asz_sf=0.7, 
+                                ixx_sf=0.8, iyy_sf=0.8, izz_sf=0.9, wgt_sf=0.95)
+                
+            """
+            
+            # Check if group exists, create if not
+            if group != "":
+                chk = 0
+                a = [v['NAME'] for v in Group.Boundary.json()["Assign"].values()]
+                if group in a:
+                    chk = 1
+                if chk == 0:
+                    Group.Boundary(group)
+            
+            # Handle element_id as single int or list
+            if isinstance(element_id, (list, tuple)):
+                self.ELEMENT_IDS = list(element_id)
+            else:
+                self.ELEMENT_IDS = [element_id]
+            
+            self.SHEAR_SF = shear_sf
+            self.BENDING_SF = bending_sf
+
+            self.AXIAL_SF = axial_sf
+            self.OUT_TORSION_SF = torsion_outplane_sf
+            self.OUT_SHEAR_SF = shear_outplane_sf
+            self.OUT_BENDING_SF = bending_outplane_sf
+
+
+            self.GROUP_NAME = group
+            
+            # Auto-assign ID if not provided
+            if id is None:
+                self.ID = len(Element.Wall_StiffnessScaleFactor.data) + 1
+            else:
+                self.ID = id
+            
+            # Add to static list
+            Element.Wall_StiffnessScaleFactor.data.append(self)
+        
+        @classmethod
+        def json(cls):
+            """
+            Converts StiffnessScaleFactor data to JSON format
+            """
+            json_data = {"Assign": {}}
+            
+            for scale_factor in cls.data:
+                # Create scale factor item
+
+                if scale_factor.OUT_TORSION_SF is None or scale_factor.OUT_SHEAR_SF is None or scale_factor.OUT_BENDING_SF is None:
+                    # Data incomplete
+                    scale_factor_item = {
+                        "ID": scale_factor.ID,
+                        "SHEAR": scale_factor.SHEAR_SF,
+                        "BENDING": scale_factor.BENDING_SF,
+                        "GROUP_NAME": scale_factor.GROUP_NAME
+                    }
+                else:
+                    scale_factor_item = {
+                        "ID": scale_factor.ID,
+                        "SHEAR": scale_factor.SHEAR_SF,
+                        "BENDING": scale_factor.BENDING_SF,
+                        "AXIAL": scale_factor.AXIAL_SF,
+                        "OUT_TORSION": scale_factor.OUT_TORSION_SF,
+                        "OUT_SHEAR": scale_factor.OUT_SHEAR_SF,
+                        "OUT_BENDING": scale_factor.OUT_BENDING_SF,
+                        "GROUP_NAME": scale_factor.GROUP_NAME
+                    }
+
+                
+                # Assign to each element ID
+                for element_id in scale_factor.ELEMENT_IDS:
+                    if str(element_id) not in json_data["Assign"]:
+                        json_data["Assign"][str(element_id)] = {"ITEMS": []}
+                    
+                    json_data["Assign"][str(element_id)]["ITEMS"].append(scale_factor_item)
+            
+            return json_data
+        
+        @classmethod
+        def clear(cls):
+            """
+            Sends all StiffnessScaleFactor data to the API
+            """
+            cls.data = []
+        
+        @classmethod
+        def create(cls):
+            """
+            Sends all StiffnessScaleFactor data to the API
+            """
+            MidasAPI("PUT", "/db/WSSF", cls.json())
+        
+        @classmethod
+        def get(cls):
+            """
+            Retrieves StiffnessScaleFactor data from the API
+            """
+            return MidasAPI("GET", "/db/WSSF")
+        
+        @classmethod
+        def sync(cls):
+            """
+            Updates the StiffnessScaleFactor class with data from the API
+            """
+            cls.clear()
+            a = cls.get()
+
+            if a != {'message': ''}:
+                for i in a['WSSF'].keys():
+                    for j in range(len(a['WSSF'][i]['ITEMS'])):
+
+                        if 'OUT_TORSION' in a['WSSF'][i]['ITEMS'][j]:
+                            # print("CRB PLATE")
+                            Element.Wall_StiffnessScaleFactor(int(i),
+                                                            a['WSSF'][i]['ITEMS'][j]['SHEAR'],
+                                                            a['WSSF'][i]['ITEMS'][j]['BENDING'],
+                                                            a['WSSF'][i]['ITEMS'][j]['AXIAL'],
+                                                            a['WSSF'][i]['ITEMS'][j]['OUT_TORSION'],
+                                                            a['WSSF'][i]['ITEMS'][j]['OUT_SHEAR'],
+                                                            a['WSSF'][i]['ITEMS'][j]['OUT_BENDING'],
+                                                            a['WSSF'][i]['ITEMS'][j]['GROUP_NAME'],
+                                                            a['WSSF'][i]['ITEMS'][j]['ID'])
+                        else:
+                            # print("NORMAL PLATE")
+                            Element.Wall_StiffnessScaleFactor(int(i),
+                                                            a['WSSF'][i]['ITEMS'][j]['SHEAR'],
+                                                            a['WSSF'][i]['ITEMS'][j]['BENDING'],
+                                                            None,
+                                                            None,
+                                                            None,
+                                                            None,
+                                                            a['WSSF'][i]['ITEMS'][j]['GROUP_NAME'],
+                                                            a['WSSF'][i]['ITEMS'][j]['ID'])
+            
+                        
+        
+        @classmethod
+        def delete(cls):
+            """
+            Deletes all stiffness scale factors from the database and resets the class.
+            """
+            cls.data = []
+            return MidasAPI("DELETE", "/db/WSSF")
 
 
 

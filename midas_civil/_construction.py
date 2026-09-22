@@ -23,6 +23,22 @@ class CS:
         CS.TimeLoad.clear()
         CS.CreepCoeff.clear()
         CS.Camber.clear()
+    
+    @staticmethod
+    def delete():
+        CS.STAGE.delete()
+        CS.CompSec.delete()
+        CS.TimeLoad.delete()
+        CS.CreepCoeff.delete()
+        CS.Camber.delete()
+    
+    @staticmethod
+    def sync():
+        CS.STAGE.sync()
+        CS.CompSec.sync()
+        CS.TimeLoad.sync()
+        CS.CreepCoeff.sync()
+        CS.Camber.sync()
 
     class STAGE:
         stages:list[_hStage] = []
@@ -458,7 +474,7 @@ class CS:
         
         @classmethod
         def delete(cls):
-            """Deletes all construction stages from the database and CIVIL NX"""
+            """Deletes all construction stages from the database and MIDAS CIVIL NX"""
             cls.clear()
             return MidasAPI("DELETE", "/db/stag")
         @classmethod
@@ -778,17 +794,17 @@ class CS:
         
         @classmethod
         def create(cls):
-            """Creates time loads in the CIVIL NX"""
+            """Creates time loads in the MIDAS CIVIL NX"""
             return MidasAPI("PUT", "/db/tmld", cls.json())
         
         @classmethod
         def get(cls):
-            """Gets time loads data from the CIVIL NX"""
+            """Gets time loads data from the MIDAS CIVIL NX"""
             return MidasAPI("GET", "/db/tmld")
         
         @classmethod
         def sync(cls):
-            """Updates the TimeLoad class with data from the CIVIL NX"""
+            """Updates the TimeLoad class with data from the MIDAS CIVIL NX"""
             cls.timeloads = []
             response = cls.get()
             
@@ -820,7 +836,7 @@ class CS:
         
         @classmethod
         def delete(cls):
-            """Deletes all time loads from the CIVIL NX and python class"""
+            """Deletes all time loads from the MIDAS CIVIL NX and python class"""
             cls.clear()
             return MidasAPI("DELETE", "/db/tmld")
         

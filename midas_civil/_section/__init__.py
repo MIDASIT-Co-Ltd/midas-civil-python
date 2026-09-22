@@ -127,11 +127,11 @@ def _JS2OBJ(id,js):
 
 
 class Section:
-    """Manage cross-sections in a MIDAS Civil NX model.
+    """Manage cross-sections in a MIDAS CIVIL NX model.
 
     ``Section`` is a static database that holds all sections defined in the
     current Python session and provides factory methods for every supported
-    section type. Sections are pushed to / pulled from MIDAS Civil NX via the
+    section type. Sections are pushed to / pulled from MIDAS CIVIL NX via the
     REST API using :meth:`create`, :meth:`get`, :meth:`sync`, and
     :meth:`delete`.
 
@@ -187,12 +187,12 @@ class Section:
 
     @staticmethod
     def create():
-        """Push all registered sections to MIDAS Civil NX (PUT /db/SECT)."""
+        """Push all registered sections to MIDAS CIVIL NX (PUT /db/SECT)."""
         MidasAPI("PUT","/db/SECT",Section.json())
 
     @staticmethod
     def get():
-        """Retrieve all sections from MIDAS Civil NX (GET /db/SECT).
+        """Retrieve all sections from MIDAS CIVIL NX (GET /db/SECT).
 
         Returns:
             dict: Raw API response containing the ``'SECT'`` dictionary.
@@ -201,7 +201,7 @@ class Section:
 
     @staticmethod
     def delete():
-        """Delete all sections from MIDAS Civil NX and clear the local database."""
+        """Delete all sections from MIDAS CIVIL NX and clear the local database."""
         MidasAPI("DELETE","/db/SECT")
         Section.clear()
 
@@ -213,7 +213,7 @@ class Section:
 
     @staticmethod
     def sync(bDBSectParams: bool = False, bSectionProperty: bool = False):
-        """Pull sections from MIDAS Civil NX and rebuild the local database.
+        """Pull sections from MIDAS CIVIL NX and rebuild the local database.
 
         Fetches all sections via the API and reconstructs the corresponding
         Python objects. Optionally retrieves additional section data.
@@ -288,7 +288,7 @@ class Section:
                 ``'T'``, ``'B'``, ``'P'``, ``'2L'``, ``'2C'``, ``'SB'``,
                 ``'SR'``, ``'OCT'``.
             parameters (list[float]): Section dimensions. Order depends on the
-                chosen shape (see MIDAS Civil NX section definition).
+                chosen shape (see MIDAS CIVIL NX section definition).
             Offset (Offset): Cross-section offset. Defaults to centroid (CC).
             useShear (bool): Include shear deformation. Default ``True``.
             use7Dof (bool): Include warping (7th DOF) effect. Default ``False``.
@@ -1036,7 +1036,7 @@ class Section:
 
 #---------------------------------     T A P E R E D   G R O U P    ---------------------------------------------
     class TaperedGroup:
-        """database and API wrapper for MIDAS Civil NX Tapered Section Groups (TSGR).
+        """database and API wrapper for MIDAS CIVIL NX Tapered Section Groups (TSGR).
 
         A Tapered Group assigns a variation law (linear or polynomial) to the
         cross-section change along a set of elements that share a tapered
@@ -1145,7 +1145,7 @@ class Section:
         
         @classmethod
         def create(cls):
-            """Push all tapered groups to MIDAS Civil NX (PUT /db/tsgr)."""
+            """Push all tapered groups to MIDAS CIVIL NX (PUT /db/tsgr)."""
             MidasAPI("PUT", "/db/TSGR", cls.json())
 
         @classmethod
@@ -1184,7 +1184,7 @@ class Section:
         
         @classmethod
         def get(cls):
-            """Retrieve all tapered groups from MIDAS Civil NX (GET /db/tsgr).
+            """Retrieve all tapered groups from MIDAS CIVIL NX (GET /db/tsgr).
 
             Returns:
                 dict: Raw API response containing the ``'TSGR'`` dictionary.
@@ -1193,7 +1193,7 @@ class Section:
 
         @classmethod
         def delete(cls):
-            """Delete all tapered groups from MIDAS Civil NX and clear the local database."""
+            """Delete all tapered groups from MIDAS CIVIL NX and clear the local database."""
             cls.clear()
             return MidasAPI("DELETE", "/db/tsgr")
 
@@ -1204,7 +1204,7 @@ class Section:
 
         @classmethod
         def sync(cls):
-            """Pull tapered groups from MIDAS Civil NX and rebuild the local database.
+            """Pull tapered groups from MIDAS CIVIL NX and rebuild the local database.
 
             Fetches all tapered groups via the API and reconstructs the
             corresponding ``TaperedGroup`` objects. The local database is

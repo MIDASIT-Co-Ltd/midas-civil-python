@@ -431,15 +431,20 @@ def Mesh_SHAPE(shape:Section,meshSize=0.1):
     ''' Shape is a object from midas library
     Retrurns Section points (SHAPE), Thickness, CG , Line connection of plates'''
 
-    sect_shape, sect_thk ,sect_thk_off, sect_cgs , sect_lin_con = shape._centerLine(L2P.first) # I end for first then J end
+    sect_shape, sect_thk ,sect_thk_off, sect_cgs , sect_lin_con = shape._centerLine(L2P.first) # 0 = I end for first then 1 = J end
     
 
     sect_cg_LT , sect_cg_CC , sect_cg_RB = sect_cgs
     # print(sect_cg_LT , sect_cg_CC , sect_cg_RB)
+    if L2P.first:
+        END_SEC = 'J'
+    else:
+        END_SEC = 'I'
 
-    offset_CG1 = [L2P.CG_data[str(shape.ID)]['Y1'],-L2P.CG_data[str(shape.ID)]['Z1']]
-    offset_CG2 = [-L2P.CG_data[str(shape.ID)]['Y2'],L2P.CG_data[str(shape.ID)]['Z2']]
+    offset_CG1 = [L2P.CG_data[str(shape.ID)][END_SEC]['Y1'],-L2P.CG_data[str(shape.ID)][END_SEC]['Z1']]
+    offset_CG2 = [-L2P.CG_data[str(shape.ID)][END_SEC]['Y2'],L2P.CG_data[str(shape.ID)][END_SEC]['Z2']]
 
+    # SHIFTING OF CG DUE TO COMPOSITE SLAB
     if shape.TYPE == 'COMPOSITE':
         if shape.SHAPE == 'Tub':
             offset_CG1 = [L2P.CG_data[str(shape.ID)]['Y1'],-(L2P.CG_data[str(shape.ID)]['Z1']+shape.HH+shape.TC)]
@@ -465,7 +470,52 @@ def Mesh_SHAPE(shape:Section,meshSize=0.1):
             'RC':  [sect_cg_RB[0],sect_cg_CC[1]],
             'RB':  sect_cg_RB
         }
+    
     sect_cg = offset_loc[offset_pt]
+    # print(sect_cg)
+    # print(shape.OFFSET.JS)
+
+    # --- Additional offset in case of user defined offset---
+
+    horz_opt = shape.OFFSET.JS["HORZ_OFFSET_OPT"]
+    vert_opt = shape.OFFSET.JS["VERT_OFFSET_OPT"]
+
+    horz_offset_I = shape.OFFSET.JS["USERDEF_OFFSET_YI"]
+    vert_offset_I = shape.OFFSET.JS["USERDEF_OFFSET_ZI"]
+    horz_offset_J = shape.OFFSET.JS["USERDEF_OFFSET_YJ"]
+    vert_offset_J = shape.OFFSET.JS["USERDEF_OFFSET_ZJ"]
+
+    bUser_ref = shape.OFFSET.JS["USER_OFFSET_REF"]
+
+
+    vert_mult = -1 if offset_pt[1] == 'B' else 1
+    horz_mult = -1 if offset_pt[0] == 'R' else 1
+
+    if L2P.first==0:
+        horz_offset = horz_mult*horz_offset_I
+        vert_offset = vert_mult*vert_offset_I
+    else:
+        horz_offset = horz_mult*horz_offset_J
+        vert_offset = vert_mult*vert_offset_J
+    
+
+    # print(horz_opt , vert_opt)
+    
+    if horz_opt == 1:           # User offset
+
+        if bUser_ref == 1:      # Extreme fiber
+            sect_cg[0] = sect_cg[0]+horz_offset
+        if bUser_ref == 0:      # Centroid
+            sect_cg[0] = sect_cg_CC[0]-horz_offset
+    
+    if vert_opt == 1:           # User offset
+        if bUser_ref == 1:      # Extreme fiber
+            sect_cg[1] = sect_cg[1]-vert_offset
+        if bUser_ref == 0:      # Centroid
+            sect_cg[1] = sect_cg_CC[1]+vert_offset
+        
+
+
     # ----------------- MESH SIZER --------------------------
 
     n_nodes = len(sect_shape)
@@ -548,7 +598,39 @@ def getCGdata():
     L2P.CG_data = {}
     for data in cg_points['SCG']['DATA']:
         L2P.CG_data[data[1]] = {"Y1" : float(data[3]) , "Z1" : float(data[4]) , "Y2" : float(data[2]) , "Z2" : float(data[5])}
+
     # print(L2P.CG_data)
+
+def getCGdata2():
+    secPropJS = MidasAPI('GET','/ope/SECTPROP')
+    L2P.CG_data = {}
+
+    for secID in secPropJS['SECTPROP']:
+        #
+        cyp_I,cym_I,czp_I,czm_I = 0,0,0,0
+        cyp_J,cym_J,czp_J,czm_J = 0,0,0,0
+
+        if 'Value' in secPropJS['SECTPROP'][secID]["HEAD"]:
+            # print("UNIFORM SECTION")
+            for data_item in secPropJS['SECTPROP'][secID]["DATA"]:
+                # print(data_item)
+                if data_item[0] == 'Cyp': cyp_I,cyp_J = data_item[1],data_item[1]
+                if data_item[0] == 'Cym': cym_I,cym_J = data_item[1],data_item[1]
+                if data_item[0] == 'Czp': czp_I,czp_J = data_item[1],data_item[1]
+                if data_item[0] == 'Czm': czm_I,czm_J = data_item[1],data_item[1]
+
+        elif 'Value(I)' in secPropJS['SECTPROP'][secID]["HEAD"]:
+            # print("TAPERED SECTION")
+            for data_item in secPropJS['SECTPROP'][secID]["DATA"]:
+                if data_item[0] == 'Cyp': cyp_I,cyp_J = data_item[1],data_item[2]
+                if data_item[0] == 'Cym': cym_I,cym_J = data_item[1],data_item[2]
+                if data_item[0] == 'Czp': czp_I,czp_J = data_item[1],data_item[2]
+                if data_item[0] == 'Czm': czm_I,czm_J = data_item[1],data_item[2]
+
+
+
+        L2P.CG_data[secID] = {"I" : {"Y1" : float(cyp_I) , "Z1" : float(czp_I) , "Y2" : float(cym_I) , "Z2" : float(czm_I)} , "J" : {"Y1" : float(cyp_J) , "Z1" : float(czp_J) , "Y2" : float(cym_J) , "Z2" : float(czm_J)}}
+
 
 def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList,reverse):
     L2P._reverse = reverse
@@ -603,7 +685,7 @@ def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList,reverse):
     pbar.update(1)
     pbar.set_description_str("Processing Sections...")
 
-    getCGdata()
+    getCGdata2()
 
     pbar.update(1)
     pbar.set_description_str("Deleting Elements and Nodes...")

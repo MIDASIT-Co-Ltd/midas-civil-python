@@ -405,6 +405,18 @@ class Tendon:
         Tendon.Profile.clear()
         Tendon.Prestress.clear()
 
+    @staticmethod
+    def delete():
+        Tendon.Property.delete()
+        Tendon.Profile.delete()
+        Tendon.Prestress.delete()
+    
+    @staticmethod
+    def sync():
+        Tendon.Property.sync()
+        Tendon.Profile.sync()
+        Tendon.Prestress.sync()
+
 
     class Relaxation:
 
@@ -1014,27 +1026,26 @@ class Tendon:
                         
             return json
         
-
         @classmethod
         def create(cls):
-            __maxNos__ = 100  #500 profiles can be sent in a single request
-            __numItem__ = len(cls.profiles)
-            __nTime__ = int(__numItem__/__maxNos__)+1
+            MidasAPI("PUT","/db/TDNA",cls.json())
+            # __maxNos__ = 100  #500 profiles can be sent in a single request
+            # __numItem__ = len(cls.profiles)
+            # __nTime__ = int(__numItem__/__maxNos__)+1
 
-            if __nTime__ == 1:
-                MidasAPI("PUT","/db/TDNA",cls.json())
-            else:
-                __remainItem__ = __numItem__
-                for n in range(__nTime__):
-                    json = {"Assign":{}}
-                    __nElem_c__ = min(__maxNos__,__remainItem__)
-                    for q in range(__nElem_c__):
-                        elem=cls.profiles[n*__maxNos__+q]
-                        js = _ObjtoJS_Profile(elem)
-                        json["Assign"][elem.ID] = js
-                    MidasAPI("PUT","/db/TDNA",json)
-                    __remainItem__ -= __maxNos__
-
+            # if __nTime__ == 1:
+            #     MidasAPI("PUT","/db/TDNA",cls.json())
+            # else:
+            #     __remainItem__ = __numItem__
+            #     for n in range(__nTime__):
+            #         json = {"Assign":{}}
+            #         __nElem_c__ = min(__maxNos__,__remainItem__)
+            #         for q in range(__nElem_c__):
+            #             elem=cls.profiles[n*__maxNos__+q]
+            #             js = _ObjtoJS_Profile(elem)
+            #             json["Assign"][elem.ID] = js
+            #         MidasAPI("PUT","/db/TDNA",json)
+            #         __remainItem__ -= __maxNos__
 
         @classmethod
         def get(cls):

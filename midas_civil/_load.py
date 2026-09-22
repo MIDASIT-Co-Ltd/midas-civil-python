@@ -278,7 +278,6 @@ class Load:
                     
                     Load.SW(a['BODF'][i]['LCNAME'], di, va, a['BODF'][i]['GROUP_NAME'])
     
-    
     #--------------------------------   NODAL LOADS  ------------------------------------------------------------
 
     #18 Class to add Nodal Loads:
@@ -1327,6 +1326,7 @@ class Load:
 
 
             self.ID = len(Load.PlaneLoad_Define.data) + 1
+            self.SEQ = self.ID
 
 
             self.LOAD_TYPE = load_type
@@ -1356,7 +1356,7 @@ class Load:
                     "LTYPE": i.LOAD_TYPE,
                     "COPY_X": i.COPY_X,
                     "COPY_Y": i.COPY_Y,
-                    "SEQ": i.ID,
+                    "SEQ": i.SEQ,
                 }
                 
                 if i.LOAD_TYPE=='POINT':
@@ -1414,6 +1414,67 @@ class Load:
         def clear(cls):
             cls.data=[]
     
+        @classmethod
+        def sync(cls):
+            cls.clear()
+            a = cls.get()
+
+            if a != {'message': ''}:
+                for key in a['PNLD'].keys():
+                    data = a['PNLD'][key]
+
+                    _NAME = data["NAME"]
+                    _DESC = data["DESC"]
+                    _COPY_X = data["COPY_X"]
+                    _COPY_Y = data["COPY_Y"]
+                    _SEQ = data["SEQ"]
+
+                    if data["LTYPE"] == "POINT":
+                        # POINT LOAD
+                        _TYPE = "POINT"
+                        _pointLoads = []
+                        for load in data["POINTLOAD"]:
+                            _pointLoads.append((load["X"],load["Y"],load["F"]))
+
+                        pnld = Load.PlaneLoad_Define(_NAME,_TYPE,point_load=_pointLoads,copy_X=_COPY_X,copy_Y=_COPY_Y,desc=_DESC)
+
+                    elif data["LTYPE"] == "LINE":
+                        # POINT LOAD
+                        _TYPE = "LINE"
+                        _bUNIFORM = data["LINELOAD"]["bUNIFORM"]
+                        _PT1 = (data["LINELOAD"]["X"][0],data["LINELOAD"]["Y"][0],data["LINELOAD"]["F"][0])
+                        _PT2_LOAD = data["LINELOAD"]["F"][0] if _bUNIFORM else data["LINELOAD"]["F"][1]
+                        _PT2 = (data["LINELOAD"]["X"][1],data["LINELOAD"]["Y"][1],_PT2_LOAD)
+
+                        pnld = Load.PlaneLoad_Define(_NAME,_TYPE,line_load=[_PT1,_PT2],copy_X=_COPY_X,copy_Y=_COPY_Y,desc=_DESC)
+
+
+                    elif data["LTYPE"] == "AREA":
+                        # POINT LOAD
+                        _TYPE = "AREA"
+                        _bUNIFORM = data["AREALOAD"]["bUNIFORM"]
+                        _b3PT = data["AREALOAD"]["b3PNT"]
+
+                        _PT1 = (data["AREALOAD"]["X"][0],data["AREALOAD"]["Y"][0],data["AREALOAD"]["LOAD"][0])
+
+                        _PT2_LOAD = data["AREALOAD"]["LOAD"][0] if _bUNIFORM else data["AREALOAD"]["LOAD"][1]
+                        _PT3_LOAD = data["AREALOAD"]["LOAD"][0] if _bUNIFORM else data["AREALOAD"]["LOAD"][2]
+                        _PT4_LOAD = data["AREALOAD"]["LOAD"][0] if _bUNIFORM else data["AREALOAD"]["LOAD"][3]
+
+                        _PT2 = (data["AREALOAD"]["X"][1],data["AREALOAD"]["Y"][1],_PT2_LOAD)
+                        _PT3 = (data["AREALOAD"]["X"][2],data["AREALOAD"]["Y"][2],_PT3_LOAD)
+                        _PT4 = (data["AREALOAD"]["X"][3],data["AREALOAD"]["Y"][3],_PT4_LOAD)
+
+                        if _b3PT:
+                            pnld = Load.PlaneLoad_Define(_NAME,_TYPE,area_load=[_PT1,_PT2,_PT3],copy_X=_COPY_X,copy_Y=_COPY_Y,desc=_DESC)
+                        else:
+                            pnld = Load.PlaneLoad_Define(_NAME,_TYPE,area_load=[_PT1,_PT2,_PT3,_PT4],copy_X=_COPY_X,copy_Y=_COPY_Y,desc=_DESC)
+
+
+                    pnld.SEQ = _SEQ # MANUAL SEQ OVERRIDE
+                    pnld.ID = int(key) # MANUAL ID OVERRIDE
+
+
     class PlaneLoad_Assign:
         """
         Define Plane load to plates faces.
@@ -1490,6 +1551,30 @@ class Load:
         @classmethod
         def clear(cls):
             cls.data=[]
+
+        @classmethod
+        def sync(cls):
+            cls.data = []
+            a = cls.get()
+            if a != {'message': ''}:
+                for i in a['PNLA'].keys():
+                    data = a['PNLA'][i]
+                    LCNAME = data["LCNAME"]
+                    LOAD_GROUP = data["LOAD_GROUP"]
+                    PNLD_KEY = data["PNLD_KEY"]
+                    POINT_ORIGIN = data["POINT_ORIGIN"]
+                    AXIS_X = data["AXIS_X"]
+                    AXIS_Y = data["AXIS_Y"]
+                    TOL = data["TOL"]
+                    # SELECT_TYPE = data["SELECT_TYPE"]
+                    # LOAD_DIR = data["LOAD_DIR"]
+                    # PROJECT_TYPE = data["PROJECT_TYPE"]
+                    DESC = data["DESC"]
+                    # _LCNAME = data["LCNAME"]
+                    # _LCNAME = data["LCNAME"]
+
+
+            Load.PlaneLoad_Assign(load_case=LCNAME,load_group=LOAD_GROUP,plane_load=PNLD_KEY,origin=POINT_ORIGIN,x_axis=AXIS_X,xy_plane=AXIS_Y,tolerance=TOL,loading_dir='Normal',elmList='onLoadingPlane',desc=DESC,id=int(i))
 
 
 

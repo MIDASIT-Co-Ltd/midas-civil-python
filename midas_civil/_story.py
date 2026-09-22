@@ -66,17 +66,17 @@ class Story:
     
     @staticmethod
     def create():
-        """Creates Story in MIDAS Civil NX"""
+        """Creates Story in MIDAS CIVIL NX"""
         MidasAPI("PUT", "/db/STOR", Story.json())
     
     @staticmethod
     def get():
-        """Get the JSON from MIDAS Civil NX"""
+        """Get the JSON from MIDAS CIVIL NX"""
         return MidasAPI("GET", "/db/STOR")
     
     @staticmethod
     def delete():
-        """Delete from MIDAS Civil NX and Python"""
+        """Delete from MIDAS CIVIL NX and Python"""
         Story.clear()
         return MidasAPI("DELETE", "/db/STOR")
 
@@ -87,7 +87,7 @@ class Story:
 
     @staticmethod
     def sync():
-        """Retrieve all data from MIDAS Civil NX and rebuild the local database.
+        """Retrieve all data from MIDAS CIVIL NX and rebuild the local database.
 
         Clears the current database, fetches all nodes via ``GET /db/STOR``,
         and recreates the local database.

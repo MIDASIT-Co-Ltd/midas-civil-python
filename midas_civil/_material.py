@@ -56,12 +56,12 @@ class Material:
 
     @staticmethod
     def create_only():
-        """Push all locally defined materials to midas Civil NX (materials only, no time-dependent data)."""
+        """Push all locally defined materials to MIDAS CIVIL NX (materials only, no time-dependent data)."""
         return MidasAPI("PUT","/db/MATL",Material.json())
 
     @staticmethod
     def get():
-        """Fetch all materials currently defined in the midas Civil NX model."""
+        """Fetch all materials currently defined in the MIDAS CIVIL NX model."""
         return MidasAPI("GET","/db/MATL")
 
 

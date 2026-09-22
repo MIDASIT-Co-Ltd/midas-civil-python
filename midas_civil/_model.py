@@ -336,7 +336,7 @@ class Model:
     @staticmethod
     def maxID(dbNAME:_dbNames = 'NODE' , fast:bool=False) -> int :
         ''' 
-        Returns maximum ID of a DB in CIVIL NX
+        Returns maximum ID of a DB in MIDAS CIVIL NX
         dbNAME - 'NODE' , 'ELEM' , 'THIK' , 'SECT' 
         fast - 'NODE' , 'ELEM' , 'THIK' , 'SECT' , 'MATL'
         If no data exist, 0 is returned
@@ -514,7 +514,7 @@ class Model:
     
     @staticmethod
     def open(location):
-        """Open Civil NX model file \n Model.open("D:\\model.mcb")"""
+        """Open MIDAS CIVIL NX model file \n Model.open("D:\\model.mcb")"""
         if location.endswith(('.mcb','.mcbz','.mgb','.mgbx')):
             MidasAPI("POST","/doc/OPEN",{"Argument":str(location)})
         else:
@@ -581,6 +581,12 @@ class Model:
             MidasAPI("POST","/doc/EXPORTMXT",{"Argument":str(location)})
         else:
             print('⚠️  Location data in exportMCT is missing file extension')
+
+    @staticmethod
+    def sendMCT(mctData=""):
+        """Send MCT data (string) to MIDAS CIVIL NX
+        mctData is MCT commands as string input"""
+        MidasAPI('POST','/OPE/MXTCMDSHELL',{"Argument":mctData})
 
     @staticmethod
     def importJSON(location=""):

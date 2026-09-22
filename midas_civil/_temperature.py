@@ -52,7 +52,7 @@ class Temperature:
 
     @classmethod
     def create(cls):
-        """Creates Temperature elements in MIDAS Civil NX"""
+        """Creates Temperature elements in MIDAS CIVIL NX"""
         if cls.System.temps: cls.System.create()
         if cls.Element.temps: cls.Element.create()
         if cls.Gradient.temps: cls.Gradient.create()
@@ -61,7 +61,7 @@ class Temperature:
 
     @classmethod
     def delete(cls):
-        """Deletes Temperature elements from MIDAS Civil NX and Python"""
+        """Deletes Temperature elements from MIDAS CIVIL NX and Python"""
         cls.System.delete()
         cls.Element.delete()
         cls.Gradient.delete()
@@ -70,7 +70,7 @@ class Temperature:
         
     @classmethod
     def clear(cls):
-        """Deletes Temperature elements from MIDAS Civil NX and Python"""
+        """Deletes Temperature elements from MIDAS CIVIL NX and Python"""
         cls.System.clear()
         cls.Element.clear()
         cls.Gradient.clear()
@@ -79,7 +79,7 @@ class Temperature:
 
     @classmethod
     def sync(cls):
-        """Sync Temperature elements from MIDAS Civil NX to Python"""
+        """Sync Temperature elements from MIDAS CIVIL NX to Python"""
         cls.System.sync()
         cls.Element.sync()
         cls.Gradient.sync()
@@ -146,17 +146,17 @@ class Temperature:
 
         @staticmethod
         def create():
-            """Creates System Temperatures in MIDAS Civil NX"""
-            MidasAPI("PUT", "/db/stmp", Temperature.System.json())
+            """Creates System Temperatures in MIDAS CIVIL NX"""
+            MidasAPI("PUT", "/db/STMP", Temperature.System.json())
 
         @staticmethod
         def get():
-            """Get the JSON of System Temperatures from MIDAS Civil NX"""
-            return MidasAPI("GET", "/db/stmp")
+            """Get the JSON of System Temperatures from MIDAS CIVIL NX"""
+            return MidasAPI("GET", "/db/STMP")
 
         @staticmethod
         def sync():
-            """Sync System Temperatures from MIDAS Civil NX to Python"""
+            """Sync System Temperatures from MIDAS CIVIL NX to Python"""
             Temperature.System.temps = []
             a = Temperature.System.get()
             
@@ -172,9 +172,9 @@ class Temperature:
 
         @staticmethod
         def delete():
-            """Delete System Temperatures from MIDAS Civil NX and Python"""
+            """Delete System Temperatures from MIDAS CIVIL NX and Python"""
             Temperature.System.clear()
-            return MidasAPI("DELETE", "/db/stmp")
+            return MidasAPI("DELETE", "/db/STMP")
 
         @staticmethod
         def clear():
@@ -284,17 +284,17 @@ class Temperature:
 
         @staticmethod
         def create():
-            """Creates Element Temperatures in MIDAS Civil NX"""
-            MidasAPI("PUT", "/db/etmp", Temperature.Element.json())
+            """Creates Element Temperatures in MIDAS CIVIL NX"""
+            MidasAPI("PUT", "/db/ETMP", Temperature.Element.json())
 
         @staticmethod
         def get():
-            """Get the JSON of Element Temperatures from MIDAS Civil NX"""
-            return MidasAPI("GET", "/db/etmp")
+            """Get the JSON of Element Temperatures from MIDAS CIVIL NX"""
+            return MidasAPI("GET", "/db/ETMP")
 
         @staticmethod
         def sync():
-            """Sync Element Temperatures from MIDAS Civil NX to Python"""
+            """Sync Element Temperatures from MIDAS CIVIL NX to Python"""
             Temperature.Element.temps = []
             a = Temperature.Element.get()
             
@@ -309,13 +309,13 @@ class Temperature:
 
         @staticmethod
         def delete():
-            """Delete Element Temperatures from MIDAS Civil NX and Python"""
+            """Delete Element Temperatures from MIDAS CIVIL NX and Python"""
             Temperature.Element.clear()
-            return MidasAPI("DELETE", "/db/etmp")
+            return MidasAPI("DELETE", "/db/ETMP")
         
         @staticmethod
         def clear():
-            """Delete Element Temperatures from MIDAS Civil NX and Python"""
+            """Delete Element Temperatures from MIDAS CIVIL NX and Python"""
             Temperature.Element.temps = []
 
     # --------------------------------------------------------------------------------------------------
@@ -442,17 +442,17 @@ class Temperature:
 
         @staticmethod
         def create():
-            """Creates Temperature Gradients in MIDAS Civil NX"""
-            MidasAPI("PUT", "/db/gtmp", Temperature.Gradient.json())
+            """Creates Temperature Gradients in MIDAS CIVIL NX"""
+            MidasAPI("PUT", "/db/GTMP", Temperature.Gradient.json())
 
         @staticmethod
         def get():
-            """Get the JSON of Temperature Gradients from MIDAS Civil NX"""
-            return MidasAPI("GET", "/db/gtmp")
+            """Get the JSON of Temperature Gradients from MIDAS CIVIL NX"""
+            return MidasAPI("GET", "/db/GTMP")
 
         @staticmethod
         def sync():
-            """Sync Temperature Gradients from MIDAS Civil NX to Python"""
+            """Sync Temperature Gradients from MIDAS CIVIL NX to Python"""
             Temperature.Gradient.temps = []
             a = Temperature.Gradient.get()
             
@@ -467,13 +467,13 @@ class Temperature:
 
         @staticmethod
         def delete():
-            """Delete Temperature Gradients from MIDAS Civil NX and Python"""
+            """Delete Temperature Gradients from MIDAS CIVIL NX and Python"""
             Temperature.Gradient.clear()
-            return MidasAPI("DELETE", "/db/gtmp")
+            return MidasAPI("DELETE", "/db/GTMP")
         
         @staticmethod
         def clear():
-            """Delete Temperature Gradients from MIDAS Civil NX and Python"""
+            """Delete Temperature Gradients from MIDAS CIVIL NX and Python"""
             Temperature.Gradient.temps = []
 
     # --------------------------------------------------------------------------------------------------
@@ -579,17 +579,17 @@ class Temperature:
 
         @staticmethod
         def create():
-            """Creates Nodal Temperatures in MIDAS Civil NX"""
-            MidasAPI("PUT", "/db/ntmp", Temperature.Nodal.json())
+            """Creates Nodal Temperatures in MIDAS CIVIL NX"""
+            MidasAPI("PUT", "/db/NTMP", Temperature.Nodal.json())
 
         @staticmethod
         def get():
-            """Get the JSON of Nodal Temperatures from MIDAS Civil NX"""
-            return MidasAPI("GET", "/db/ntmp")
+            """Get the JSON of Nodal Temperatures from MIDAS CIVIL NX"""
+            return MidasAPI("GET", "/db/NTMP")
 
         @staticmethod
         def sync():
-            """Sync Nodal Temperatures from MIDAS Civil NX to Python"""
+            """Sync Nodal Temperatures from MIDAS CIVIL NX to Python"""
             Temperature.Nodal.temps = []
             a = Temperature.Nodal.get()
             
@@ -604,13 +604,13 @@ class Temperature:
 
         @staticmethod
         def delete():
-            """Delete Nodal Temperatures from MIDAS Civil NX and Python"""
+            """Delete Nodal Temperatures from MIDAS CIVIL NX and Python"""
             Temperature.Nodal.clear()
-            return MidasAPI("DELETE", "/db/ntmp")
+            return MidasAPI("DELETE", "/db/NTMP")
         
         @staticmethod
         def clear():
-            """Delete Nodal Temperatures from MIDAS Civil NX and Python"""
+            """Delete Nodal Temperatures from MIDAS CIVIL NX and Python"""
             Temperature.Nodal.temps = []
 
 
@@ -864,11 +864,11 @@ class Temperature:
 
         @staticmethod
         def create():
-            MidasAPI("PUT", "/db/btmp", Temperature.BeamSection.json())
+            MidasAPI("PUT", "/db/BTMP", Temperature.BeamSection.json())
 
         @staticmethod
         def get():
-            return MidasAPI("GET", "/db/btmp")
+            return MidasAPI("GET", "/db/BTMP")
 
         @staticmethod
         def sync():
@@ -885,7 +885,7 @@ class Temperature:
         @staticmethod
         def delete():
             Temperature.BeamSection.clear()
-            return MidasAPI("DELETE", "/db/btmp")
+            return MidasAPI("DELETE", "/db/BTMP")
 
         @staticmethod
         def clear():

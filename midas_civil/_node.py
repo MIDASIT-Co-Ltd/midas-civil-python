@@ -5,6 +5,8 @@ from ._group import _add_node_2_stGroup
 from typing import Literal
 import numpy as np
 from ._group import Group
+from colorama import Fore, Style
+
 
 _order = Literal['ID','XYZ','XZY','YXZ','YZX','ZXY','ZYX']
 
@@ -58,7 +60,7 @@ class _hNode:
     ID,X,Y,Z,AXIS,LOC = 0,0,0,0,0,0
 
 class Node:
-    """Represents a single node in the MIDAS Civil NX model.
+    """Represents a single node in the MIDAS CIVIL NX model.
 
     Class Attributes:
         nodes (list[_hNode]): All node objects in the current session.
@@ -72,10 +74,11 @@ class Node:
     """
 
     nodes: list[_hNode] = []
-    ids: list[int] = []
+    ids: set[int] = set()
     maxID:int = 0
     Grid = {}
     __nodeDic__ = {}
+    __idIndex__ = {}
 
     ## TEMP DATA TO SPEED UP SELECTION FUNCTIONS
 
@@ -111,76 +114,56 @@ class Node:
 
         node_count = Node.maxID+1
 
-        # if Node.ids == []: 
-        #     node_count = 1
-        # else:
-        #     node_count = max(Node.ids)+1
-        
-        
         self.X = float(round(x,6))
         self.Y = float(round(y,6))
         self.Z = float(round(z,6))
         self.AXIS = [[0,0,0],[0,0,0],[0,0,0]]
 
-        if id == 0 : self.ID = node_count
-        if id != 0 : self.ID = id
-
-        
-
-
-        #REPLACE - No merge check
-        if id in Node.ids:
-
-            index=Node.ids.index(id)
-            n_orig = Node.nodes[index]
-            loc_orig = str(cell(n_orig))
-            Node.Grid[loc_orig].remove(n_orig)
-
-            loc_new = str(cell(self))
-            
-            zz_add_to_dict(Node.Grid,loc_new,self)
-            Node.nodes[index]=self
-            Node.__nodeDic__[str(id)] = self
-
-
-        #CREATE NEW - Merge Check based on input
+        if id is None or id == 0:
+            self.ID = Node.maxID + 1
+            self.__register__(merge)
+        elif id in Node.ids:                 # O(1) set membership
+            self.ID = id
+            self.__replace__(id)
         else:
-            cell_loc = str(cell(self))      
-
-            if cell_loc in Node.Grid:
-
-                if merge :
-                    chk=0   #OPTIONAL
-                    for node in Node.Grid[cell_loc]:
-                        if dist_tol(self,node):
-  
-                            chk=1
-                            self.ID=node.ID
-                            self.AXIS = node.AXIS
-                    if chk==0:
-
-                        Node.nodes.append(self)
-                        Node.ids.append(self.ID)
-                        Node.Grid[cell_loc].append(self)
-                        
-
-                else:
-
-                    Node.nodes.append(self)
-                    Node.ids.append(self.ID)
-                    Node.Grid[cell_loc].append(self)
-            else:
-
-                Node.Grid[cell_loc]=[]
-                Node.nodes.append(self)
-                Node.ids.append(self.ID)
-                Node.Grid[cell_loc].append(self)
-            Node.__nodeDic__[str(self.ID)] = self
+            self.ID = id
+            self.__register__(merge)
             
         if group !="":
             _add_node_2_stGroup(self.ID,group)
 
         Node.maxID = max(self.ID,Node.maxID)
+
+
+
+    def __replace__(self, id: int):
+        """Overwrite the existing node with this ID at its current position."""
+        index = Node.__idIndex__[id]         # O(1), was Node.ids.index(id)
+        n_orig = Node.nodes[index]
+        Node.Grid[str(cell(n_orig))].remove(n_orig)
+
+        zz_add_to_dict(Node.Grid, str(cell(self)), self)
+        Node.nodes[index] = self
+        Node.__nodeDic__[str(id)] = self
+
+    def __register__(self, merge: bool):
+        """Store as a new node, unless merge finds a coincident one."""
+        cell_loc = str(cell(self))
+        bucket = Node.Grid.get(cell_loc)
+
+        if bucket is not None and merge:
+            for node in bucket:
+                if dist_tol(self, node):
+                    self.ID = node.ID        # reuse existing ID; nothing stored
+                    self.AXIS = node.AXIS
+                    return
+
+        Node.__idIndex__[self.ID] = len(Node.nodes)   # slot before append
+        Node.nodes.append(self)
+        Node.ids.add(self.ID)
+        Node.Grid.setdefault(cell_loc, []).append(self)
+        Node.__nodeDic__[str(self.ID)] = self
+
 
     @property
     def LOC(self):
@@ -192,7 +175,7 @@ class Node:
 
     @classmethod
     def json(cls):
-        """Serialise all nodes to the MIDAS API JSON format.
+        """Serialise all nodes to the MIDAS CIVIL NX API JSON format.
 
         Returns:
             dict: ``{"Assign": {id: {"X": x, "Y": y, "Z": z}, ...}}`` ready
@@ -205,30 +188,31 @@ class Node:
 
     @classmethod
     def create(cls):
-        """Send all nodes to MIDAS Civil NX (PUT /db/NODE).
+        """Send all nodes to MIDAS CIVIL NX (PUT /db/NODE).
 
         """
-        __maxNos__ = 40_000  #40_000 nodes can be sent in a single request
-        __numItem__ = len(cls.nodes)
-        __nTime__ = int(__numItem__/__maxNos__)+1
+        MidasAPI("PUT","/db/NODE",Node.json())
+        # __maxNos__ = 40_000  #40_000 nodes can be sent in a single request
+        # __numItem__ = len(cls.nodes)
+        # __nTime__ = int(__numItem__/__maxNos__)+1
 
-        if __nTime__ == 1:
-            MidasAPI("PUT","/db/NODE",Node.json())
-        else:
-            __remainItem__ = __numItem__
-            for n in range(__nTime__):
-                json = {"Assign":{}}
-                __nNode_c__ = min(__maxNos__,__remainItem__)
-                for q in range(__nNode_c__):
-                    i=cls.nodes[n*__maxNos__+q]
-                    json["Assign"][i.ID]={"X":i.X,"Y":i.Y,"Z":i.Z}
-                MidasAPI("PUT","/db/NODE",json)
-                __remainItem__ -= __maxNos__
+        # if __nTime__ == 1:
+        #     MidasAPI("PUT","/db/NODE",Node.json())
+        # else:
+        #     __remainItem__ = __numItem__
+        #     for n in range(__nTime__):
+        #         json = {"Assign":{}}
+        #         __nNode_c__ = min(__maxNos__,__remainItem__)
+        #         for q in range(__nNode_c__):
+        #             i=cls.nodes[n*__maxNos__+q]
+        #             json["Assign"][i.ID]={"X":i.X,"Y":i.Y,"Z":i.Z}
+        #         MidasAPI("PUT","/db/NODE",json)
+        #         __remainItem__ -= __maxNos__
 
         
     @staticmethod
     def get():
-        """Retrieve all nodes from MIDAS Civil NX (GET /db/NODE).
+        """Retrieve all nodes from MIDAS CIVIL NX (GET /db/NODE).
 
         Returns:
             dict: Raw API response containing the ``'NODE'`` dictionary keyed
@@ -238,7 +222,7 @@ class Node:
 
     @staticmethod
     def sync():
-        """Retrieve all nodes from MIDAS Civil NX and rebuild the local database.
+        """Retrieve all nodes from MIDAS CIVIL NX and rebuild the local database.
 
         Clears the current database, fetches all nodes via ``GET /db/NODE``,
         and recreates the local database.
@@ -252,17 +236,18 @@ class Node:
 
     @staticmethod
     def delete():
-        """Delete all nodes from MIDAS Civil NX and clear the local database."""
+        """Delete all nodes from MIDAS CIVIL NX and clear the local database."""
         MidasAPI("DELETE","/db/NODE")
         Node.clear()
 
     @staticmethod
     def clear():
-        """Clear the local node database without affecting the MIDAS model."""
+        """Clear the local node database without affecting the MIDAS CIVIL NX model."""
         Node.nodes=[]
-        Node.ids=[]
+        Node.ids=set()
         Node.Grid={}
         Node.__nodeDic__ = {}
+        Node.__idIndex__ = {}
         Node.maxID = 0
 
     @staticmethod
@@ -648,9 +633,8 @@ def nodesInRadius(point_location, radius: float = 0, output: Literal['ID','NODE'
 
     ifRemove = bNode and not includeSelf
 
-    checked_GridStr = []
-    close_nodes:list[int] = []
-    close_nodesID:list[Node] = []
+    close_nodes:list[Node] = []
+    close_nodesID:list[int] = []
     _dist_record = {}
 
 
@@ -695,7 +679,7 @@ def nodesInRadius(point_location, radius: float = 0, output: Literal['ID','NODE'
 class NodeLocalAxis:
     """Define a local coordinate axis for one or more nodes.
 
-    In MIDAS Civil NX, nodes can have a local axis orientation different from
+    In MIDAS CIVIL NX, nodes can have a local axis orientation different from
     the global axis. This is used to apply boundary conditions or interpret
     results in a skewed (rotated) coordinate system.
 
@@ -802,7 +786,7 @@ class NodeLocalAxis:
 
     @classmethod
     def json(cls):
-        """Serialise all local axis definitions to the MIDAS API JSON format.
+        """Serialise all local axis definitions to the MIDAS CIVIL NX API JSON format.
 
         Returns:
             dict: ``{"Assign": {node_id: {...}, ...}}`` ready for the
@@ -831,24 +815,24 @@ class NodeLocalAxis:
 
     @staticmethod
     def create():
-        """Push all local axis definitions to MIDAS Civil NX (PUT /db/SKEW)."""
+        """Push all local axis definitions to MIDAS CIVIL NX (PUT /db/SKEW)."""
         MidasAPI("PUT","/db/SKEW",NodeLocalAxis.json())
 
     @staticmethod
     def delete():
-        """Delete all local axis definitions from MIDAS Civil NX and clear the local database."""
+        """Delete all local axis definitions from MIDAS CIVIL NX and clear the local database."""
         MidasAPI("DELETE","/db/SKEW")
         NodeLocalAxis.clear()
 
     @staticmethod
     def clear():
-        """Clear the local axis database without affecting the MIDAS model."""
+        """Clear the local axis database without affecting the MIDAS CIVIL NX model."""
         NodeLocalAxis.skew=[]
         NodeLocalAxis.ids=[]
 
     @staticmethod
     def get():
-        """Retrieve all node local axis definitions from MIDAS Civil NX (GET /db/SKEW).
+        """Retrieve all node local axis definitions from MIDAS CIVIL NX (GET /db/SKEW).
 
         Returns:
             dict: Raw API response containing the ``'SKEW'`` dictionary keyed
@@ -856,14 +840,25 @@ class NodeLocalAxis:
         """
         return MidasAPI("GET","/db/SKEW")
     
-    # @staticmethod
-    # def sync():
-    #     NodeLocalAxis.skew=[]
-    #     NodeLocalAxis.ids=[]
-    #     a = NodeLocalAxis.get()
-    #     if a != {'message': ''}:
-    #         if list(a['NODE'].keys()) != []:
-
-    #             for j in a['NODE'].keys():
-
-    #                 Node(round(a['NODE'][j]['X'],6), round(a['NODE'][j]['Y'],6), round(a['NODE'][j]['Z'],6), id=int(j), group='', merge=0)
+    @staticmethod
+    def sync():
+        NodeLocalAxis.clear()
+        _unSuppNode = []
+        a = NodeLocalAxis.get()
+        if a != {'message': ''}:
+            if list(a['SKEW'].keys()) != []:
+                for j in a['SKEW'].keys():
+                    if a['SKEW'][j]["iMETHOD"]==1:
+                        # print("ANGLE BASE")
+                        NodeLocalAxis(int(j),'XYZ',[a['SKEW'][j]["ANGLE_X"],a['SKEW'][j]["ANGLE_Y"],a['SKEW'][j]["ANGLE_Z"]])
+                    elif a['SKEW'][j]["iMETHOD"]==3:
+                        # print("VECTOR BASE")
+                        _v1 = [a['SKEW'][j]["V1X"],a['SKEW'][j]["V1Y"],a['SKEW'][j]["V1Z"]]
+                        _v2 = [a['SKEW'][j]["V2X"],a['SKEW'][j]["V2Y"],a['SKEW'][j]["V2Z"]]
+                        NodeLocalAxis(int(j),'Vector',[_v1,_v2])
+                    else:
+                        _unSuppNode.append(int(j))
+        
+        if _unSuppNode:
+            # print(f"  ⚠️   Node local axis type for nodes - ",_unSuppNode," is unsupported.")
+            print(Fore.YELLOW +f" ⚠️   Node local axis type for nodes - {_unSuppNode} is unsupported."+Style.RESET_ALL)

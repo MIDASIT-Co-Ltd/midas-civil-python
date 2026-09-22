@@ -3,7 +3,7 @@ from ._offsetSS import _common
 from math import sin,cos,pi
 
 class _SS_TAPERED_DBUSER(_common):
-    """Tapered user-defined standard section for MIDAS Civil NX.
+    """Tapered user-defined standard section for MIDAS CIVIL NX.
 
     Represents a tapered section whose cross-section varies linearly from the
     I-end (start) to the J-end (end) of a frame element. The shape type and
@@ -69,7 +69,7 @@ class _SS_TAPERED_DBUSER(_common):
 
 
     def toJSON(sect):
-        """Serialise the section to the MIDAS Civil NX API JSON format.
+        """Serialise the section to the MIDAS CIVIL NX API JSON format.
 
         Returns:
             dict: A dictionary ready to be sent to the ``/db/sect`` endpoint,

@@ -25,13 +25,35 @@ _eigenOutputType = Literal["EigenVector","Eigenvalue_Analysis","Modal_Participat
 _bucklingOutputType = Literal["BucklingVector","Buckling_Analysis"]
 _EIGEN_SUBTABLE_MAP = {"Eigenvalue_Analysis":"EIGENVALUEANALYSIS","Modal_Participation_Percent":"MODALPARTICIPATIONMASSESPRINTOUT(1)","Modal_Participation_Mass":"MODALPARTICIPATIONMASSESPRINTOUT(2)","Modal_Participation_Factor":"MODALPARTICIPATIONFACTORPRINTOUT","Modal_Direction_Factor":"MODALDIRECTIONFACTORPRINTOUT","Buckling_Analysis":"BUCKLINGANALYSIS"}
 
+_TABLE_BACKEND = Literal['Polars','Pandas','JSON']
+_STR_PATTERN   = "Load|Part|Remark"
+_INT_NAMES     = ("Index", "Elem")
+_NODE_PATTERN  = "/Node"
+_FLOAT_PATTERN = (
+    "Axial|Shear|Torsion|Moment|FX|FY|FZ|MX|MY|MZ|DX|DY|DZ|RX|RY|RZ|"
+    "Fx|Fy|Fz|Mx|My|Mz|Dx|Dy|Dz|Rx|Ry|Rz|Level|Height|Displacement|"
+    "Maximum/Average|Elements|Drift|Factor|Frequency|TRAN|ROTN|Period|"
+    "Tolerance|Sig-|Time/Step|Force-"
+)
+
+def _emptyDF(backend):
+        if backend == 'json':
+            return {}
+
+        elif backend == 'pandas':
+            import pandas as pd
+            return pd.DataFrame()
+        else:
+            import polars as pl
+            return pl.DataFrame()
+
 def _convertColm2DataType(res_df):
     import polars as pl
 
     str_colms = set(res_df.select(pl.selectors.matches("Load|Part|Remark")).columns)
     int_colms1 = set(res_df.select(pl.selectors.by_name("Index","Elem",require_all=False)).columns)
     int_colms2 = set(res_df.select(pl.selectors.matches("/Node")).columns)-int_colms1
-    float_colms = set(res_df.select(pl.selectors.matches("Axial|Shear|Torsion|Moment|FX|FY|FZ|MX|MY|MZ|DX|DY|DZ|RX|RY|RZ|Fx|Fy|Fz|Mx|My|Mz|Dx|Dy|Dz|Rx|Ry|Rz|Level|Height|Displacement|Maximum/Average|Elements|Drift|Factor|Frequency|TRAN|ROTN|Period|Tolerance|Sig-|Time/Step|")).columns)-str_colms-int_colms1-int_colms2
+    float_colms = set(res_df.select(pl.selectors.matches("Axial|Shear|Torsion|Moment|FX|FY|FZ|MX|MY|MZ|DX|DY|DZ|RX|RY|RZ|Fx|Fy|Fz|Mx|My|Mz|Dx|Dy|Dz|Rx|Ry|Rz|Level|Height|Displacement|Maximum/Average|Elements|Drift|Factor|Frequency|TRAN|ROTN|Period|Tolerance|Sig-|Time/Step|Force-")).columns)-str_colms-int_colms1-int_colms2
     
     res_type_df = res_df.with_columns([
         pl.selectors.by_name(*str_colms,require_all=False).cast(pl.String),
@@ -41,6 +63,7 @@ def _convertColm2DataType(res_df):
 
     ])
 
+    # SPECIAL CASE WHEN GETTING PLATE RESULTS - NODE can be String ( Center )
     if "Node" in res_type_df.columns:
         res_type_df = res_type_df.with_columns(
             pl.col("Node")
@@ -53,24 +76,138 @@ def _convertColm2DataType(res_df):
             
     return res_type_df
 
+def _convertColm2DataType_pd(res_json):
+    """Raw string dict -> pandas DataFrame with columns cast by name (single pass)."""
+    import re
+    import pandas as pd
+
+    cols = list(res_json.keys())
+
+    str_cols   = {c for c in cols if re.search(_STR_PATTERN, c)}
+    int_cols1  = {c for c in cols if c in _INT_NAMES}
+    int_cols2  = {c for c in cols if re.search(_NODE_PATTERN, c)} - int_cols1
+    float_cols = {c for c in cols if re.search(_FLOAT_PATTERN, c)} \
+                 - str_cols - int_cols1 - int_cols2
+
+    df = pd.DataFrame(res_json)
+
+    # numeric columns: string -> number, then final dtype (one pass per column)
+    for c in (int_cols1 | int_cols2):
+        df[c] = pd.to_numeric(df[c], errors="coerce").astype("Int64")
+    for c in float_cols:
+        df[c] = pd.to_numeric(df[c], errors="coerce").astype("float32")
+    for c in str_cols:
+        df[c] = df[c].astype("string")
+
+    # SPECIAL CASE: plate results — "Node" can be a string ("Center")
+    if "Node" in df.columns:
+        df["Node"] = df["Node"].map(lambda x: int(x) if str(x).isdigit() else str(x))
+
+    return df
+
+def _convertColm2DataType_pl(res_json):
+    """Raw string dict -> polars LazyFrame with columns cast by name (stays lazy)."""
+    import polars as pl
+    cs = pl.selectors
+
+    res_lf = pl.LazyFrame(res_json)
+
+    def _names(selector):
+        # resolves schema only, no data collected
+        return set(res_lf.select(selector).collect_schema().names())
+
+    str_colms   = _names(cs.matches(_STR_PATTERN))
+    int_colms1  = _names(cs.by_name(*_INT_NAMES, require_all=False))
+    int_colms2  = _names(cs.matches(_NODE_PATTERN)) - int_colms1
+    float_colms = _names(cs.matches(_FLOAT_PATTERN)) - str_colms - int_colms1 - int_colms2
+
+    casts = []
+    if str_colms:
+        casts.append(cs.by_name(*str_colms,   require_all=False).cast(pl.String))
+    if int_colms1:
+        casts.append(cs.by_name(*int_colms1,  require_all=False).cast(pl.Int64))
+    if int_colms2:
+        casts.append(cs.by_name(*int_colms2,  require_all=False).cast(pl.Int64))
+    if float_colms:
+        casts.append(cs.by_name(*float_colms, require_all=False).cast(pl.Float32))
+
+    res_type_lf = res_lf.with_columns(casts) if casts else res_lf
+
+    # SPECIAL CASE: plate results — "Node" can be a string ("Center")
+    if "Node" in res_type_lf.collect_schema().names():
+        res_type_lf = res_type_lf.with_columns(
+            pl.col("Node").map_elements(
+                lambda x: int(x) if str(x).isdigit() else str(x),
+                return_dtype=pl.Object,
+            )
+        )
+    return res_type_lf
+
+def _convertColm2DataType_json(res_json):
+    """Pure Python: return a NEW dict with values cast to int / float / str by column name.
+    No polars, no pandas. Used for the JSON return value and for Excel writing."""
+    import re
+
+    cols = list(res_json.keys())
+    str_cols   = {c for c in cols if re.search(_STR_PATTERN, c)}
+    int_cols1  = {c for c in cols if c in _INT_NAMES}
+    int_cols2  = {c for c in cols if re.search(_NODE_PATTERN, c)} - int_cols1
+    float_cols = {c for c in cols if re.search(_FLOAT_PATTERN, c)} \
+                 - str_cols - int_cols1 - int_cols2
+
+    def _to_int(v):
+        try:
+            return int(float(v))        # "5" and "5.0" both -> 5
+        except (TypeError, ValueError):
+            return v                 # non-numeric -> null
+    def _to_float(v):
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return v
+
+    out = {}
+    for c in cols:
+        vals = res_json[c]
+        if c in int_cols1 or c in int_cols2:
+            out[c] = [_to_int(v) for v in vals]
+        elif c in float_cols:
+            out[c] = [_to_float(v) for v in vals]
+        elif c in str_cols:
+            out[c] = [None if v is None else str(v) for v in vals]
+        else:
+            out[c] = list(vals)         # leave untouched
+
+    # SPECIAL CASE: plate results — "Node" can be a string ("Center")
+    if "Node" in out:
+        out["Node"] = [int(v) if str(v).isdigit() else str(v) for v in out["Node"]]
+
+    return out
+
 #---- INPUT: JSON -> OUTPUT : Data FRAME --------- ---------
 def _JSToDF_ResTable(js_json,excelLoc,sheetName,cellLoc="A1",outputFormat='Polars'):
+
+    backend = outputFormat.lower()
+
+    
     # Check for SS_Table existence
-    import polars as pl
     if "SS_Table" not in js_json:
         if 'message' in js_json:
             print(f'⚠️  Error from API: {js_json["message"]}')
         else:
             print('⚠️  Error: "SS_Table" not found in the response JSON.')
-        return pl.DataFrame() # Return empty DataFrame on error
+
+        return _emptyDF(backend) # Return empty DataFrame on error
         
+
     res_json = {}
     c=0
     
     # Check for HEAD and DATA existence
     if "HEAD" not in js_json["SS_Table"] or "DATA" not in js_json["SS_Table"]:
         print('⚠️  Error: "HEAD" or "DATA" not found in "SS_Table".')
-        return pl.DataFrame() # Return empty DataFrame
+
+        return _emptyDF(backend) # Return empty DataFrame
         
     for heading in js_json["SS_Table"]["HEAD"]:
         for dat in js_json["SS_Table"]["DATA"]:
@@ -82,31 +219,36 @@ def _JSToDF_ResTable(js_json,excelLoc,sheetName,cellLoc="A1",outputFormat='Polar
 
         c+=1
 
-    res_df = pl.DataFrame(res_json) # Final DF
+    casted_res_json = _convertColm2DataType_json(res_json)
 
-    res_type_df = _convertColm2DataType(res_df)
-
-    # EXPORTING FILE STARTS HERE................
     if excelLoc:
-        _write_df_to_existing_excel(res_type_df,(excelLoc,sheetName, cellLoc))
+        _write_json_to_existing_excel(casted_res_json,(excelLoc,sheetName, cellLoc))
 
-    if outputFormat=='JSON':
-        return res_type_df.to_dict(as_series=False)
-    elif outputFormat=='Polars':
-        return(res_type_df)
+    if backend == 'json':
+        return casted_res_json
+    elif backend == 'pandas':
+        import pandas as pd
+        # df = _convertColm2DataType_pd(res_json)
+        df = pd.DataFrame(casted_res_json)
+        return df
     else:
-        return(res_type_df)
+        import polars as pl
+        # df = _convertColm2DataType_pl(res_json).collect()
+        df = pl.DataFrame(casted_res_json,strict=False)
+        return df
+    
 
 #---- INPUT: JSON -> OUTPUT : Data FRAME --------- ---------
 def _JSToDF_ResTable_TEXT(table_type, js_json, excelLoc, sheetName, cellLoc="A1",outputFormat='Polars'):
     # Check for result key existence
-    import polars as pl
+    backend = outputFormat.lower()
+
     if table_type not in js_json:
         if 'message' in js_json:
             print(f'⚠️  Error from API: {js_json["message"]}')
         else:
             print(f'⚠️  Error: "{table_type}" not found in the response JSON.')
-        return pl.DataFrame() # Return empty DataFrame on error
+        return _emptyDF(backend) # Return empty DataFrame on error
 
     res_json = {}
     c=0
@@ -114,7 +256,7 @@ def _JSToDF_ResTable_TEXT(table_type, js_json, excelLoc, sheetName, cellLoc="A1"
     # Check for HEAD and DATA existence
     if "HEAD" not in js_json[table_type] or "DATA" not in js_json[table_type]:
         print(f'⚠️  Error: "HEAD" or "DATA" not found in "{table_type}".')
-        return pl.DataFrame() # Return empty DataFrame
+        return _emptyDF(backend) # Return empty DataFrame
 
     for heading in js_json[table_type]["HEAD"]:
         for dat in js_json[table_type]["DATA"]:
@@ -126,15 +268,24 @@ def _JSToDF_ResTable_TEXT(table_type, js_json, excelLoc, sheetName, cellLoc="A1"
 
         c+=1
 
-    res_df = pl.DataFrame(res_json) # Final DF
+    casted_res_json = _convertColm2DataType_json(res_json)
 
-    res_type_df = _convertColm2DataType(res_df)
-
-    # EXPORTING FILE STARTS HERE................
     if excelLoc:
-        _write_df_to_existing_excel(res_type_df,(excelLoc,sheetName, cellLoc))
+        _write_json_to_existing_excel(casted_res_json,(excelLoc,sheetName, cellLoc))
 
-    return(res_type_df)
+    if backend == 'json':
+        return casted_res_json
+    elif backend == 'pandas':
+        import pandas as pd
+        # df = _convertColm2DataType_pd(res_json)
+        df = pd.DataFrame(casted_res_json)
+        return df
+    else:
+        import polars as pl
+        # df = _convertColm2DataType_pl(res_json).collect()
+        df = pl.DataFrame(casted_res_json,strict=False)
+        return df
+
 
 def _format_mode_name(m):
     ''' Normalizes 1 / '1' / 'Mode 1' / 'Mode1' -> 'Mode1' '''
@@ -150,21 +301,22 @@ def _format_modes(modes):
 
 #---- INPUT: JSON (Eigen result with SUB_TABLES) -> OUTPUT : Data FRAME ----
 def _JSToDF_ResTable_Eigen(js_json, output, excelLoc, sheetName, cellLoc="A1",outputFormat='Polars'):
-    import polars as pl
+    backend = outputFormat.lower()
+    # import polars as pl
 
     if "SS_Table" not in js_json:
         if 'message' in js_json:
             print(f'⚠️  Error from API: {js_json["message"]}')
         else:
             print('⚠️  Error: "SS_Table" not found in the response JSON.')
-        return pl.DataFrame()
+        return _emptyDF(backend) # Return empty DataFrame on error
 
     table_json = js_json["SS_Table"]
 
     if output == "EigenVector" or output == "BucklingVector":
         if "HEAD" not in table_json or "DATA" not in table_json:
             print('⚠️  Error: "HEAD" or "DATA" not found in "SS_Table".')
-            return pl.DataFrame()
+            return _emptyDF(backend) # Return empty DataFrame on error
 
         res_json = {}
         c = 0
@@ -177,18 +329,17 @@ def _JSToDF_ResTable_Eigen(js_json, output, excelLoc, sheetName, cellLoc="A1",ou
                     res_json[heading].append(dat[c])
             c += 1
 
-        res_df = pl.DataFrame(res_json)
-        res_type_df = _convertColm2DataType(res_df)
+        casted_res_json = _convertColm2DataType_json(res_json)
 
     else:
         sub_key = _EIGEN_SUBTABLE_MAP.get(output)
         if sub_key is None:
             print(f'⚠️  Error: Unknown output type "{output}".')
-            return pl.DataFrame()
+            return _emptyDF(backend) # Return empty DataFrame on error
 
         if "SUB_TABLES" not in table_json:
             print('⚠️  Error: "SUB_TABLES" not found in "SS_Table".')
-            return pl.DataFrame()
+            return _emptyDF(backend) # Return empty DataFrame on error
 
         sub_table_data = None
         for sub_tab in table_json["SUB_TABLES"]:
@@ -200,57 +351,28 @@ def _JSToDF_ResTable_Eigen(js_json, output, excelLoc, sheetName, cellLoc="A1",ou
 
         if sub_table_data is None:
             print(f'⚠️  Error: Sub-table for "{output}" not found in response.')
-            return pl.DataFrame()
+            return _emptyDF(backend) # Return empty DataFrame on error
 
         if "HEAD" not in sub_table_data or "DATA" not in sub_table_data:
             print(f'⚠️  Error: "HEAD" or "DATA" not found in sub-table for "{output}".')
-            return pl.DataFrame()
+            return _emptyDF(backend) # Return empty DataFrame on error
 
         res_json = _Head_Data_2_DF_JSON(sub_table_data["HEAD"], sub_table_data["DATA"])
-        res_df = pl.DataFrame(res_json)
-        res_type_df = _convertColm2DataType(res_df)
+        casted_res_json = _convertColm2DataType_json(res_json)
 
     if excelLoc:
-        _write_df_to_existing_excel(res_type_df, (excelLoc, sheetName, cellLoc))
+        _write_json_to_existing_excel(casted_res_json,(excelLoc,sheetName, cellLoc))
 
-    return res_type_df
-
-
-
-
-# #---- INPUT: JSON -> OUTPUT : Data FRAME --------- ---------
-# def JSON2DF(json_data):
-#     ''' CONVERTS JSON DATA WITH HEAD AND DATA KEYS TO POLARS DATAFRAME'''
-#     # Check for SS_Table existence
-
-#     import polars as pl
-
-        
-#     res_json = {}
-#     c=0
-    
-#     # Check for HEAD and DATA existence
-#     if "HEAD" not in json_data or "DATA" not in json_data:
-#         print('⚠️  Error: "HEAD" or "DATA" not found in "SS_Table".')
-#         return pl.DataFrame() # Return empty DataFrame
-        
-#     for heading in json_data["HEAD"]:
-#         for dat in json_data["DATA"]:
-#             try:
-#                 res_json[heading].append(dat[c])
-#             except:
-#                 res_json[heading]=[]
-#                 res_json[heading].append(dat[c])
-
-#         c+=1
-
-#     res_df = pl.DataFrame(res_json) # Final DF
-
-#     res_type_df = _convertColm2DataType(res_df)
-
-#     return(res_type_df)
-
-
+    if backend == 'json':
+        return casted_res_json
+    elif backend == 'pandas':
+        import pandas as pd
+        df = pd.DataFrame(casted_res_json)
+        return df
+    else:
+        import polars as pl
+        df = pl.DataFrame(casted_res_json,strict=False)
+        return df
 
 def _Head_Data_2_DF_JSON(head,data):
     res_json = {}
@@ -276,18 +398,21 @@ def _Head_Data_2_DF_JSON(head,data):
 
         c+=1
     return res_json
-    
 
 def _JSToDF_UserDefined(tableName,js_json,summary,excelLoc,sheetName,cellLoc="A1",outputFormat='Polars'):
-    import polars as pl
+
+    backend = outputFormat.lower()
+        
+
+    # CHECKING IF TABLE NAME EXISTS
     if 'message' in js_json:
         print(f'⚠️  {tableName} table name does not exist.')
         Result.TABLE.UserDefinedTables_list()
-        return 'Check table name'
+        return _emptyDF(backend)
     
     if tableName not in js_json:
         print(f'⚠️  Error: Table "{tableName}" not found in API response.')
-        return 'Check table name'
+        return _emptyDF(backend)
 
     if summary == 0:
         head = js_json[tableName]["HEAD"]
@@ -300,21 +425,27 @@ def _JSToDF_UserDefined(tableName,js_json,summary,excelLoc,sheetName,cellLoc="A1
             data = sub_tab1[key_name]["DATA"]
         except :
             print(' ⚠️  No Summary table exist')
-            return 'No Summary table exist'
+            return _emptyDF(backend)
 
 
     res_json = _Head_Data_2_DF_JSON(head,data)
-    res_df = pl.DataFrame(res_json)
 
-    res_type_df = _convertColm2DataType(res_df)
+    casted_res_json = _convertColm2DataType_json(res_json)
 
-    # EXPORTING FILE STARTS HERE................
     if excelLoc:
-        _write_df_to_existing_excel(res_type_df,(excelLoc,sheetName, cellLoc))
+        _write_json_to_existing_excel(casted_res_json,(excelLoc,sheetName, cellLoc))
 
-    return(res_type_df)
-
-    
+    if backend == 'json':
+        return casted_res_json
+    elif backend == 'pandas':
+        import pandas as pd
+        df = pd.DataFrame(casted_res_json)
+        return df
+    else:
+        import polars as pl
+        df = pl.DataFrame(casted_res_json,strict=False)
+        return df
+   
 def _write_df_to_existing_excel(res_df, existing_excel_input: list):
     """
     Writes a Polars DataFrame to an existing Excel file at a specific sheet and cell.
@@ -393,10 +524,96 @@ def _write_df_to_existing_excel(res_df, existing_excel_input: list):
     except Exception as e:
         print(f"⚠️  Error writing to existing Excel file: {e}")
 
+def _write_json_to_existing_excel(res_json:dict, existing_excel_input: list):
+    """
+    Writes a Polars DataFrame to an existing Excel file at a specific sheet and cell.
+    Uses openpyxl to modify the existing file.
+    """
+    import openpyxl
+    from openpyxl.utils import column_index_from_string
+    from openpyxl.styles import Font,PatternFill,Border,Side
+
+
+    try:
+        excel_path, sheet_name, start_cell = existing_excel_input
+        if not all([excel_path, sheet_name, start_cell]):
+             print("⚠️  `existing_excel_input` has empty values. Skipping update.")
+             return
+
+        # Load workbook
+        try:
+            wb = openpyxl.load_workbook(excel_path)
+            # FILE EXISTS -> OVERWRITE
+        except:
+            # CREATE A NEW FILE
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = sheet_name
+
+            
+            
+        # Get sheet
+        if sheet_name in wb.sheetnames:
+            ws = wb[sheet_name]
+        else:
+            print(f"      ⚠️  Sheet '{sheet_name}' not found in {excel_path}. Creating new sheet.")
+            ws = wb.create_sheet(sheet_name)
+        
+        # Find start row and column from cell_name (e.g., "A1")
+        if start_cell == "end":
+            nRow = ws.max_row
+            if nRow == 1 : nRow = -1
+            start_row_str = nRow+2
+            start_col = ws.min_column
+        else:
+            start_col_let = ''.join(filter(str.isalpha, start_cell))
+            start_row_str = ''.join(filter(str.isdigit, start_cell))
+            start_col = column_index_from_string(start_col_let)
+            
+        start_row = int(start_row_str)
+
+
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(fill_type="solid", fgColor="000000")
+
+        thin = Side(style="thin")
+
+
+
+        # Write header
+        headers = list(res_json.keys())
+        print(headers)
+
+        for c_idx, header in enumerate(headers):
+            cell = ws.cell(row=start_row, column=start_col + c_idx, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+
+
+        # Write data rows
+        # for r_idx, row_data in enumerate(res_df.rows()):
+        #     for c_idx, cell_value in enumerate(row_data):
+        #         cell = ws.cell(row=start_row + 1 + r_idx, column=start_col + c_idx, value=cell_value)
+        #         cell.border = Border(bottom=thin)
+        
+        for c_idx,head in enumerate(headers):
+            for r_idx, data in enumerate(res_json[head]):
+                cell = ws.cell(row=start_row + 1 + r_idx, column=start_col + c_idx, value=data)
+                cell.border = Border(bottom=thin)
+
+        
+        # Save the workbook
+        wb.save(excel_path)
+        wb.close()
+        print(f"      ✅ Updated excel file: {excel_path} | Sheet: {sheet_name} | Cell: {start_cell} |")
+
+    except Exception as e:
+        print(f"⚠️  Error writing to existing Excel file: {e}")
+
 def _changeUNITandGetData(js_dat,force_unit,len_unit,jsonloc,keyName):
     # currUNIT = _getUNIT()
     Model.units(force=force_unit,length=len_unit)
-    ss_json = MidasAPI("POST","/post/table",js_dat)
+    ss_json = MidasAPI("POST","/post/TABLE",js_dat)
     # _setUNIT(currUNIT)
     if jsonloc:
         if "SS_Table" in ss_json:
@@ -474,10 +691,10 @@ class TableOptions:
     EXCEL_FILE_LOC = None
     EXCEL_SHEET_NAME = None
     EXCEL_CELL_POS = "end"
-    OUTPUT_FORMAT = 'Polars'
+    BACKEND:_TABLE_BACKEND = 'Polars'
 
     def __init__(self,force_unit:_forceType=None,len_unit:_lengthType=None,num_format:_numFormat=None,decimal_place:int=None,
-                 JSONFileLoc=None,ExcelFileLoc=None , ExcelSheetName = None,ExcelCellPos = None , outputFormat = None):
+                 JSONFileLoc=None,ExcelFileLoc=None , ExcelSheetName = None,ExcelCellPos = None , backend:_TABLE_BACKEND = None):
         
         # existing_excel_input -> excel file , sheet , cell
 
@@ -498,7 +715,7 @@ class TableOptions:
         self.EXCEL_FILE_LOC = ExcelFileLoc or TableOptions.EXCEL_FILE_LOC
         self.EXCEL_SHEET_NAME = ExcelSheetName or TableOptions.EXCEL_SHEET_NAME
         self.EXCEL_CELL_POS = ExcelCellPos or TableOptions.EXCEL_CELL_POS
-        self.OUTPUT_FORMAT = outputFormat or TableOptions.OUTPUT_FORMAT
+        self.BACKEND = backend or TableOptions.BACKEND
 
     @property
     def Style(self):
@@ -544,7 +761,7 @@ class Result :
             js_dat = _generate(tabletype,keys,loadcase,[],cs_stage,options)
 
             ResultJSON = _changeUNITandGetData(js_dat,options.FORCE_UNIT,options.LEN_UNIT,options.JSON_FILE_LOC,tabletype)
-            polarDF = _JSToDF_ResTable(ResultJSON,options.EXCEL_FILE_LOC,sheetName,options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
+            polarDF = _JSToDF_ResTable(ResultJSON,options.EXCEL_FILE_LOC,sheetName,options.EXCEL_CELL_POS, options.BACKEND)
             return polarDF
         
             # ---------- User defined TABLE (Dynamic Report Table) ------------------------------
@@ -562,7 +779,7 @@ class Result :
 
 
             ResultJSON = _changeUNITandGetData(js_dat,options.FORCE_UNIT,options.LEN_UNIT,options.JSON_FILE_LOC,tableName)
-            polarDF = _JSToDF_UserDefined(tableName,ResultJSON,summary,options.EXCEL_FILE_LOC,sheetName,options.EXCEL_CELL_POS)
+            polarDF = _JSToDF_UserDefined(tableName,ResultJSON,summary,options.EXCEL_FILE_LOC,sheetName,options.EXCEL_CELL_POS,options.BACKEND)
             return polarDF
 
         
@@ -576,10 +793,10 @@ class Result :
                 for tabName in ss_json['UTBLTYPES']:
                     table_name.append(tabName)
                 
-                print('Available user-defined tables in Civil NX are : ')
+                print('Available user-defined tables in MIDAS CIVIL NX are : ')
                 print(*table_name,sep=' , ')
             except:
-                print(' ⚠️  There are no user-defined tables in Civil NX')
+                print(' ⚠️  There are no user-defined tables in MIDAS CIVIL NX')
 
             return table_name
 
@@ -610,7 +827,7 @@ class Result :
             js_dat = _generate(table_type,keys,loadcase,components,cs_stage,options)
 
             ResultJSON = _changeUNITandGetData(js_dat,options.FORCE_UNIT,options.LEN_UNIT,options.JSON_FILE_LOC,table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON,options.EXCEL_FILE_LOC,sheetName,options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
+            polarDF = _JSToDF_ResTable(ResultJSON,options.EXCEL_FILE_LOC,sheetName,options.EXCEL_CELL_POS, options.BACKEND)
             return polarDF
 
         @staticmethod
@@ -646,7 +863,7 @@ class Result :
                 js_dat["Argument"]["DISP_OPT"] = displacement_type
 
             ResultJSON = _changeUNITandGetData(js_dat,options.FORCE_UNIT,options.LEN_UNIT,options.JSON_FILE_LOC,table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON,options.EXCEL_FILE_LOC,sheetName,options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
+            polarDF = _JSToDF_ResTable(ResultJSON,options.EXCEL_FILE_LOC,sheetName,options.EXCEL_CELL_POS, options.BACKEND)
             return polarDF
     
         @staticmethod
@@ -670,7 +887,7 @@ class Result :
             js_dat = _generate(table_type, keys, loadcase, components, cs_stage, options)
             
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.BACKEND)
             return polarDF
 
         @staticmethod
@@ -694,7 +911,7 @@ class Result :
             js_dat = _generate(table_type, keys, loadcase, components, cs_stage, options)
             
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.BACKEND)
             return polarDF
 
         @staticmethod
@@ -722,7 +939,7 @@ class Result :
                 js_dat["Argument"]["PARTS"] = parts
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.BACKEND)
             return polarDF
 
         @staticmethod
@@ -754,7 +971,7 @@ class Result :
                 js_dat["Argument"]['ITEM_TO_DISPLAY'] = items
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.BACKEND)
             return polarDF
 
         @staticmethod
@@ -783,7 +1000,7 @@ class Result :
                 js_dat["Argument"]["PARTS"] = parts
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.BACKEND)
             return polarDF
 
         @staticmethod
@@ -811,7 +1028,7 @@ class Result :
                 js_dat["Argument"]["PARTS"] = parts
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.BACKEND)
             return polarDF
 
         @staticmethod
@@ -843,7 +1060,7 @@ class Result :
                 js_dat["Argument"]['ITEM_TO_DISPLAY'] = items
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.BACKEND)
             return polarDF
 
         @staticmethod
@@ -876,7 +1093,7 @@ class Result :
                 js_dat["Argument"]["SECTION_POSITION"] = section_position
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.BACKEND)
             return polarDF
 
         @staticmethod
@@ -909,7 +1126,7 @@ class Result :
                 js_dat["Argument"]["SECTION_POSITION"] = section_position
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.BACKEND)
             return polarDF
 
         @staticmethod
@@ -942,7 +1159,7 @@ class Result :
                 js_dat["Argument"]["SECTION_POSITION"] = section_position
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.BACKEND)
             return polarDF
 
         @staticmethod
@@ -976,7 +1193,7 @@ class Result :
                 js_dat["Argument"]["AVERAGE_NODAL_RESULT"] = True
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.BACKEND)
             return polarDF
 
         @staticmethod
@@ -1009,7 +1226,7 @@ class Result :
                 js_dat["Argument"]["SECTION_POSITION"] = section_position
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.BACKEND)
             return polarDF
 
         @staticmethod
@@ -1051,7 +1268,7 @@ class Result :
                 js_dat["Argument"]["AVERAGE_NODAL_RESULT"] = True
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.BACKEND)
             return polarDF
 
         @staticmethod
@@ -1098,7 +1315,7 @@ class Result :
                 js_dat["Argument"]["AVERAGE_NODAL_RESULT"] = True
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.BACKEND)
             return polarDF
 
         @staticmethod
@@ -1135,7 +1352,7 @@ class Result :
                 js_dat["Argument"]["AVERAGE_NODAL_RESULT"] = True
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.BACKEND)
             return polarDF
         
         @staticmethod
@@ -1169,7 +1386,7 @@ class Result :
             }
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.BACKEND)
             return polarDF
         
                 
@@ -1200,7 +1417,7 @@ class Result :
             
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.BACKEND)
             return polarDF
         
         @staticmethod
@@ -1236,7 +1453,7 @@ class Result :
             js_dat["Argument"]['SET_STORY_DRIFT_PARAMS']['ALLOWABLE_RATIO']  = allowable_ratio
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.BACKEND)
             return polarDF
 
         @staticmethod
@@ -1270,7 +1487,7 @@ class Result :
             }
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.BACKEND)
             return polarDF
 
         @staticmethod
@@ -1294,7 +1511,7 @@ class Result :
             js_dat["Argument"].pop("LOAD_CASE_NAMES")
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.BACKEND)
             return polarDF
 
         @staticmethod
@@ -1318,7 +1535,7 @@ class Result :
             js_dat["Argument"].pop("LOAD_CASE_NAMES")
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.BACKEND)
             return polarDF
 
         @staticmethod
@@ -1342,7 +1559,7 @@ class Result :
             js_dat["Argument"].pop("LOAD_CASE_NAMES")
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.BACKEND)
             return polarDF
 
         @staticmethod
@@ -1366,7 +1583,7 @@ class Result :
             js_dat["Argument"].pop("LOAD_CASE_NAMES")
 
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
-            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.OUTPUT_FORMAT)
+            polarDF = _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.BACKEND)
             return polarDF
         
         @staticmethod
@@ -2116,7 +2333,7 @@ class Result :
     @staticmethod
     def IMAGE(ResultGraphic:ResultGraphic,location:str='',image_size:tuple = None,CS_StageName:str='',CS_StepIndex=2, bOutputImage=True):
         ''' 
-        Capture Result Graphic in CIVIL NX   
+        Capture Result Graphic in MIDAS CIVIL NX   
             Result Graphic - ResultGraphic JSON (ResultGraphic.BeamDiagram())
             Location - image location
             Image height and width

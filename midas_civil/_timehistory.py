@@ -1271,6 +1271,53 @@ class TH:
         def create(cls):
             if cls.functions:
                 MidasAPI('PUT','/db/THFC',cls.json())
+    
+
+        @classmethod
+        def delete(cls):
+            cls.clear()
+            MidasAPI('DELETE','/db/THFC')
+
+        @classmethod
+        def clear(cls):
+            cls.functions = []
+            cls._ids = [0]
+
+        @classmethod
+        def get(cls):
+            return MidasAPI('GET','/db/THFC')
+
+
+        @classmethod
+        def sync(cls):
+            cls.clear()
+            a = cls.get()
+            if a != {'message': ''}:
+                if list(a['THFC'].keys()) != []:
+                    for j in a['THFC'].keys():
+                        name = a['THFC'][j]['NAME']
+                        data_type = a['THFC'][j]['FUNCTYPE']
+
+                        iMethod = a['THFC'][j]['iMETHOD']
+                        if iMethod == 0:
+                            scaling = a['THFC'][j]['SCALE'] 
+                            max_value = None
+                        else:
+                            scaling = 1
+                            max_value = a['THFC'][j]['SCALE']
+
+                        gravity = a['THFC'][j]['GRAV']
+                        desc = a['THFC'][j]['DESC']
+                        id = int(j)
+
+                        THdataJSON = a['THFC'][j]['aFUNCDATA']
+                        THdata = []
+                        for data in THdataJSON:
+                            THdata.append((data['TIME'],data['VALUE']))
+
+                        TH.Function(name,THdata,data_type,scaling,max_value,gravity,desc,id)
+                    
+
 
         def __init__(self,name,FuncData = [(0,0),(0.1,0.1)],data_type:_DataType='Normal',scaling=1,max_value=None,gravity=None,desc="",id=None):
             

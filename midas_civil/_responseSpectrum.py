@@ -36,6 +36,21 @@ class RS:
         RS.Function.create()
         RS.Case.create()
 
+    @staticmethod
+    def delete():
+        RS.Function.delete()
+        RS.Case.delete()
+
+    @staticmethod
+    def clear():
+        RS.Function.clear()
+        RS.Case.clear()
+
+    @staticmethod
+    def sync():
+        RS.Function.sync()
+        RS.Case.sync()
+
     class ModalCombination:
         def __init__(self,combType:_ModalCombType='CQC',bAddSign:bool=False,AddSignType:int=0,ModeShapeFactor:list[float]=None):
             self.TYPE = combType
@@ -183,7 +198,7 @@ class RS:
                 if case.DAMPING_CONTROL !=None: # DAMPING
                     json_data["Assign"][str(case.ID)].update(case.DAMPING_CONTROL._json())
 
-                if case.COMBINATION_CONTROL !=None: # DAMPING
+                if case.COMBINATION_CONTROL !=None: # COMBINATION CONTROL
                     json_data["Assign"][str(case.ID)].update(case.COMBINATION_CONTROL._json())
 
 
@@ -191,18 +206,18 @@ class RS:
         
         @staticmethod
         def get():
-            """Get the JSON of RS Cases from MIDAS Civil NX"""
+            """Get the JSON of RS Cases from MIDAS CIVIL NX"""
             return MidasAPI("GET", "/db/SPLC")
         
         @staticmethod
         def create():
-            """Creates RS CASE in MIDAS Civil NX"""
+            """Creates RS CASE in MIDAS CIVIL NX"""
             if RS.Case.cases:
                 MidasAPI("PUT", "/db/SPLC", RS.Case.json())
 
         @staticmethod
         def delete():
-            """Delete RS CASE in MIDAS Civil NX"""
+            """Delete RS CASE in MIDAS CIVIL NX"""
             RS.Case.clear()
             MidasAPI("DELETE", "/db/SPLC")
 
@@ -214,7 +229,7 @@ class RS:
 
         @classmethod
         def sync(cls):
-            """Sync RS Cases from MIDAS Civil NX to Python"""
+            """Sync RS Cases from MIDAS CIVIL NX to Python"""
             cls.clear()
             a = cls.get()
             
@@ -240,6 +255,53 @@ class RS:
         def create(cls):
             if cls.functions:
                 MidasAPI('PUT','/db/SPFC',cls.json())
+
+        @classmethod
+        def delete(cls):
+            cls.clear()
+            MidasAPI('DELETE','/db/SPFC')
+
+        @classmethod
+        def clear(cls):
+            cls.functions = []
+            cls._ids = [0]
+
+        @classmethod
+        def get(cls):
+            return MidasAPI('GET','/db/SPFC')
+
+
+        @classmethod
+        def sync(cls):
+            cls.clear()
+            a = cls.get()
+            if a != {'message': ''}:
+                if list(a['SPFC'].keys()) != []:
+                    for j in a['SPFC'].keys():
+                        name = a['SPFC'][j]['NAME']
+                        spectral_type = a['SPFC'][j]['iTYPE']
+
+                        iMethod = a['SPFC'][j]['iMETHOD']
+                        if iMethod == 0:
+                            scaling = a['SPFC'][j]['SCALE'] 
+                            max_value = None
+                        else:
+                            scaling = None
+                            max_value = a['SPFC'][j]['SCALE']
+
+                        gravity = a['SPFC'][j]['GRAV']
+                        damping_rat = a['SPFC'][j]['DRATIO']
+                        desc = a['SPFC'][j]['DESC']
+                        id = int(j)
+
+                        RSdataJSON = a['SPFC'][j]['aFUNC']
+                        RSdata = []
+                        for data in RSdataJSON:
+                            RSdata.append((data['PERIOD'],data['VALUE']))
+
+                        RS.Function.USER(name,RSdata,spectral_type,scaling,max_value,gravity,damping_rat,desc,id)
+                    
+
 
 
         class USER:
@@ -404,7 +466,6 @@ class RS:
                 js_data["CALC_OPT"] = True
 
                 return js_data
-
 
         class Peru:
             def __init__(self,name,zone:int=1,soilType:_PeruSoil='S0',usage_cat:_PeruUse='A1',RRF=1.5,max_period=6,spectral_type='Normalized Accel',scaling=1,max_value=None,gravity=None,damping_rat = 0.05,desc="",id=None):

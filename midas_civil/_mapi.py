@@ -6,6 +6,7 @@ except: pass
 import time
 from tqdm import tqdm
 from typing import Literal
+import json
 
 # import polars as pl
 
@@ -208,7 +209,7 @@ def Midas_help():
 
 
 class NX:
-    version_check = True    # CHANGE IT TO FALSE TO SKIP VERSION CHECK OF LIBRARY
+    version_check = False    # CHANGE IT TO FALSE TO SKIP VERSION CHECK OF LIBRARY
     user_print = True
     debug_request = False
     debug_requestJSON = False
@@ -223,6 +224,8 @@ class NX:
     _MEC_VERSIONS = ['9.7.5']
     _isSyncUnit = False
     save_debug_log = False
+    OFFLINE = False     # DISABLE MAPI CALLS
+    SEND_IN_CHUNKS = False
 
     units = {
         "FORCE": "KN",
@@ -352,7 +355,7 @@ class MAPI_BASEURL:
             sys.exit(0)
             
 class MAPI_KEY:
-    """MAPI key from Civil NX.\n\nEg: MAPI_Key("eadsfjaks568wqehhf.ajkgj345qfhh")"""
+    """MAPI key from MIDAS CIVIL NX.\n\nEg: MAPI_Key("eadsfjaks568wqehhf.ajkgj345qfhh")"""
     data = ""
     count = 1
     
@@ -380,7 +383,7 @@ class MAPI_KEY:
 
 #2 midas API link code:
 def MidasAPI(method:_httpMethod, command:str, body:dict={})->dict:
-    """Sends HTTP Request to MIDAS Civil NX
+    """Sends HTTP Request to MIDAS CIVIL NX
             Parameters:
                 Method: "PUT" , "POST" , "GET" or "DELETE"
                 Command: eg. "/db/NODE"
@@ -399,43 +402,55 @@ def MidasAPI(method:_httpMethod, command:str, body:dict={})->dict:
         "MAPI-Key": mapi_key
     }
 
+    
     if MAPI_KEY.count == 1:
-        MAPI_KEY.count =0
+        MAPI_KEY.count = 0
+
+        if NX.OFFLINE:
+            NX.box_print("  OFFLINE MODE ACTIVE  ",pad=30,text_col=Fore.RED,border_col=Fore.RED)
 
         if NX.user_print:
             _checkUSER()
 
         if NX.save_debug_log:
+            NX.debug_request = True
             sys.stdout = open("midas_civil_debug_log.txt", "w", encoding="utf-8")
 
+    if NX.OFFLINE:
+        return {}
 
 
-
-    start_time = time.perf_counter()
-
-
-    if method == "POST":
-        response = requests.post(url=url, headers=headers, json=body)
-    elif method == "PUT":
-        response = requests.put(url=url, headers=headers, json=body)
-    elif method == "GET":
-        response = requests.get(url=url, headers=headers)
-    elif method == "DELETE":
-        response = requests.delete(url=url, headers=headers)
+    if not NX.SEND_IN_CHUNKS:
+        response = _sendAPI_cmd(method,command,body,headers)
     else:
-        print(f"Invalid HTTP method entered {method}.")
-        return False
+        # IF IT IS A DB TYPE OF JSON WITH ASSIGN ONLY SEND IN CHUNKS
+        if command.upper().startswith('/DB') and "Assign" in body:
+            LIST_KEYS = list(body["Assign"].keys())
+            NUM_KEYS = len(LIST_KEYS)
+            N_REQ = _sizeToNumReq(_findSizeJSON(body))
+            MAX_NUM= int(NUM_KEYS/N_REQ)
 
-    end_time = time.perf_counter()
-    elapsed_time = end_time - start_time
+            if N_REQ == 1:
+                # print("  >>>  SEND DATA IN A SINGLE CHUNKS 💚")
+                response=_sendAPI_cmd(method,command,body,headers)
 
-    if NX.debug_request:
-        tqdm.write(Fore.RED+f">>   METHOD : {method} |  URL : {command} | STATUS :  {response.status_code} | TIME : {elapsed_time:.4f} sec "+Style.RESET_ALL)
-    if NX.debug_requestJSON:
-        tqdm.write(Fore.CYAN+">>  "+str(body)+Style.RESET_ALL)
-    if NX.debug_response:
-        tqdm.write(Fore.GREEN+"<<  "+str(response.json())+Style.RESET_ALL)
+            else:
+                REMAIN_KEYS = NUM_KEYS
+                for n in range(N_REQ):
+                    json_send = {"Assign":{}}
+                    SEND_KEYS = min(MAX_NUM,REMAIN_KEYS)
+                    for q in range(SEND_KEYS):
+                        i=LIST_KEYS[n*MAX_NUM+q]
+                        json_send["Assign"][i]=body["Assign"][i]
 
+                    # print("   >>>  SEND DATA IN CHUNK   -   ",(n+1)*"🔥")
+                    # NX.saveJSON(json_send,"testJS.json")
+                    response=_sendAPI_cmd(method,command,body,headers)
+                    REMAIN_KEYS -= MAX_NUM
+        else:
+            response = _sendAPI_cmd(method,command,body,headers)
+
+    
     if MAPI_KEY.count == 0:
         MAPI_KEY.count = -1
         if response.status_code == 404:
@@ -516,3 +531,44 @@ def _checkUSER():
 
         # print('─'*86)
 
+def _sendAPI_cmd(method, command, body, headers):
+    base_url = MAPI_BASEURL.baseURL
+    url = base_url + command
+
+    start_time = time.perf_counter()
+
+    response = {}
+    if method == "POST":
+        response = requests.post(url=url, headers=headers, json=body)
+    elif method == "PUT":
+        response = requests.put(url=url, headers=headers, json=body)
+    elif method == "GET":
+        response = requests.get(url=url, headers=headers)
+    elif method == "DELETE":
+        response = requests.delete(url=url, headers=headers)
+    else:
+        print(f"Invalid HTTP method entered {method}.")
+
+    
+    end_time = time.perf_counter()
+    elapsed_time = end_time - start_time
+
+    if NX.debug_request:
+        tqdm.write(Fore.RED+f">>   METHOD : {method} |  URL : {command} | STATUS :  {response.status_code} | TIME : {elapsed_time:.4f} sec "+Style.RESET_ALL)
+    if NX.debug_requestJSON:
+        tqdm.write(Fore.CYAN+">>  "+str(body)+Style.RESET_ALL)
+    if NX.debug_response:
+        tqdm.write(Fore.GREEN+"<<  "+str(response.json())+Style.RESET_ALL)
+
+        
+    return response
+
+def _findSizeJSON(data):
+    json_bytes = len(json.dumps(data).encode("utf-8"))
+    size_mb = json_bytes / (1024 * 1024)
+    # print(f"{size_mb:.4f} MB")
+    return size_mb
+
+def _sizeToNumReq(size):
+    # print("N REQUESTS = ",int(size/7)+1)
+    return int(size/7)+1

@@ -2,7 +2,7 @@ from ._mapi import MidasAPI
 # from ._model import *
 # from ._node import Node
 from ._group import Group
-from typing import Literal
+from typing import Literal,Union
 
 
 
@@ -17,7 +17,7 @@ class _Support:
     NODE,CONST,GROUP,ID = 0,0,0,0
 
 class _ElasticLink:
-    (I_NODE,J_NODE,GROUP_NAME,LINK_TYPE,ANGLE,SDx,SDy,SDz,SRx,SRy,SRz,bSHEAR,DR_Y,DR_Z,Direction,Function_ID,Distance_Ratio,ID) = (0,) * 18
+    (I_NODE,J_NODE,GROUP_NAME,LINK_TYPE,ANGLE,SDX,SDY,SDZ,SRX,SRY,SRZ,bSHEAR,DR_Y,DR_Z,DIR,FUNC_ID,DIST_RAT,ID) = (0,) * 18
 
 class _RigidLink:
     (ID,M_NODE,S_NODE,GROUP_NAME,DOF) = (0,)*5
@@ -52,7 +52,7 @@ class Boundary:
 
     @classmethod
     def create(cls):
-        """Creates Boundary elements in MIDAS Civil NX"""
+        """Creates Boundary elements in MIDAS CIVIL NX"""
         if cls.Support.sups!=[]: cls.Support.create()
         if cls.ElasticLink.links!=[]: cls.ElasticLink.create()
         if cls.RigidLink.links!=[]: cls.RigidLink.create()
@@ -63,7 +63,7 @@ class Boundary:
     
     @classmethod
     def delete(cls):
-        """Delets Boundary elements from MIDAS Civil NX and Python"""
+        """Delets Boundary elements from MIDAS CIVIL NX and Python"""
         cls.Support.delete()
         cls.ElasticLink.delete()
         cls.RigidLink.delete()
@@ -81,7 +81,7 @@ class Boundary:
 
     @classmethod
     def sync(cls):
-        """Sync Boundary elements from MIDAS Civil NX to Python"""
+        """Sync Boundary elements from MIDAS CIVIL NX to Python"""
         cls.Support.sync()
         cls.ElasticLink.sync()
         cls.RigidLink.sync()
@@ -140,17 +140,17 @@ class Boundary:
         
         @staticmethod
         def create():
-            """Creates Supports in MIDAS Civil NX"""
-            MidasAPI("PUT","/db/cons",Boundary.Support.json())
+            """Creates Supports in MIDAS CIVIL NX"""
+            MidasAPI("PUT","/db/CONS",Boundary.Support.json())
             
         @staticmethod
         def get():
-            """Get the JSON of Supports from MIDAS Civil NX"""
-            return MidasAPI("GET","/db/cons")
+            """Get the JSON of Supports from MIDAS CIVIL NX"""
+            return MidasAPI("GET","/db/CONS")
         
         @staticmethod
         def sync():
-            """Sync Supports from MIDAS Civil NX to Python"""
+            """Sync Supports from MIDAS CIVIL NX to Python"""
             a = Boundary.Support.get()
             if a != {'message': ''}:
                 if list(a['CONS'].keys()) != []:
@@ -160,9 +160,9 @@ class Boundary:
         
         @staticmethod
         def delete():
-            """Delete Supports from MIDAS Civil NX and Python"""
+            """Delete Supports from MIDAS CIVIL NX and Python"""
             Boundary.Support.clear()
-            return MidasAPI("DELETE","/db/cons")
+            return MidasAPI("DELETE","/db/CONS")
 
         @staticmethod
         def clear():
@@ -178,24 +178,26 @@ class Boundary:
 
         # list to store all link instances
         links:list[_ElasticLink] = []
+        __maxID__ = 0
         
         def __init__(self, 
                     i_node: int, 
                     j_node: int, 
                     group: str = "", 
                     link_type: _eLinkType = "GEN",
-                    sdx: float = 0, 
-                    sdy: float = 0, 
-                    sdz: float = 0, 
-                    srx: float = 0, 
-                    sry: float = 0, 
-                    srz: float = 0, 
+                    sdx: Union[float, Literal["rigid"]] = 0, 
+                    sdy: Union[float, Literal["rigid"]] = 0, 
+                    sdz: Union[float, Literal["rigid"]] = 0, 
+                    srx: Union[float, Literal["rigid"]] = 0, 
+                    sry: Union[float, Literal["rigid"]] = 0, 
+                    srz: Union[float, Literal["rigid"]] = 0, 
                     shear: bool = False, 
                     dr_y: float = 0.5, 
                     dr_z: float = 0.5, 
                     beta_angle: float = 0, 
                     dir: _eLinkDir = "Dy", 
                     func_id: int = 1, 
+                    stiffness_rigid:list[bool]=[False,False,False,False,False,False],
                     distance_ratio: float = 0,
                     id: int = None, ):
             """
@@ -271,20 +273,20 @@ class Boundary:
             self.ANGLE = beta_angle
             
             # Parameters for all link types
-            self.SDx = sdx
-            self.SDy = sdy
-            self.SDz = sdz
-            self.SRx = srx
-            self.SRy = sry
-            self.SRz = srz
+            self.SDX = sdx
+            self.SDY = sdy
+            self.SDZ = sdz
+            self.SRX = srx
+            self.SRY = sry
+            self.SRZ = srz
             self.bSHEAR = shear
             self.DR_Y = dr_y
             self.DR_Z = dr_z
             
             # Parameters for MULTI LINEAR and RAIL INTERACT
-            self.Direction = dir
-            self.Function_ID = func_id
-            self.Distance_ratio = distance_ratio
+            self.DIR = dir
+            self.FUNC_ID = func_id
+            self.DIST_RAT = distance_ratio
             
             # Auto-assign ID if not provided
             if id is None:
@@ -316,15 +318,18 @@ class Boundary:
                 
                 # Add type-specific parameters
                 if link.LINK_TYPE == "GEN":
-                    link_data["R_S"] = [False] * 6
-                    link_data["SDR"] = [
-                        link.SDx,
-                        link.SDy,
-                        link.SDz,
-                        link.SRx,
-                        link.SRy,
-                        link.SRz
+                    _stiff =[
+                        link.SDX,
+                        link.SDY,
+                        link.SDZ,
+                        link.SRX,
+                        link.SRY,
+                        link.SRZ
                     ]
+                    # print(_stiff)
+                    
+                    link_data["SDR"] = [0 if isinstance(stif,(bool,str)) else float(stif) for stif in _stiff]
+                    link_data["R_S"] = [True if isinstance(stif,(bool,str)) else False for stif in _stiff]
                     link_data["bSHEAR"] = link.bSHEAR
                     if link.bSHEAR:
                         link_data["DR"] = [link.DR_Y, link.DR_Z]
@@ -332,7 +337,7 @@ class Boundary:
                         link_data["DR"] = [0.5, 0.5]
                     
                 elif link.LINK_TYPE in ["TENS", "COMP"]:
-                    link_data["SDR"] = [link.SDx, 0, 0, 0, 0, 0]
+                    link_data["SDR"] = [link.SDX, 0, 0, 0, 0, 0]
                     link_data["bSHEAR"] = link.bSHEAR
                     if link.bSHEAR:
                         link_data["DR"] = [link.DR_Y, link.DR_Z]
@@ -343,17 +348,17 @@ class Boundary:
                     direction_mapping = {
                         "Dx": 0, "Dy": 1, "Dz": 2, "Rx": 3, "Ry": 4, "Rz": 5
                     }
-                    link_data["DIR"] = direction_mapping.get(link.Direction, 0)
-                    link_data["MLFC"] = link.Function_ID
-                    link_data["DRENDI"] = link.Distance_ratio
+                    link_data["DIR"] = direction_mapping.get(link.DIR, 0)
+                    link_data["MLFC"] = link.FUNC_ID
+                    link_data["DRENDI"] = link.DIST_RAT
                     
                 elif link.LINK_TYPE == "RAIL INTERACT":
                     direction_mapping = {"Dy": 1, "Dz": 2}
-                    link_data["DIR"] = direction_mapping.get(link.Direction, 0)
-                    link_data["RLFC"] = link.Function_ID
+                    link_data["DIR"] = direction_mapping.get(link.DIR, 0)
+                    link_data["RLFC"] = link.FUNC_ID
                     link_data["bSHEAR"] = link.bSHEAR
                     if link.bSHEAR:
-                        link_data["DEENDI"] = link.Distance_ratio
+                        link_data["DEENDI"] = link.DIST_RAT
                     else:
                         link_data["DR"] = [0.5, 0.5]
                     
@@ -370,7 +375,7 @@ class Boundary:
                 # Send to the API
                 ElasticLink.create()
             """
-            MidasAPI("PUT", "/db/elnk", cls.json())
+            MidasAPI("PUT", "/db/ELNK", cls.json())
         
         @classmethod
         def get(cls):
@@ -380,7 +385,7 @@ class Boundary:
                 api_data = ElasticLink.get()
                 print(api_data)
             """
-            return MidasAPI("GET", "/db/elnk")
+            return MidasAPI("GET", "/db/ELNK")
         
         @classmethod
         def sync(cls):
@@ -402,7 +407,7 @@ class Boundary:
                     distance_ratio = 0
 
                     if link_data["LINK"] == "GEN" and "SDR" in link_data:
-                        sdx, sdy, sdz, srx, sry, srz = link_data["SDR"]
+                        sdx, sdy, sdz, srx, sry, srz = ['rigid' if r_s else sdr for r_s, sdr in zip(link_data["R_S"], link_data["SDR"])]
                         shear = link_data.get("bSHEAR")
                         if shear and "DR" in link_data:
                             dr_y, dr_z = link_data["DR"]
@@ -430,7 +435,7 @@ class Boundary:
                     Boundary.ElasticLink(
                         link_data["NODE"][0],
                         link_data["NODE"][1],
-                        link_data.get("BNGR_NAME"),
+                        link_data.get("BNGR_NAME",""),
                         link_data["LINK"],
                         sdx, sdy, sdz, srx, sry, srz,
                         shear, dr_y, dr_z,
@@ -447,6 +452,7 @@ class Boundary:
                 ElasticLink.delete()
             """
             cls.clear()
+            return MidasAPI("DELETE", "/db/ELNK")
 
         @classmethod
         def clear(cls):
@@ -837,14 +843,14 @@ class Boundary:
             """
             Sends all PointSpring data
             """
-            MidasAPI("PUT", "/db/nspr", cls.json())
+            MidasAPI("PUT", "/db/NSPR", cls.json())
         
         @classmethod
         def get(cls):
             """
             Retrieves PointSpring data
             """
-            return MidasAPI("GET", "/db/nspr")
+            return MidasAPI("GET", "/db/NSPR")
         
         @classmethod
         def sync(cls):
@@ -910,7 +916,7 @@ class Boundary:
             Deletes all point springs from the database and resets the class.
             """
             cls.clear()
-            return MidasAPI("DELETE", "/db/nspr")
+            return MidasAPI("DELETE", "/db/NSPR")
         
         @classmethod
         def clear(cls):

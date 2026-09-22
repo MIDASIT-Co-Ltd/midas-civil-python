@@ -80,7 +80,7 @@ class MovingLoad:
 
         @classmethod
         def get(cls):
-            """Gets the currently set moving load code from the Midas model."""
+            """Gets the currently set moving load code from the MIDAS CIVIL NX model."""
             return MidasAPI("GET", "/db/mvcd")
         
         @classmethod
@@ -147,7 +147,10 @@ class MovingLoad:
                     if not any(lane.id == self.id for lane in MovingLoad.LineLane.lanes):
                         MovingLoad.LineLane.lanes.append(self)
                 else:
-                    print(f"  ⚠️   Moving Load code is different than Lane code or not defined. Line Lane '{Lane_name}' will not be created.\n        Kindly use MovingLoad.Code('{code}')")
+                    # print(f"  ⚠️   Moving Load code is different than Lane code or not defined. Line Lane '{Lane_name}' will not be created.\n        Kindly use MovingLoad.Code('{code}')")
+                    MovingLoad.Code(code)
+                    if not any(lane.id == self.id for lane in MovingLoad.LineLane.lanes):
+                        MovingLoad.LineLane.lanes.append(self)
 
             # Definition of country-specific subclasses
             class India:
@@ -378,7 +381,7 @@ class MovingLoad:
             
             @classmethod
             def create(cls):
-                """Sends all defined traffic lane data to the Midas Civil API """
+                """Sends all defined traffic lane data to the MIDAS CIVIL NX API """
                 if not cls.lanes:
                     print("No lanes to create.")
                     return
@@ -396,19 +399,19 @@ class MovingLoad:
                 # Create JSON and send data for each group
                 if lanes_by_code["INDIA"]:
                     india_data = cls.json(lanes_by_code["INDIA"])
-                    MidasAPI("PUT", "/db/llanid", india_data)
+                    MidasAPI("PUT", "/db/LLANID", india_data)
                 
                 if lanes_by_code["CHINA"]:
                     china_data = cls.json(lanes_by_code["CHINA"])
-                    MidasAPI("PUT", "/db/llanch", china_data)
+                    MidasAPI("PUT", "/db/LLANCH", china_data)
                 
                 if lanes_by_code["OTHER"]:
                     other_data = cls.json(lanes_by_code["OTHER"])
-                    MidasAPI("PUT", "/db/llan", other_data)
+                    MidasAPI("PUT", "/db/LLAN", other_data)
 
             @classmethod
             def get(cls):
-                """Retrieves lane data from the Midas model based on the current active code.
+                """Retrieves lane data from the MIDAS CIVIL NX model based on the current active code.
                 Returns pure JSON output like {"LLAN": {...}} or {"LLANID": {...}} or {"LLANCH": {...}}"""
                 
                 # First get the current active code
@@ -436,15 +439,15 @@ class MovingLoad:
                 
                 # Based on the code, use the appropriate endpoint
                 if current_code == "INDIA":
-                    return MidasAPI("GET", "/db/llanid")
+                    return MidasAPI("GET", "/db/LLANID")
                 elif current_code == "CHINA":
-                    return MidasAPI("GET", "/db/llanch")
+                    return MidasAPI("GET", "/db/LLANCH")
                 else:
-                    return MidasAPI("GET", "/db/llan")
+                    return MidasAPI("GET", "/db/LLAN")
 
             @classmethod
             def delete(cls):
-                """Deletes all traffic lanes from the Midas model using simple deletion."""
+                """Deletes all traffic lanes from the MIDAS CIVIL NX model using simple deletion."""
                 
                 # Get the current active code to determine endpoint
                 try:
@@ -506,7 +509,7 @@ class MovingLoad:
             @classmethod
             def sync(cls):
                 """
-                Synchronizes the lane data from the Midas model 
+                Synchronizes the lane data from the MIDAS CIVIL NX model 
                 """
                 # Clear existing lanes
                 cls.lanes = []
@@ -910,13 +913,13 @@ class MovingLoad:
 
         @classmethod
         def create(cls):
-            """Sends all defined vehicle data to the Midas Civil"""
+            """Sends all defined vehicle data to the MIDAS CIVIL NX"""
             if not cls.vehicles: 
                 print("No vehicles defined to create.")
                 return
             
             json_data = cls.json(cls.vehicles)
-            MidasAPI("PUT", "/db/mvhl", json_data)
+            MidasAPI("PUT", "/db/MVHL", json_data)
 
 
         @classmethod
@@ -977,7 +980,7 @@ class MovingLoad:
         @classmethod
         def sync(cls):
             """
-            Synchronizes the vehicle data from the Midas model 
+            Synchronizes the vehicle data from the MIDAS CIVIL NX model 
             """
             cls.vehicles = []  # Clear the local list before syncing
             response = cls.get()
@@ -1076,15 +1079,15 @@ class MovingLoad:
 
         @classmethod
         def get(cls):
-            """Gets all vehicle load definitions from the Midas model."""
-            return MidasAPI("GET", "/db/mvhl")
+            """Gets all vehicle load definitions from the MIDAS CIVIL NX model."""
+            return MidasAPI("GET", "/db/MVHL")
         
 
         
         @classmethod
         def delete(cls):
-            """Deletes all vehicles from the Midas model."""
-            return MidasAPI("DELETE", "/db/mvhl")
+            """Deletes all vehicles from the MIDAS CIVIL NX model."""
+            return MidasAPI("DELETE", "/db/MVHL")
 
 
     class Case:
@@ -1109,7 +1112,7 @@ class MovingLoad:
             
             if india_cases: MidasAPI("PUT", "/db/MVLDid", cls.json(india_cases))
             if euro_cases: MidasAPI("PUT", "/db/MVLDeu", cls.json(euro_cases))
-            if general_cases: MidasAPI("PUT", "/db/mvld", cls.json(general_cases))
+            if general_cases: MidasAPI("PUT", "/db/MVLD", cls.json(general_cases))
             
             cls.cases.clear()
 

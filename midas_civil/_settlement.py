@@ -4,19 +4,19 @@ class Settlement:
     
     @classmethod
     def create(cls):
-        """Creates Settlement Load in MIDAS Civil NX"""
+        """Creates Settlement Load in MIDAS CIVIL NX"""
         if cls.Group.data != []: cls.Group.create()
         if cls.Case.data != []: cls.Case.create()
     
     @classmethod
     def delete(cls):
-        """Deletes Settlement load from MIDAS Civil NX and Python"""
+        """Deletes Settlement load from MIDAS CIVIL NX and Python"""
         cls.Group.delete()
         cls.Case.delete()
     
     @classmethod
     def sync(cls):
-        """Sync Settlement load from MIDAS Civil NX to Python"""
+        """Sync Settlement load from MIDAS CIVIL NX to Python"""
         cls.Group.sync()
         cls.Case.sync()
     
@@ -59,16 +59,16 @@ class Settlement:
         
         @staticmethod
         def create():
-            MidasAPI("PUT", "/db/smpt", Settlement.Group.json())
+            MidasAPI("PUT", "/db/SMPT", Settlement.Group.json())
         
         @staticmethod
         def get():
-            return MidasAPI("GET", "/db/smpt")
+            return MidasAPI("GET", "/db/SMPT")
         
         @classmethod
         def delete(cls):
             cls.data = []
-            return MidasAPI("DELETE", "/db/smpt")
+            return MidasAPI("DELETE", "/db/SMPT")
         
         @classmethod
         def sync(cls):
@@ -133,16 +133,16 @@ class Settlement:
         
         @staticmethod
         def create():
-            MidasAPI("PUT", "/db/smlc", Settlement.Case.json())
+            MidasAPI("PUT", "/db/SMLC", Settlement.Case.json())
         
         @staticmethod
         def get():
-            return MidasAPI("GET", "/db/smlc")
+            return MidasAPI("GET", "/db/SMLC")
         
         @classmethod
         def delete(cls):
             cls.data = []
-            return MidasAPI("DELETE", "/db/smlc")
+            return MidasAPI("DELETE", "/db/SMLC")
         
         @classmethod
         def sync(cls):
