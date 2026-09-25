@@ -76,16 +76,16 @@ class MovingLoad:
                 }
             }
             MovingLoad.Code.name = code_name
-            MidasAPI("PUT", "/db/mvcd", json_data)
+            MidasAPI("PUT", "/db/MVCD", json_data)
 
         @classmethod
         def get(cls):
             """Gets the currently set moving load code from the MIDAS CIVIL NX model."""
-            return MidasAPI("GET", "/db/mvcd")
+            return MidasAPI("GET", "/db/MVCD")
         
         @classmethod
         def delete(cls):
-            return MidasAPI("DELETE", "/db/mvcd")
+            return MidasAPI("DELETE", "/db/MVCD")
 
     class LineLane:
         
@@ -1126,7 +1126,7 @@ class MovingLoad:
         @classmethod
         def get(cls):
             all_cases_data = {}
-            endpoints = {"/db/MVLDid": "MVLDID", "/db/MVLDeu": "MVLDEU", "/db/mvld": "MVLD"}
+            endpoints = {"/db/MVLDid": "MVLDID", "/db/MVLDeu": "MVLDEU", "/db/MVLD": "MVLD"}
             for endpoint, response_key in endpoints.items():
                 api_data = MidasAPI("GET", endpoint)
                 if api_data and response_key in api_data:
@@ -1139,7 +1139,7 @@ class MovingLoad:
             if not all_cases_in_model: return
             if "MVLDID" in all_cases_in_model: MidasAPI("DELETE", "/db/MVLDid")
             if "MVLDEU" in all_cases_in_model: MidasAPI("DELETE", "/db/MVLDeu")
-            if "MVLD" in all_cases_in_model: MidasAPI("DELETE", "/db/mvld")
+            if "MVLD" in all_cases_in_model: MidasAPI("DELETE", "/db/MVLD")
 
         @classmethod
         def clear(cls):

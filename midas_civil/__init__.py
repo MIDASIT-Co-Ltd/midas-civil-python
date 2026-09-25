@@ -1,7 +1,7 @@
 import requests
 from colorama import Fore,Style
 from ._mapi import NX,MidasAPI,MAPI_KEY,MAPI_BASEURL,MAPI_COUNTRY,Midas_help
-_version_ = "1.7.2"
+_version_ = "1.7.3"
 
 
 print('\n╭────────────────────────────────────────────────────────────────────────────────────╮')
@@ -10,13 +10,14 @@ print('╰───────────────────────�
 
 if NX.version_check:
     try:
-            resp =  requests.get("https://pypi.org/pypi/midas_civil/json").json()
-            latest_ver =  resp["info"]["version"]
-            if _version_ != latest_ver:        
-                print(Fore.YELLOW +'╭─ ⚠️   ──────────────────────────────────────────────────────────────────────────────╮')
-                print(f"│    Warning: You are using v{_version_}, but the latest available version is v{latest_ver}.      │")
-                print(f"│    Run 'pip install midas_civil --upgrade' to update.                              │")
-                print('╰────────────────────────────────────────────────────────────────────────────────────╯\n'+Style.RESET_ALL)
+        resp =  requests.get("https://raw.githubusercontent.com/MIDASIT-Co-Ltd/midas-civil-python/main/version.txt",timeout=0.05)
+        latest_ver = resp.text.strip()
+        # print(latest_ver)
+        if _version_ != latest_ver:        
+            print(Fore.YELLOW +'╭─ ⚠️   ──────────────────────────────────────────────────────────────────────────────╮')
+            print(f"│    Warning: You are using v{_version_}, but the latest available version is v{latest_ver}.      │")
+            print(f"│    Run 'pip install midas_civil --upgrade' to update.                              │")
+            print('╰────────────────────────────────────────────────────────────────────────────────────╯\n'+Style.RESET_ALL)
     except:
          pass
     

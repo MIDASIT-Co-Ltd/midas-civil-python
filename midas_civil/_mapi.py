@@ -7,7 +7,9 @@ import time
 from tqdm import tqdm
 from typing import Literal
 import json
+import math
 
+_sumit_req = requests.Session()
 # import polars as pl
 
 _httpMethod = Literal["PUT","POST","DELETE","GET"]
@@ -209,7 +211,7 @@ def Midas_help():
 
 
 class NX:
-    version_check = False    # CHANGE IT TO FALSE TO SKIP VERSION CHECK OF LIBRARY
+    version_check = True    # CHANGE IT TO FALSE TO SKIP VERSION CHECK OF LIBRARY
     user_print = True
     debug_request = False
     debug_requestJSON = False
@@ -344,7 +346,7 @@ class MAPI_BASEURL:
                 "Content-Type": "application/json",
                 "MAPI-Key": mapi_key
             }
-            response = requests.get(url=url, headers=headers)
+            response = _sumit_req.get(url=url, headers=headers)
             if response.status_code == 200:
                 MAPI_BASEURL(base_url)
                 MAPI_BASEURL.server_loc = serv_locations[i]
@@ -404,6 +406,7 @@ def MidasAPI(method:_httpMethod, command:str, body:dict={})->dict:
 
     
     if MAPI_KEY.count == 1:
+        # ONLY ONE TIME - WHEN API COMMANDS ARE USED
         MAPI_KEY.count = 0
 
         if NX.OFFLINE:
@@ -428,7 +431,7 @@ def MidasAPI(method:_httpMethod, command:str, body:dict={})->dict:
             LIST_KEYS = list(body["Assign"].keys())
             NUM_KEYS = len(LIST_KEYS)
             N_REQ = _sizeToNumReq(_findSizeJSON(body))
-            MAX_NUM= int(NUM_KEYS/N_REQ)
+            MAX_NUM= math.ceil(NUM_KEYS/N_REQ)
 
             if N_REQ == 1:
                 # print("  >>>  SEND DATA IN A SINGLE CHUNKS 💚")
@@ -445,7 +448,7 @@ def MidasAPI(method:_httpMethod, command:str, body:dict={})->dict:
 
                     # print("   >>>  SEND DATA IN CHUNK   -   ",(n+1)*"🔥")
                     # NX.saveJSON(json_send,"testJS.json")
-                    response=_sendAPI_cmd(method,command,body,headers)
+                    response=_sendAPI_cmd(method,command,json_send,headers)
                     REMAIN_KEYS -= MAX_NUM
         else:
             response = _sendAPI_cmd(method,command,body,headers)
@@ -539,13 +542,13 @@ def _sendAPI_cmd(method, command, body, headers):
 
     response = {}
     if method == "POST":
-        response = requests.post(url=url, headers=headers, json=body)
+        response = _sumit_req.post(url=url, headers=headers, json=body)
     elif method == "PUT":
-        response = requests.put(url=url, headers=headers, json=body)
+        response = _sumit_req.put(url=url, headers=headers, json=body)
     elif method == "GET":
-        response = requests.get(url=url, headers=headers)
+        response = _sumit_req.get(url=url, headers=headers)
     elif method == "DELETE":
-        response = requests.delete(url=url, headers=headers)
+        response = _sumit_req.delete(url=url, headers=headers)
     else:
         print(f"Invalid HTTP method entered {method}.")
 
@@ -560,7 +563,6 @@ def _sendAPI_cmd(method, command, body, headers):
     if NX.debug_response:
         tqdm.write(Fore.GREEN+"<<  "+str(response.json())+Style.RESET_ALL)
 
-        
     return response
 
 def _findSizeJSON(data):
