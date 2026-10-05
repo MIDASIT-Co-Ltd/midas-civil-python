@@ -1,7 +1,7 @@
 import requests
 from colorama import Fore,Style
 from ._mapi import NX,MidasAPI,MAPI_KEY,MAPI_BASEURL,MAPI_COUNTRY,Midas_help
-_version_ = "1.7.3"
+_version_ = "1.7.4"
 
 
 print('\n╭────────────────────────────────────────────────────────────────────────────────────╮')
@@ -57,3 +57,5 @@ from ._timehistory import TH
 from ._story import Story
     
 # from ._visualise import Snap
+
+# from ._midasModel import MIDAS_MODEL
