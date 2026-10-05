@@ -1180,7 +1180,8 @@ class Section:
 
             #GENERATE TAPERED GROUP
             for sectID in _tapSectIDs:
-                Section.TaperedGroup(f"TG_SecID{sectID}",_tapSectElems[sectID])
+                if _tapSectElems[sectID]!= {}:
+                    Section.TaperedGroup(f"TG_SecID{sectID}",_tapSectElems[sectID])
         
         @classmethod
         def get(cls):

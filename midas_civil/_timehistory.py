@@ -6,6 +6,44 @@ _runge_kuttamethod = Literal["FEHLBERG" ,  "CASHKARP" ]
 
 class TH:
 
+    @staticmethod
+    def create():
+        if TH.Function.functions: TH.Function.create()
+        if TH.Case.cases: TH.Case.create()
+        if TH.GroundAccel.data: TH.GroundAccel.create()
+        if TH.TimeVaryingStaticLoad.data: TH.TimeVaryingStaticLoad.create()
+        if TH.DynamicNodalLoad.data: TH.DynamicNodalLoad.create()
+        if TH.MultipleSupportExcitation.data: TH.MultipleSupportExcitation.create()
+
+    @staticmethod
+    def delete():
+        TH.GroundAccel.delete()
+        TH.TimeVaryingStaticLoad.delete()
+        TH.DynamicNodalLoad.delete()
+        TH.MultipleSupportExcitation.delete()
+        TH.Case.delete()
+        TH.Function.delete()
+
+    @staticmethod
+    def clear():
+        TH.Function.clear()
+        TH.Case.clear()
+        TH.GroundAccel.clear()
+        TH.TimeVaryingStaticLoad.clear()
+        TH.DynamicNodalLoad.clear()
+        TH.MultipleSupportExcitation.clear()
+
+    @staticmethod
+    def sync():
+        TH.Function.sync()
+        TH.Case.sync()
+        TH.GroundAccel.sync()
+        TH.TimeVaryingStaticLoad.sync()
+        TH.DynamicNodalLoad.sync()
+        TH.MultipleSupportExcitation.sync()
+
+
+
     class GroundAccel:
 
         data = []

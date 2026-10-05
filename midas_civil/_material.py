@@ -109,10 +109,10 @@ class Material:
     
     @staticmethod
     def create():
-        if Material.mats!=[] : Material.create_only()
-        if CreepShrinkage.mats!=[] : CreepShrinkage.create()
-        if CompStrength.mats!=[] : CompStrength.create()
-        if TDMatLink.json()!={'Assign':{}} : TDMatLink.create()
+        if Material.mats : Material.create_only()
+        if CreepShrinkage.mats : CreepShrinkage.create()
+        if CompStrength.mats : CompStrength.create()
+        if TDMatLink.mats : TDMatLink.create()
         if ChangeProperty.data: ChangeProperty.create()
         
     
@@ -1751,13 +1751,12 @@ class TDMatLink:
 
     @staticmethod
     def sync():
+        TDMatLink.clear()
         a = TDMatLink.get()
         if a != {'message': ''}:
-            if list(a['TMAT'].keys()) != []:
-                TDMatLink.mats = []
-                TDMatLink.ids=[]
+            if list(a['TMAT'].keys()):
                 for j in a['TMAT'].keys():
-                    TDMatLink(a['TMAT'][j], int(j))
+                    TDMatLink(int(j), a['TMAT'][j]["TDMT_NAME"], a['TMAT'][j]["TDME_NAME"] )
 
 #-------------------------------------------------------------------------------------------------
 class _ChangeProperty:

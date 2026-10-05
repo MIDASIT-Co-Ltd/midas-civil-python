@@ -164,6 +164,15 @@ class Node:
         Node.Grid.setdefault(cell_loc, []).append(self)
         Node.__nodeDic__[str(self.ID)] = self
 
+    @staticmethod
+    def _deleteNode(nID):
+        if int(nID) in Node.ids:
+            nObj = nodeByID(nID)
+            cell_loc = cell(nObj)
+            Node.nodes.remove(nObj)
+            Node.ids.remove(nID)
+            Node.__nodeDic__.pop(str(nID))
+            Node.Grid[cell_loc].remove(nObj)
 
     @property
     def LOC(self):
@@ -235,10 +244,17 @@ class Node:
                     Node(round(a['NODE'][j]['X'],6), round(a['NODE'][j]['Y'],6), round(a['NODE'][j]['Z'],6), id=int(j), group='', merge=False)
 
     @staticmethod
-    def delete():
+    def delete(ids:list=None):
         """Delete all nodes from MIDAS CIVIL NX and clear the local database."""
-        MidasAPI("DELETE","/db/NODE")
-        Node.clear()
+        if ids is None:
+            MidasAPI("DELETE","/db/NODE")
+            Node.clear()
+        else:
+            nIDSSTR = [str(nID) for nID in ids]
+            de = [Node._deleteNode(nID) for nID in ids]
+            listofnode = ",".join(nIDSSTR)
+            MidasAPI('DELETE',f'/db/NODE/{listofnode}')
+            
 
     @staticmethod
     def clear():

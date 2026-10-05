@@ -21,6 +21,7 @@ from ._construction import CS
 from._analysiscontrol import AnalysisControl
 from ._responseSpectrum import RS
 from ._heat_of_hydration import HoH
+from ._timehistory import TH
 
 from ._view import View
 
@@ -276,7 +277,7 @@ class Model:
 
     
     @staticmethod
-    def units(force:_forceUnit = "KN",length:_lengthUnit = "M", heat:_heatUnit = "BTU", temp:_tempUnit = "C"):
+    def units(force:_forceUnit = None,length:_lengthUnit = None, heat:_heatUnit = None, temp:_tempUnit = None):
         """force --> KN, N, KFG, TONF, LFB, KIPS ||  
         \ndist --> M, CM, MM, FT, IN ||  
         \nheat --> CAL, KCAL, J, KJ, BTU ||  
@@ -289,24 +290,36 @@ class Model:
             temp = force['TEMPER']
             force = force['FORCE']
 
-        if temp not in ["C","F"]:
-            temp="C"
-        if force not in ["KN", "N", "KGF", "TONF", "LBF", "KIPS"]:
-            force = "KN"
-        if length not in ["M", "CM", "MM", "FT", "IN"]:
-            length = "M"
-        if heat not in ["CAL", "KCAL", "J", "KJ", "BTU"]:
-            heat = "BTU"
 
+        unitJS = {}
 
-        unit={"Assign":{
-            1:{
-                "FORCE":force,
-                "DIST":length,
-                "HEAT":heat,
-                "TEMPER":temp
+        if temp is not None:
+            if temp not in ["C","F"]:
+                temp="C"
+            unitJS["TEMPER"] = temp
+
+        if force is not None:
+            if force not in ["KN", "N", "KGF", "TONF", "LBF", "KIPS"]:
+                force = "KN"
+            unitJS["FORCE"] = force
+
+        if length is not None:  
+            if length not in ["M", "CM", "MM", "FT", "IN"]:
+                length = "M"
+            unitJS["DIST"] = length
+
+        if heat is not None:
+            if heat not in ["CAL", "KCAL", "J", "KJ", "BTU"]:
+                heat = "KJ"
+            unitJS["HEAT"] = heat
+
+        if all([force is None , length is None , heat is None , temp is None]):
+            unitJS = {
+                "FORCE":"KN",
+                "DIST":"M",
+                "HEAT":"KJ",
+                "TEMPER":"C"
             }
-        }}
 
         NX.units = {
                 "FORCE":force,
@@ -314,7 +327,7 @@ class Model:
                 "HEAT":heat,
                 "TEMPER":temp
             }
-        MidasAPI("PUT","/db/UNIT",unit)
+        MidasAPI("PUT","/db/UNIT",{"Assign":{1:unitJS}})
         NX._isSyncUnit = True
         return NX.units
 
@@ -364,6 +377,106 @@ class Model:
                 return 0
             return max(map(int, list(dbJS[dbNAME].keys())))
 
+    @ staticmethod
+    def sync(geom=True, properties = True, boundary = True, load_case=True, loading = True ):
+        resp = MidasAPI('GET','/ope/PROJECTSTATUS')
+        DATA = resp["PROJECTSTATUS"]["DATA"]
+        LOAD = resp["PROJECTSTATUS"]["DATA_LOAD"]
+
+        from ._material import CreepShrinkage, CompStrength , TDMatLink
+        from ._load import Load_Case
+        from ._settlement import Settlement
+
+
+        MODEL = {}
+        #---------------- P A R S I N G   D A T A  -----------------
+
+        for item in DATA:
+            MODEL[item[0]] = int(item[1])
+        for item in LOAD:
+            MODEL[item[0]] = int(item[1])
+
+        function_mapper={
+            'Group' : Group.Structure.sync, 
+            'Boundary Group': Group.Boundary.sync, 
+            'Load Group': Group.Load.sync,
+            'Node':Node.sync, 
+            'Element' : [Element.sync , Element.StiffnessScaleFactor.sync , Element.Wall_StiffnessScaleFactor.sync], 
+            'Node Local Axis':NodeLocalAxis.sync,
+            'Material':Material.sync, 
+            'Time Dep. Material': [CreepShrinkage.sync,CompStrength.sync], 
+            'Time Dep. Matl. Link' : TDMatLink.sync ,
+            'Section' : Section.sync, 
+            'Tapered Section Group' : Section.TaperedGroup.sync, 
+            'Thickness' : Thickness.sync, 
+            'Support' : Boundary.Support.sync, 
+            'Point Spring' : Boundary.PointSpring.sync,
+            'Elastic Link' : Boundary.ElasticLink.sync, 
+            'Beam End Release' : Boundary.BeamEndRelease.sync, 
+            'Rigid Link' : Boundary.RigidLink.sync, 
+
+            'Static Load Case' : Load_Case.sync, 
+            'Nodal Mass' : Load.NodalMass.sync, 
+            'Loads to Mass' : Load.LoadToMass.sync, 
+            'Self Weight' : Load.SW.sync, 
+            'Nodal Load' : Load.Nodal.sync, 
+            'Specified Displacement' : Load.SpDisp.sync, 
+            'Beam Load' : Load.Beam.sync, 
+            'Floor Load Type' : Load.FloorLoadDefine.sync, 
+            'Floor Load' : Load.FloorLoadAssign.sync, 
+            'Plane Load Type' : Load.PlaneLoad_Define.sync, 
+            'Plane Load' : Load.PlaneLoad_Assign.sync,
+            'Pressure': Load.Pressure.sync, 
+            'System Temperature' : Temperature.System.sync, 
+            'Nodal Temperature' : Temperature.Nodal.sync, 
+            'Element Temperature' :Temperature.Element.sync, 
+            'Beam Section Temperature' : Temperature.BeamSection.sync, 
+            'Gradient Temperature' : Temperature.Gradient.sync, 
+
+            'Tendon Property' : Tendon.Property.sync, 
+            'Tendon Profile' : [Group.Tendon.sync, Tendon.Profile.sync], 
+            'Tendon Prestress Loads' : Tendon.Prestress.sync, 
+
+            'Time Loads' : CS.TimeLoad.sync, 
+            'Creep Coefficient' : CS.CreepCoeff.sync,                
+            'Spectrum Function' : RS.Function.sync, 
+            'Spectrum Load' : RS.Case.sync,                 
+            'Time History Function' : TH.Function.sync, 
+            'Dynamic Nodal Load' : TH.DynamicNodalLoad.sync, 
+            'Ground Acceleration' : TH.GroundAccel.sync, 
+            'Time Varying Static Load' : TH.TimeVaryingStaticLoad.sync, 
+            'Time History Load' : TH.TimeVaryingStaticLoad.sync, 
+            'Multiple Support Excitation' : TH.MultipleSupportExcitation.sync,
+
+            'Moving Load Code' : [MovingLoad.Code.sync, MovingLoad.LineLane.sync ,   MovingLoad.Vehicle.sync,  MovingLoad.Case.sync,],             
+            # 'Traffic Line Lane' : MovingLoad.LineLane.sync, 
+            # 'Vehicle' : MovingLoad.Vehicle.sync, 
+            # 'Moving Load Case' : MovingLoad.Case.sync, 
+            'Settlement Group' : Settlement.Group.sync, 
+            'Settlement Load Case' : Settlement.Case.sync,
+            'Ambient Temperature Func.' : HoH.Ambient_Temperature_Function.sync, 
+            'Convection Coeff. Func.' : HoH.Convection.Coefficient_Function.sync, 
+            'Element Convection Bndr.' : HoH.Convection.Boundary.sync, 
+            'Prescribed Temperature' : HoH.PrescribedTemperature.sync, 
+            'Heat Source Function' : HoH.HeatSource.Function.sync, 
+            'Heat Source' : HoH.HeatSource.AssignHeatSource.sync, 
+            'Pipe Cooling' : HoH.PipeCooling.sync, 
+            'Const. Stage for Hydration' : HoH.CS.sync, 
+            'Construction Stage' :CS.sync,
+        }
+
+        for key in function_mapper:
+            if MODEL[key]:
+                print(f"                                              SYNCING - {key}")
+                func = function_mapper.get(key,None)
+                if func: 
+                    if isinstance(func,list):
+                        for each_fn in func:
+                            each_fn()
+                    else:
+                        func()
+                    
+
     @staticmethod
     def create():
         """Create Material, Section, Node, Elements, Groups and Boundary."""
@@ -381,50 +494,78 @@ class Model:
         pbar.update(1)
         pbar.set_description_str("Creating Thickness...")
         if Thickness.thick!=[]: Thickness.create()
+
         pbar.update(1)
         pbar.set_description_str("Creating Node...")
+
         if Node.nodes!=[]: Node.create()
+
         pbar.update(1)
         pbar.set_description_str("Creating Element...")
+
         if Element.elements!=[] : Element.create()
+
         pbar.update(1)
         pbar.set_description_str("Creating Tapered Group...")
+
         if NX.autoTaperGroup: Section.TaperedGroup.autoGenerate()
         if Section.TaperedGroup.data !=[] : Section.TaperedGroup.create()
+
         pbar.update(1)
         pbar.set_description_str("Creating Node Local Axis...")
+
         if NodeLocalAxis.skew!=[] : NodeLocalAxis.create()
+
         pbar.update(1)
         pbar.set_description_str("Creating Group...")
+
         Group.create()
+
         pbar.update(1)
         pbar.set_description_str("Creating Boundary...")
+
         if Element.StiffnessScaleFactor.data: Element.StiffnessScaleFactor.create()
         Boundary.create()
+
         pbar.update(1)
         pbar.set_description_str("Creating Load...")
+
         Load.create()
+
         pbar.update(1)
         pbar.set_description_str("Creating Temperature...")
+
         Temperature.create()
+
         pbar.update(1)
         pbar.set_description_str("Creating Tendon...")
+
         Tendon.create()
+
         pbar.update(1)
         pbar.set_description_str("Creating Construction Stages...")
+
         CS.create()
+
         pbar.update(1)
         pbar.set_description_str("Creating Moving Load...")
+
         MovingLoad.create()
+
         # PLACING EIGEN VALUE CONTROL
         if 'Eigen' in AnalysisControl._Controls: AnalysisControl._Controls["Eigen"]._execute()
-        RS.Function.create()
-        RS.Case.create()
+        RS.create()
+        TH.create()
+
         pbar.update(1)
+
         HoH.create()
+
         pbar.update(1)
         pbar.set_description_str("Creating Load Combination...")
+
         LoadCombination.create()
+
         pbar.update(1)
         pbar.set_description_str(Fore.GREEN+"Model creation complete"+Style.RESET_ALL)
         

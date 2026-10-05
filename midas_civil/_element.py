@@ -461,7 +461,7 @@ class Element():
 
     @staticmethod
     def _deleteElem(eID):
-        if str(eID) in Element.__elemDIC__:
+        if int(eID) in Element.ids:
             eObj = elemByID(eID)
             cell_loc = _cell(eObj.CENTER)
             Element.elements.remove(eObj)
@@ -518,9 +518,16 @@ class Element():
                 _JS2Obj(elem_id, data)
 
     @staticmethod
-    def delete():
-        MidasAPI("DELETE", "/db/ELEM")
-        Element.clear()
+    def delete(ids:list=None):
+        if ids is None:
+            MidasAPI("DELETE", "/db/ELEM")
+            Element.clear()
+        else:
+            nIDSSTR = [str(nID) for nID in ids]
+            de = [Element._deleteElem(nID) for nID in ids]
+            listofids = ",".join(nIDSSTR)
+            MidasAPI('DELETE',f'/db/ELEM/{listofids}')
+                    
     
     @staticmethod
     def clear():

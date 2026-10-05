@@ -156,7 +156,7 @@ class Boundary:
                 if list(a['CONS'].keys()) != []:
                     Boundary.Support.sups = []
                     for j in a['CONS'].keys():
-                        Boundary.Support(int(j),a['CONS'][j]['ITEMS'][0]['CONSTRAINT'])
+                        Boundary.Support(int(j),a['CONS'][j]['ITEMS'][0]['CONSTRAINT'],a['CONS'][j]['ITEMS'][0]['GROUP_NAME'])
         
         @staticmethod
         def delete():

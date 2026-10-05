@@ -923,7 +923,7 @@ class ResultGraphic:
                 "LEGEND": ResultGraphic.Legend._json()
             },
             "OUTPUT_SECT_LOCATION": {
-                "OPT_MAX_MINMAX_ALL": output_loc
+                "OPT_MAX_ALL": output_loc
             }
         }
         return json_body

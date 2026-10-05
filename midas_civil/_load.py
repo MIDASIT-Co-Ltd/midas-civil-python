@@ -1002,7 +1002,7 @@ class Load:
                         sub_beam_no=item.get('SUB_BEAM_NUM', 0),
                         sub_beam_angle=item.get('SUB_BEAM_ANGLE', 0),
                         unit_selfweight=item.get('UNIT_SELF_WEIGHT', 0),
-                        opt_projection=item.get('OPT_PROJECTION', False),
+                        bProjection=item.get('OPT_PROJECTION', False),
                         exclude_inner_elem_area=item.get('OPT_EXCLUDE_INNER_ELEM_AREA', False),
                         allow_polygon_type_unit_area=item.get('OPT_ALLOW_POLYGON_TYPE_UNIT_AREA', False),
                         id=int(i)
@@ -1560,7 +1560,7 @@ class Load:
                 for i in a['PNLA'].keys():
                     data = a['PNLA'][i]
                     LCNAME = data["LCNAME"]
-                    LOAD_GROUP = data["LOAD_GROUP"]
+                    LOAD_GROUP = data.get("LOAD_GROUP","")
                     PNLD_KEY = data["PNLD_KEY"]
                     POINT_ORIGIN = data["POINT_ORIGIN"]
                     AXIS_X = data["AXIS_X"]
@@ -1574,7 +1574,7 @@ class Load:
                     # _LCNAME = data["LCNAME"]
 
 
-            Load.PlaneLoad_Assign(load_case=LCNAME,load_group=LOAD_GROUP,plane_load=PNLD_KEY,origin=POINT_ORIGIN,x_axis=AXIS_X,xy_plane=AXIS_Y,tolerance=TOL,loading_dir='Normal',elmList='onLoadingPlane',desc=DESC,id=int(i))
+                    Load.PlaneLoad_Assign(load_case=LCNAME,load_group=LOAD_GROUP,plane_load=PNLD_KEY,origin=POINT_ORIGIN,x_axis=AXIS_X,xy_plane=AXIS_Y,tolerance=TOL,loading_dir='Normal',elmList='onLoadingPlane',desc=DESC,id=int(i))
 
 
 
