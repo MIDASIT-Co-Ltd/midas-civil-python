@@ -2,7 +2,7 @@ from ._mapi import MidasAPI
 # from ._node import *
 from ._group import Group
 from ._load import Load_Case
-from typing import Literal
+from typing import Literal,Union
 
 #type hints for beamsection
 _BeamSectionSecType = Literal['General','PSC']
@@ -629,11 +629,13 @@ class Temperature:
             group        (str)  : Load Group Name.
             dir          (str)  : 'LY' or 'LZ'. Default 'LZ'.
             ref_pos      (str)  : 'Centroid', 'Top', or 'Bot'. 
-            b_value      (float): The `val_b` parameter. Default 0.
-            value (list of lists): [val_h1, val_h2, val_t1, val_t2] per entry.
+            b_value      (float|str): Default B for rows that don't give their own. Default 0.
+                                   PSC: 0 / 'Section' → section width (OPT_B=0),
+                                        number > 0    → user width (OPT_B=1, VAL_B=number).
+            value (list of lists): [val_h1, val_h2, val_t1, val_t2] per entry, or
+                                   [val_b, val_h1, val_h2, val_t1, val_t2] for a per-row B.
+                                   3-, 4- and 5-value rows can be mixed.
                                    PSC: val_h1/val_h2 accept 'Z1'/'Z2'/'Z3' or numeric.
-                                   Short row (3 vals): [val_h1, val_h2, val_t1] → padded.
-                                   Flat single entry auto-wrapped to [[...]].
             elast        (float): Required for 'Input' type.
             thermal      (float): Required for 'Input' type.
             id           (int)  : Load ID (auto-assigned if None).
@@ -645,6 +647,9 @@ class Temperature:
             PSC num  : [[0.15, 0.4, 4, 0]]
                     val_h1=0.15 (numeric) → OPT_H1=3 (Value), VAL_H1=0.15
             Short    : [[0.1, 0.2, 5.0]]  →  [val_h1=0.1, val_h2=0.2, val_t1=5.0, val_t2=0]
+            Per-row B: [[1.2, 0, 0.25, -10.3, -0.7],
+                        [0.4, 0.25, 0.5, -0.7, 0],
+                        ['Section', 2.5, 2.75, 0, -0.8]]
         """
         temps:list[_BeamSection] = []
 
@@ -680,21 +685,43 @@ class Temperature:
             return value
 
         @staticmethod
-        def _pad_row(row, is_psc, b_value):
+        def _pad_row(row, b_value):
             """
-            Allow short rows (3 values) by padding defaults:
-            3-value row: [val_h1, val_h2, val_t1]       → [b_value, val_h1, val_h2, val_t1, 0]
-            4-value row: [val_h1, val_h2, val_t1, val_t2]  → [b_value, val_h1, val_h2, val_t1, val_t2]
+            Convert a user row to [val_b, val_h1, val_h2, val_t1, val_t2].
+              3 values: [val_h1, val_h2, val_t1]                → uses global b_value, val_t2=0
+              4 values: [val_h1, val_h2, val_t1, val_t2]        → uses global b_value
+              5 values: [val_b, val_h1, val_h2, val_t1, val_t2] → per-row B value
             """
+            row = list(row)
             if len(row) == 3:
-                # user passed [val_h1, val_h2, val_t1]
                 return [b_value, row[0], row[1], row[2], 0]
             elif len(row) == 4:
-                return [b_value, row[0], row[1], row[2], row[3]]
+                return [b_value] + row
+            elif len(row) == 5:
+                return row
             else:
                 raise ValueError(
-                    f"Each value entry must have 3 or 4 elements. Got {len(row)}: {row}"
+                    f"Each value entry must have 3, 4 or 5 elements. Got {len(row)}: {row}"
                 )
+
+        @staticmethod
+        def _resolve_b(val):
+            """
+            Resolve B for PSC sections:
+              None / 0 / 'Section'  → (OPT_B=0, VAL_B=0)   use section-defined width
+              number > 0            → (OPT_B=1, VAL_B=val) user-defined width
+            """
+            if val is None:
+                return 0, 0
+            if isinstance(val, str):
+                if val.strip().upper() in ("SECTION", "S", "SEC"):
+                    return 0, 0
+                raise ValueError(f"Invalid B value '{val}'. Use 'Section' or a number.")
+            if val == 0:
+                return 0, 0
+            if val < 0:
+                raise ValueError(f"B value must be positive. Got {val}.")
+            return 1, val
 
         def __init__(self, element, lcname,
                     section_type:_BeamSectionSecType = 'General',
@@ -702,7 +729,7 @@ class Temperature:
                     group        = "",
                     dir:_BeamSectionDir          = 'LZ',
                     ref_pos:_BeamSectionRefPos      = 'Centroid',
-                    b_value      = 0,
+                    b_value:Union[float,Literal['Section']]      = 0,
                     value        = None,
                     elast        = None,
                     thermal      = None,
@@ -715,7 +742,7 @@ class Temperature:
             # ── Normalise & pad ───────────────────────────────────────────────────
             is_psc   = section_type.lower() == 'psc'
             value    = self._normalize_value(value)
-            value    = [self._pad_row(row, is_psc, b_value) for row in value]
+            value    = [self._pad_row(row, b_value) for row in value]
 
             # ── Validate Input type ───────────────────────────────────────────────
             if type.upper() == 'INPUT':
@@ -765,9 +792,10 @@ class Temperature:
                 if is_psc:
                     vsec_item["REF"] = psc_ref_int
 
-                    # val_b → OPT_B (0=Section, 1=Value)
-                    vsec_item["OPT_B"]  = int(val_b)
-                    vsec_item["VAL_B"]  = 0          # VAL_B always 0 when OPT_B=0(Section)
+                    # val_b → OPT_B (0=Section, 1=Value) + VAL_B
+                    opt_b, num_b = self._resolve_b(val_b)
+                    vsec_item["OPT_B"]  = opt_b
+                    vsec_item["VAL_B"]  = num_b
 
                     # val_h1 → OPT_H1 + VAL_H1
                     opt_h1, num_h1 = self._resolve_h(val_h1)
@@ -784,6 +812,8 @@ class Temperature:
 
                 else:
                     # General section — straight values
+                    if isinstance(val_b, str) or val_b is None:
+                        raise ValueError("General section needs a numeric B value.")
                     vsec_item["VAL_B"]  = val_b
                     vsec_item["VAL_H1"] = val_h1
                     vsec_item["VAL_H2"] = val_h2
@@ -820,7 +850,7 @@ class Temperature:
                     "REF":        ref_pos,
                     "NUM":        len(vsect_tmp_list),
                     "bPSC":       is_psc,
-                    "vSECTTMP":   vsect_tmp_list
+                    "vSECTTMP":   [dict(v) for v in vsect_tmp_list]
                 }
 
                 # ── Merge or create ───────────────────────────────────────────────────
