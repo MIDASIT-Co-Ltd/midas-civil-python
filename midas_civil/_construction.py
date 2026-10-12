@@ -2,6 +2,8 @@ from ._mapi import MidasAPI
 from typing import Literal
 
 _CompSecType = Literal['GENERAL','USER','NORMAL']
+_mat_type = Literal["ELEM","MATL"]
+
 
 class _hStage:
     NAME,DURATION,SV_RESULT,SV_STEP,Load_IN,N_LOAD_INC,ADD_STEP,STEP_INDEX,ID,NO = (0,0,0,0,0,0,0,0,0,0)
@@ -10,11 +12,11 @@ class CS:
 
     @staticmethod
     def create():
-        if CS.STAGE.stages!=[]: CS.STAGE.create()
-        if CS.CompSec.compsecs!=[] : CS.CompSec.create()
-        if CS.TimeLoad.timeloads!=[] : CS.TimeLoad.create()
-        if CS.CreepCoeff.creepcoeffs!=[] : CS.CreepCoeff.create()
-        if CS.Camber.cambers!=[] : CS.Camber.create()
+        if CS.STAGE.stages: CS.STAGE.create()
+        if CS.CompSec.compsecs : CS.CompSec.create()
+        if CS.TimeLoad.timeloads : CS.TimeLoad.create()
+        if CS.CreepCoeff.creepcoeffs : CS.CreepCoeff.create()
+        if CS.Camber.cambers : CS.Camber.create()
     
     @staticmethod
     def clear():
@@ -493,7 +495,7 @@ class CS:
         def __init__(self, 
                     activation_stage: str,
                     section_id: int,
-                    comp_type: _CompSecType = "GENERAL",
+                    comp_type: _CompSecType = "NORMAL",
                     tapered_type: bool = False,
                     partinfo: list = None,
                     id: int = None):
@@ -501,7 +503,7 @@ class CS:
             Parameters:
                 activation_stage: Active Stage name (required)
                 section_id: Section ID (required)
-                comp_type: Composite Type - "GENERAL" or "USER" or "NORMAL" (default "GENERAL")
+                comp_type: Composite Type - "GENERAL" or "USER" or "NORMAL" (default "NORMAL")
                 tapered_type: Tapered Type - True or False (default False)
                 partinfo: List of part information lists (required)
                 id: The composite section ID (optional)
@@ -728,7 +730,11 @@ class CS:
             """Deletes all composite sections from the database and resets the class"""
             cls.compsecs = []
 
+        
 
+        # @staticmethod
+        # def PartInfo(part_id,material_type:_mat_type="ELEM",material_id=None,composite_stage="",age=0,h=0,vs=0,M=0,area=1,asy=1,asz=1,ixx=1,iyy=1,izz=1,w_area=1,iw=1):
+        #     return [part_id,material_type,material_id,composite_stage,age,h,vs,M,area,asy,asz,ixx,iyy,izz,w_area,iw]
 #-----------------------------------------------------------------------------------------------------------------------------------
 
     class TimeLoad:

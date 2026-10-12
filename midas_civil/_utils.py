@@ -128,9 +128,34 @@ def _longestList(A,B):
     return (A + [A[-1]] * (nB - nA),B)
 
 
+def _calcRotationAngle(startDir:tuple,finalDir:tuple) -> float:
+    v1 = np.asarray(startDir)
+    v2 = np.asarray(finalDir)
+
+    angle = np.arctan2(
+        v1[0] * v2[1] - v1[1] * v2[0],  # cross product (z-component)
+        np.dot(v1, v2)                  # dot product
+    )
+    deg_angle = np.degrees(angle)
+    return deg_angle
+
+def _calcProjVector(vector1 , pv1 , pv2):
+    vec1 = np.array(vector1)
+    v1   = np.array(pv1)
+    v2   = np.array(pv2)
+
+    # Normal to the plane
+    n = np.cross(v1, v2)
+    n = n / np.linalg.norm(n)
+
+    # Project vec1 onto the plane
+    proj = vec1 - np.dot(vec1, n) * n
+    return proj
+
 
 _alignType = Literal['cubic','akima','makima','pchip']
 _interpXZ = Literal['linear','quadratic','cubic']
+_localAxis= Literal['Local X','Local Y','Local Z']
 
 class utils:
     ''' Contains helper function and utilities'''
@@ -149,9 +174,9 @@ class utils:
                     linear , slinear , cubic
             '''
 
-            if yEcc!=0:
-                from ._element import _pointOffset
-                points = _pointOffset(points,yEcc,0,0)
+            # if yEcc!=0:
+            #     from ._element import _pointOffset
+            #     points = _pointOffset(points,yEcc,0,0)
 
 
             from scipy.interpolate import CubicSpline , Akima1DInterpolator , PchipInterpolator, interp1d
@@ -249,6 +274,32 @@ class utils:
             slope = self.ALIGNMENT(x_interp,1) # Tan theta
             angle = np.atan(slope)
             return angle
+
+        def mesh(self,start_dist=0,end_dist=None,n_div=10,mat=1,sect=1,angle=0,group='',id=None,bLocalAxis: bool = False):
+            from ._element import Element
+            if end_dist is None: end_dist = self.TOTALLENGTH
+            dist_list = np.linspace(start_dist,end_dist,50)
+            pts_alignment = [self.getPoint(dist) for dist in dist_list]
+            beam_elems = Element.Beam.PLine2(pts_alignment,n_div,2,False,mat,sect,angle,group,id,bLocalAxis,'L',)
+
+        def Offset(self,yEcc=0,zEcc=0,superElev=[0]):
+            '''Return a new Alignment'''
+            from ._element import _interpolateAlignment ,_SInterp,_pointOffset
+            n_points_align = len(self.PT_X)
+            points_loc = list(zip(self.X_FINE,self.Y_FINE,self.Z_FINE))
+            i_loc = _interpolateAlignment(points_loc, n_points_align, 2,)
+
+            num_points = len(i_loc)
+
+            angle_intrp_Ecc = _SInterp(superElev, num_points)
+
+            yEcc_intrp = _SInterp(yEcc, num_points)
+            zEcc_intrp = _SInterp(zEcc, num_points)
+
+            i_loc2 = _pointOffset(i_loc, yEcc_intrp, zEcc_intrp, angle_intrp_Ecc)
+
+            return utils.Alignment(i_loc2,'cubic','cubic')
+
 
 
         @staticmethod
@@ -631,3 +682,44 @@ class utils:
 
         return list(_softSelect_data.items())
 
+
+
+    @staticmethod
+    def CrossBeams(strGroups,mat=1,sect=1,angle=0,group=''):
+        from ._node import nodesInGroup
+        from ._element import Element
+
+        for i in range(len(strGroups)-1):
+            g1 = nodesInGroup(strGroups[i])
+            g2 = nodesInGroup(strGroups[i+1])
+
+            for j in range(len(g1)):
+                Element.Beam(g1[j],g2[j],mat,sect,angle,group)
+
+    @staticmethod
+    def AlignLocalAxis(elementID,elmAxis:_localAxis="Local X",finalDir=(1,0,0)):
+        from ._element import elemByID
+        deg_angle = 0
+
+        elm = elemByID(elementID)
+        lcX , lcY , lcZ = elm.LOCALX , elm.LOCALY , elm.LOCALZ
+
+        # START WITH PLATE
+        if elm.TYPE == 'PLATE' :
+            proj_Vec = _calcProjVector(finalDir,lcX,lcY)
+            # can only rotate x , y axis
+            if elmAxis == 'Local X':
+                deg_angle = _calcRotationAngle(lcX,proj_Vec)
+            elif elmAxis == 'Local Y':
+                deg_angle = _calcRotationAngle(lcY,proj_Vec)
+
+        elif elm.TYPE in ('BEAM','TRUSS','TENSTR','COMPTR') :
+            proj_Vec = _calcProjVector(finalDir,lcY,lcZ)
+            # can only rotate z , y axis
+            if elmAxis == 'Local Y':
+                deg_angle = _calcRotationAngle(lcY,proj_Vec)
+            elif elmAxis == 'Local Z':
+                deg_angle = _calcRotationAngle(lcZ,proj_Vec)
+
+
+        elm.ANGLE +=deg_angle

@@ -1,4 +1,5 @@
 from ._mapi import MidasAPI
+from typing import Literal
 
 # ----------------------------------------------------------------------------------------------------------------
 
@@ -8,10 +9,18 @@ def _El_list(Start_id: int, End_id: int) -> list:
 
 # --------------------------------------------------------------------------------------------------------------------------
 
+_mvcode = Literal["KSCE-LSD15", "KOREA", "AASHTO STANDARD", "AASHTO LRFD", "AASHTO LRFD(PENDOT)", "CHINA", "INDIA", "TAIWAN", "CANADA", "BS", "EUROCODE", "AUSTRALIA", "POLAND", "RUSSIA", "SOUTH AFRICA"]
+
+_in_veh_type = Literal["Class A", "Class B", "Class 70R", "Class 40R", "Class AA","Footway","BG-1676", "MG-1000", "NG-762", "HML", "FTB","Fatigue"]
+_in_veh_std = Literal['IRC','IRS']
+
 class MovingLoad:
 
     @classmethod
     def create(cls):
+        if cls.Code.NAME:
+            cls.Code.create()
+
         if cls.LineLane.lanes:
             cls.LineLane.create()
         
@@ -46,9 +55,9 @@ class MovingLoad:
 
     
     class Code:
-        name = None
+        NAME = None
         
-        def __init__(self, code_name: str):
+        def __init__(self, code_name:_mvcode):
             """
             code_name (str): The name of the moving load code to be used.
             
@@ -75,7 +84,7 @@ class MovingLoad:
                     }
                 }
             }
-            MovingLoad.Code.name = code_name
+            MovingLoad.Code.NAME = code_name
             MidasAPI("PUT", "/db/MVCD", json_data)
 
         @classmethod
@@ -86,6 +95,25 @@ class MovingLoad:
         @classmethod
         def delete(cls):
             return MidasAPI("DELETE", "/db/MVCD")
+        
+        @classmethod
+        def create(cls):
+            json_data = {
+                            "Assign": {
+                                "1": {
+                                    "CODE": MovingLoad.Code.NAME
+                                }
+                            }
+                        }
+            MidasAPI("PUT", "/db/MVCD", json_data)
+        
+        @classmethod
+        def sync(cls):
+            currentCodeJS =  cls.get()
+            if 'MVCD' in currentCodeJS:
+                mvCode = currentCodeJS['MVCD']['1']['CODE']
+                MovingLoad.Code.NAME = mvCode
+
 
     class LineLane:
         
@@ -142,7 +170,7 @@ class MovingLoad:
                 self.Skew_end = Skew_end
                 
                 # Ensure the correct moving load code is active in the model
-                if MovingLoad.Code.name == code:
+                if MovingLoad.Code.NAME == code:
                     # Avoid duplicating lanes if syncing
                     if not any(lane.id == self.id for lane in MovingLoad.LineLane.lanes):
                         MovingLoad.LineLane.lanes.append(self)
@@ -811,8 +839,8 @@ class MovingLoad:
             """
             def __init__(self,
                          name: str,
-                         standard_code: str,
-                         vehicle_type: str,
+                         standard_code: _in_veh_std,
+                         vehicle_type: _in_veh_type,
                          vehicle_name: int = None,
                          id: int = None):
                 """
@@ -1197,14 +1225,14 @@ class MovingLoad:
                             opt_auto_ll=False, sub_load_items=sub_items
                         )
 
-            if "MVLDEU" in response:
+            elif "MVLDEU" in response:
                 for case_id, case_data in response["MVLDEU"].items():
                     name = case_data.pop("LCNAME")
                     load_model = case_data.pop("TYPE_LOADMODEL")
                     use_optimization = case_data.pop("OPT_AUTO_OPTIMIZE")
                     MovingLoad.Case.Eurocode(id=int(case_id), name=name, load_model=load_model, use_optimization=use_optimization, **case_data)
             
-            if "MVLD" in response:
+            elif "MVLD" in response:
                 for case_id, case_data in response["MVLD"].items():
                     name = case_data.pop("LCNAME", f"Case_{case_id}")
                     case_type = case_data.pop("TYPE", 0)

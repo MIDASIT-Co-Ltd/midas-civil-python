@@ -129,7 +129,16 @@ class Node:
             self.ID = id
             self.__register__(merge)
             
-        if group !="":
+        # if group !="":
+        #     _add_node_2_stGroup(self.ID,group)
+
+        # ------------  Group assignment -----------------------
+        if group == "" :
+            pass
+        elif isinstance(group, list):
+            for gpName in group:
+                _add_node_2_stGroup(self.ID,gpName)
+        elif isinstance(group, str):
             _add_node_2_stGroup(self.ID,group)
 
         Node.maxID = max(self.ID,Node.maxID)

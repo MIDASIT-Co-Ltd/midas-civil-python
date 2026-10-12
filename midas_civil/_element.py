@@ -69,6 +69,7 @@ def _dividePoints(points,mSize):
 def _SInterp(angle,num_points):
     ''' Angle -> Input list | Num Points -> Output length'''
     from scipy.interpolate import interp1d , Akima1DInterpolator
+    num_points = max(1,num_points)
     angle = _convItem2List(angle)
     if len(angle) == 1 : 
         angle.append(angle[0])
@@ -770,8 +771,10 @@ class Element():
                 i_loc = _interpolateAlignment(points_loc, n_div, deg, 0, includePoint, div_axis)
 
             num_points = len(i_loc)
-            angle_intrp_finalY = _SInterp(angle, num_points - 1)  # Beta Angle applied to Elements, so n-1
-
+            if num_points < 3:
+                angle_intrp_finalY = [np.array(angle)]
+            else:
+                angle_intrp_finalY = _SInterp(angle, num_points - 1)  # Beta Angle applied to Elements, so n-1
             for i in i_loc:
                 Enode = Node(i[0], i[1], i[2])
                 beam_nodes.append(Enode.ID)
@@ -846,7 +849,11 @@ class Element():
                 angle_intrp_Ecc = _SInterp(angle, num_points)
             else:
                 angle_intrp_Ecc = _matchArray(i_loc, [0])
-            angle_intrp_finalY = _SInterp(angle, num_points - 1)  # Beta Angle applied to Elements, so n-1
+
+            if num_points < 3:
+                angle_intrp_finalY = [np.array(angle)]
+            else:
+                angle_intrp_finalY = _SInterp(angle, num_points - 1)  # Beta Angle applied to Elements, so n-1
 
             yEcc_intrp = _SInterp(yEcc, num_points)
             zEcc_intrp = _SInterp(zEcc, num_points)
@@ -1016,13 +1023,25 @@ class Element():
                 self.LOCALY = np.round(np.cross(self.LOCALZ , self.LOCALX),4)
 
             elif len(uniq_nodes)==4:
-                self.NODE = nodes
+                self.NODE = uniq_nodes
                 _n1 = nodeByID(uniq_nodes[0])
                 _n2 = nodeByID(uniq_nodes[1])
                 _n3 = nodeByID(uniq_nodes[2])
                 _n4 = nodeByID(uniq_nodes[3])
                 a1 , n1 = _triangleAREA(_n1,_n2,_n3)
                 a2 , n2 = _triangleAREA(_n3,_n4,_n1)
+
+                # Additional check if nodes are in correct order
+                if np.dot(n1, n2) < 0:
+                    # opposite direction , issue with node numbers
+                    _n1 = nodeByID(uniq_nodes[0])
+                    _n2 = nodeByID(uniq_nodes[1])
+                    _n3 = nodeByID(uniq_nodes[3])
+                    _n4 = nodeByID(uniq_nodes[2])
+                    a1 , n1 = _triangleAREA(_n1,_n2,_n3)
+                    a2 , n2 = _triangleAREA(_n3,_n4,_n1)
+                    self.NODE = [uniq_nodes[0],uniq_nodes[1],uniq_nodes[3],uniq_nodes[2]]
+
                 self.AREA = a1+a2
                 self.NORMAL = np.round((n1+n2)/np.linalg.norm((n1+n2+0.000001)),4)
                 self.CENTER = np.average([_n1.LOC,_n2.LOC,_n3.LOC,_n4.LOC],0)
