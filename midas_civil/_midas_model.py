@@ -106,7 +106,7 @@ class cvl_lib:
     @staticmethod
     def shutDown(__dest__=None):
         ''' Closes the launched CIVIL NX instance.'''
-        print("CLOSING CIVIL NX....")
+        print("     CLOSING CIVIL NX....")
         __dest__.MidasAPI('POST','/DOC/EXIT',{"Argument":{}})
                     
 
@@ -266,6 +266,7 @@ def LaunchNX(bNewMAPIKey=True,returnType:_rType='PY_LIB',NX_exePath:str=None):
 
         # CVL_LIB = CVLLib(_importLIB_SS('midas_civil'))  # what actually runs
         CVL_LIB.MAPI_KEY(final_mapi_key)
+        CVL_LIB.MAPI_BASEURL.autoURL()
         CVL_LIB.Model.clear()
 
 

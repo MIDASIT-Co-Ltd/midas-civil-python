@@ -29,6 +29,8 @@ def _generate_configJSON():
     _CONFIG_JSON["dispWarning"] = NX.dispWarning
     _CONFIG_JSON["OFFLINE"] = NX.OFFLINE
 
+    return _CONFIG_JSON
+
     
 # SAVE THE JSON FILE
 def _save_config_file(data):
