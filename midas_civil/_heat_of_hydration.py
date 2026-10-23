@@ -1,4 +1,4 @@
-from ._mapi import MidasAPI
+from ._mapi import MidasAPI,NX
 from ._group import Group
 from typing import Literal
 
@@ -1009,7 +1009,7 @@ class HoH:
                     return
         
                 if element_id in self.__class__._dict:
-                    print(f"⚠️ Element id {element_id} already exists, overwriting")
+                    if NX.SHOW_OUPTUT_IN_TERMINAL: print(f"⚠️ Element id {element_id} already exists, overwriting")
                     self.__class__.data.remove(self.__class__._dict[element_id])
                 
                 self.ELEMENT_ID = element_id

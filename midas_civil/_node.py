@@ -1,4 +1,4 @@
-from ._mapi import MidasAPI
+from ._mapi import MidasAPI , NX
 from ._utils import zz_add_to_dict,_convItem2List , sFlatten
 from math import hypot
 from ._group import _add_node_2_stGroup
@@ -428,7 +428,7 @@ def nodesInGroup(groupName: str, unique: bool = True, reverse: bool = False, out
                     eIDlist = i.NLIST
                     nlist.append(eIDlist)
         if chk:
-            print(f'⚠️   "{gName}" - Structure group not found !')
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'⚠️   "{gName}" - Structure group not found !')
     if unique:
         finalNlistID = list(dict.fromkeys(sFlatten(nlist)))
     else:
@@ -473,7 +473,7 @@ def nodeByID(nodeID: int) -> Node:
     try:
         return (Node.__nodeDic__[str(nodeID)])
     except:
-        print(f'There is no node with ID {nodeID}')
+        if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'There is no node with ID {nodeID}')
         return None
 
 def closestNode(point_location) -> Node:
@@ -886,4 +886,4 @@ class NodeLocalAxis:
         
         if _unSuppNode:
             # print(f"  ⚠️   Node local axis type for nodes - ",_unSuppNode," is unsupported.")
-            print(Fore.YELLOW +f" ⚠️   Node local axis type for nodes - {_unSuppNode} is unsupported."+Style.RESET_ALL)
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print(Fore.YELLOW +f" ⚠️   Node local axis type for nodes - {_unSuppNode} is unsupported."+Style.RESET_ALL)

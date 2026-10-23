@@ -1,4 +1,4 @@
-from ._mapi import MidasAPI
+from ._mapi import MidasAPI,NX
 from typing import Literal
 #type hints
 _OffType = Literal['rat','val']
@@ -29,7 +29,7 @@ def _ThikADD(self):
         Thickness.ids.append(int(self.ID))
     elif id in Thickness.ids:
         self.ID=int(id)
-        print(f'⚠️  Thickness with ID {id} already exist! It will be replaced.')
+        if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'⚠️  Thickness with ID {id} already exist! It will be replaced.')
         index=Thickness.ids.index(id)
         Thickness.thick[index]=self
     else:

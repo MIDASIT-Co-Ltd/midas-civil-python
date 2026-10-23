@@ -2,6 +2,7 @@
 import plotly.graph_objects as go
 from ._model import Node,Element,Group,Model,Boundary
 from ._node import nodeByID
+from ._mapi import NX
 
 import numpy as np
 
@@ -948,7 +949,7 @@ class Snap:
             minID = min(Snap.snapshots.keys())
             return minID
         except:
-            print("⚠️ Error: no snapshots taken")
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print("⚠️ Error: no snapshots taken")
             return
 
     @staticmethod
@@ -957,7 +958,7 @@ class Snap:
             maxID = max(Snap.snapshots.keys())
             return maxID
         except:
-            print("⚠️ Error: no snapshots taken")
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print("⚠️ Error: no snapshots taken")
             return
 
     @staticmethod

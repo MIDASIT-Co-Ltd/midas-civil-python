@@ -164,7 +164,7 @@ class utils:
         '''Defines alignment object passing through the points
         X -> monotonous increasing'''
         
-        def __init__(self,points,type: _alignType = 'cubic',xz_interp:_interpXZ = 'linear',yEcc=0):
+        def __init__(self,points,type: _alignType = 'cubic',xz_interp:_interpXZ = 'linear'):
             ''' 
             **POINTS** -> Points on the alignment [[x,y] , [x,y] , [x,y] ....]   
                           Points on the alignment [[x,y,z] , [x,y,z] , [x,y,z] ....]   
@@ -554,7 +554,7 @@ class utils:
             if dia_depth == 0: dia_depth = girder_depth - slab_thk
             if dia_width == 0: dia_width = web_thk
             if dia_no <=1:
-                print("At least 2 diaphragms are required.  No. of diaphragm is changed to 2.")
+                if NX.SHOW_OUPTUT_IN_TERMINAL: print("At least 2 diaphragms are required.  No. of diaphragm is changed to 2.")
                 dia_no = 2
             if dia_no >= 2: 
                 overhang = max(overhang, dia_width/2)

@@ -1,14 +1,23 @@
 import requests
 from colorama import Fore,Style
+
+_version_ = "1.7.6"
+
+
+
+# LOADING CONFIGURATION
+from ._config import _load_config_inLIB , MIDAS_Configure
+_load_config_inLIB()
+
+
 from ._mapi import NX,MidasAPI,MAPI_KEY,MAPI_BASEURL,MAPI_COUNTRY,Midas_help
-_version_ = "1.7.5"
 
+if NX.SHOW_OUPTUT_IN_TERMINAL and __name__ == 'midas_civil':
+    print('\n╭────────────────────────────────────────────────────────────────────────────────────╮')
+    print(Style.BRIGHT+f'│                      MIDAS CIVIL-NX PYTHON LIBRARY v{_version_}  🐍                      │')
+    print('╰────────────────────────────────────────────────────────────────────────────────────╯\n'+Style.RESET_ALL)
 
-print('\n╭────────────────────────────────────────────────────────────────────────────────────╮')
-print(Style.BRIGHT+f'│                      MIDAS CIVIL-NX PYTHON LIBRARY v{_version_}  🐍                      │')
-print('╰────────────────────────────────────────────────────────────────────────────────────╯\n'+Style.RESET_ALL)
-
-if NX.version_check:
+if NX.SHOW_OUPTUT_IN_TERMINAL and NX.version_check:
     try:
         resp =  requests.get("https://raw.githubusercontent.com/MIDASIT-Co-Ltd/midas-civil-python/main/version.txt",timeout=0.05)
         latest_ver = resp.text.strip()
@@ -25,7 +34,7 @@ from ._model import Model
 from ._boundary import Boundary
 from ._utils import getID,getNodeID,utils,getLOC
 from ._node import Node,nodeByID,closestNode,NodeLocalAxis,nodesInRadius,nodesInGroup
-from ._element import Element,elemByID,elemsInGroup  #Revise
+from ._element import Element,elemByID,elemsInGroup,_ADD_ELEM  #Revise
 from ._group import Group
 from ._load import Load,Load_Case   # Revise it
 
@@ -59,3 +68,5 @@ from ._story import Story
 # from ._visualise import Snap
 
 # from ._midasModel import MIDAS_MODEL
+
+from ._midas_model import LaunchNX,MIDAS_Model

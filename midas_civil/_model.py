@@ -1,4 +1,4 @@
-from ._mapi import MidasAPI,NX,MAPI_KEY,MAPI_BASEURL
+from ._mapi import MidasAPI,NX,MAPI_KEY,MAPI_BASEURL,_sumit_req
 from colorama import Fore,Style
 import numpy as np
 import math
@@ -57,11 +57,9 @@ def _returnCommonGrid_(gridStr:set,x1,x2,y1,y2,z1,z2):
     n_total_methodA = int(1+x2-x1)*int(1+y2-y1)*int(1+z2-z1)
     n_total_methodB = len(gridStr)
 
-    # print(" TOTAL GRIDS IN MODEL = ",n_total_methodB , "   |   GRID COMBINATION POSSIBLE = ",n_total_methodA)
-    
+
 
     if n_total_methodA < n_total_methodB:
-        # print("Brute Force selected | All combination is checked")
 
     # ----------- OLD APPROACH -------------
 
@@ -76,7 +74,7 @@ def _returnCommonGrid_(gridStr:set,x1,x2,y1,y2,z1,z2):
 
     # -------------- NEW APPROACH ----------
     else:
-        # print("Checking model grids only...")
+        x1,x2,y1,y2,z1,z2 = int(x1),int(x2),int(y1),int(y2),int(z1),int(z2)
 
         possible_gridStr = []
 
@@ -213,8 +211,12 @@ class Model:
 
     #4 Function to check analysis status & perform analysis if not analyzed
     @staticmethod
-    def analyse():
-        """Checks whether a model is analyzed or not and then performs analysis if required."""
+    def analyse(__quickTimeOut__ = False):
+        """Checks whether a model is analyzed or not and then performs analysis if required.   
+        *__quickTimeOut__* = True => The API request will timeout and next python code will run.
+        when running large models, this prevent code stuck scenario.   
+        
+        """
         json_body = {
         "Argument": {
             "HEIGHT" : 2,
@@ -227,9 +229,25 @@ class Model:
         resp = MidasAPI('POST','/view/CAPTURE',json_body)
         NX.dispWarning = _current_dispWarning
 
+        jsBody = {"Assign":{}}
+
         if 'message' in resp or 'error' in resp:
-                MidasAPI("POST","/doc/ANAL",{"Assign":{}})
-        print(" 🔒   Model analysed. Switching to post-processing mode.")
+                if __quickTimeOut__:        # Run the analysis and timeout the http request , trying separate session for the timeout API command
+                    import requests
+                    mapi_key = MAPI_KEY.data
+                    cmdURL = MAPI_BASEURL.baseURL + "/doc/ANAL"
+                    headers = {
+                                    "Content-Type": "application/json",
+                                    "MAPI-Key": mapi_key
+                                }
+
+                    try:
+                        requests.post(url=cmdURL, headers=headers , json=jsBody,timeout=0.05)   # Excepting the timeout error
+                    except:
+                        pass
+                else:
+                    MidasAPI("POST","/doc/ANAL",jsBody)
+        if NX.SHOW_OUPTUT_IN_TERMINAL: print(" 🔒   Model analysed. Switching to post-processing mode.")
 
     # @staticmethod
     # def merge_nodes(tolerance = 0):
@@ -378,7 +396,7 @@ class Model:
             return max(map(int, list(dbJS[dbNAME].keys())))
 
     @ staticmethod
-    def sync(geom=True, properties = True, boundary = True, load_case=True, loading = True ):
+    def sync():
         resp = MidasAPI('GET','/ope/PROJECTSTATUS')
         DATA = resp["PROJECTSTATUS"]["DATA"]
         LOAD = resp["PROJECTSTATUS"]["DATA_LOAD"]
@@ -467,7 +485,6 @@ class Model:
 
         for key in function_mapper:
             if MODEL[key]:
-                print(f"                                              SYNCING - {key}")
                 func = function_mapper.get(key,None)
                 if func: 
                     if isinstance(func,list):
@@ -480,94 +497,115 @@ class Model:
     @staticmethod
     def create():
         """Create Material, Section, Node, Elements, Groups and Boundary."""
-        
-        # if bSync: Model.SSYNCC(bModelDATA=bModelMAPI)
 
         
-        from tqdm import tqdm
-        pbar = tqdm(total=16,desc="Creating Model...")
+        if NX.SHOW_OUPTUT_IN_TERMINAL: 
+            from tqdm import tqdm
+            pbar = tqdm(total=16,desc="Creating Model...")
+            if Material.mats!=[]: Material.create()
+            pbar.update(1)
+            pbar.set_description_str("Creating Section...")
+            if Section.sect!=[]: Section.create()
+            pbar.update(1)
+            pbar.set_description_str("Creating Thickness...")
+            if Thickness.thick!=[]: Thickness.create()
 
-        if Material.mats!=[]: Material.create()
-        pbar.update(1)
-        pbar.set_description_str("Creating Section...")
-        if Section.sect!=[]: Section.create()
-        pbar.update(1)
-        pbar.set_description_str("Creating Thickness...")
-        if Thickness.thick!=[]: Thickness.create()
+            pbar.update(1)
+            pbar.set_description_str("Creating Node...")
 
-        pbar.update(1)
-        pbar.set_description_str("Creating Node...")
+            if Node.nodes!=[]: Node.create()
 
-        if Node.nodes!=[]: Node.create()
+            pbar.update(1)
+            pbar.set_description_str("Creating Element...")
 
-        pbar.update(1)
-        pbar.set_description_str("Creating Element...")
+            if Element.elements!=[] : Element.create()
 
-        if Element.elements!=[] : Element.create()
+            pbar.update(1)
+            pbar.set_description_str("Creating Tapered Group...")
 
-        pbar.update(1)
-        pbar.set_description_str("Creating Tapered Group...")
+            if NX.autoTaperGroup: Section.TaperedGroup.autoGenerate()
+            if Section.TaperedGroup.data !=[] : Section.TaperedGroup.create()
 
-        if NX.autoTaperGroup: Section.TaperedGroup.autoGenerate()
-        if Section.TaperedGroup.data !=[] : Section.TaperedGroup.create()
+            pbar.update(1)
+            pbar.set_description_str("Creating Node Local Axis...")
 
-        pbar.update(1)
-        pbar.set_description_str("Creating Node Local Axis...")
+            if NodeLocalAxis.skew!=[] : NodeLocalAxis.create()
 
-        if NodeLocalAxis.skew!=[] : NodeLocalAxis.create()
+            pbar.update(1)
+            pbar.set_description_str("Creating Group...")
 
-        pbar.update(1)
-        pbar.set_description_str("Creating Group...")
+            Group.create()
 
-        Group.create()
+            pbar.update(1)
+            pbar.set_description_str("Creating Boundary...")
 
-        pbar.update(1)
-        pbar.set_description_str("Creating Boundary...")
+            if Element.StiffnessScaleFactor.data: Element.StiffnessScaleFactor.create()
+            Boundary.create()
 
-        if Element.StiffnessScaleFactor.data: Element.StiffnessScaleFactor.create()
-        Boundary.create()
+            pbar.update(1)
+            pbar.set_description_str("Creating Load...")
 
-        pbar.update(1)
-        pbar.set_description_str("Creating Load...")
+            Load.create()
 
-        Load.create()
+            pbar.update(1)
+            pbar.set_description_str("Creating Temperature...")
 
-        pbar.update(1)
-        pbar.set_description_str("Creating Temperature...")
+            Temperature.create()
 
-        Temperature.create()
+            pbar.update(1)
+            pbar.set_description_str("Creating Tendon...")
 
-        pbar.update(1)
-        pbar.set_description_str("Creating Tendon...")
+            Tendon.create()
 
-        Tendon.create()
+            pbar.update(1)
+            pbar.set_description_str("Creating Construction Stages...")
 
-        pbar.update(1)
-        pbar.set_description_str("Creating Construction Stages...")
+            CS.create()
 
-        CS.create()
+            pbar.update(1)
+            pbar.set_description_str("Creating Moving Load...")
 
-        pbar.update(1)
-        pbar.set_description_str("Creating Moving Load...")
+            MovingLoad.create()
 
-        MovingLoad.create()
+            # PLACING EIGEN VALUE CONTROL
+            if 'Eigen' in AnalysisControl._Controls: AnalysisControl._Controls["Eigen"]._execute()
+            RS.create()
+            TH.create()
 
-        # PLACING EIGEN VALUE CONTROL
-        if 'Eigen' in AnalysisControl._Controls: AnalysisControl._Controls["Eigen"]._execute()
-        RS.create()
-        TH.create()
+            pbar.update(1)
 
-        pbar.update(1)
+            HoH.create()
 
-        HoH.create()
+            pbar.update(1)
+            pbar.set_description_str("Creating Load Combination...")
 
-        pbar.update(1)
-        pbar.set_description_str("Creating Load Combination...")
+            LoadCombination.create()
 
-        LoadCombination.create()
-
-        pbar.update(1)
-        pbar.set_description_str(Fore.GREEN+"Model creation complete"+Style.RESET_ALL)
+            pbar.update(1)
+            pbar.set_description_str(Fore.GREEN+"Model creation complete"+Style.RESET_ALL)
+        else:
+            if Material.mats!=[]: Material.create()
+            if Section.sect!=[]: Section.create()
+            if Thickness.thick!=[]: Thickness.create()
+            if Node.nodes!=[]: Node.create()
+            if Element.elements!=[] : Element.create()
+            if NX.autoTaperGroup: Section.TaperedGroup.autoGenerate()
+            if Section.TaperedGroup.data !=[] : Section.TaperedGroup.create()
+            if NodeLocalAxis.skew!=[] : NodeLocalAxis.create()
+            Group.create()
+            if Element.StiffnessScaleFactor.data: Element.StiffnessScaleFactor.create()
+            Boundary.create()
+            Load.create()
+            Temperature.create()
+            Tendon.create()
+            CS.create()
+            MovingLoad.create()
+            # PLACING EIGEN VALUE CONTROL
+            if 'Eigen' in AnalysisControl._Controls: AnalysisControl._Controls["Eigen"]._execute()
+            RS.create()
+            TH.create()
+            HoH.create()
+            LoadCombination.create()
         
         
     @staticmethod
@@ -642,7 +680,7 @@ class Model:
             if location.endswith(('.mcb','.mcbz','.mgb','.mgbx')):
                 MidasAPI("POST","/doc/SAVEAS",{"Argument":str(location)})#Dumy location
             else:
-                print('⚠️  File extension is missing')
+                if NX.SHOW_OUPTUT_IN_TERMINAL: print('⚠️  File extension is missing')
                 
     @staticmethod
     def saveAs(location):
@@ -651,7 +689,7 @@ class Model:
         if location.endswith(('.mcb','.mcbz','.mgb','.mgbx')):
             MidasAPI("POST","/doc/SAVEAS",{"Argument":str(location)})
         else:
-            print('⚠️  File extension is missing')
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print('⚠️  File extension is missing')
     
     @staticmethod
     def open(location):
@@ -659,7 +697,7 @@ class Model:
         if location.endswith(('.mcb','.mcbz','.mgb','.mgbx')):
             MidasAPI("POST","/doc/OPEN",{"Argument":str(location)})
         else:
-            print('⚠️  File extension is missing')
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print('⚠️  File extension is missing')
         
     @staticmethod
     def new():
@@ -678,7 +716,7 @@ class Model:
         if filePath.endswith(('.mcb','.mcbz','.mgb','.mgbx')):
             MidasAPI("POST","/doc/STAGAS",{"Argument":{"EXPORT_PATH":str(filePath), "STAGE_STEP":str(stageName)}})
         else:
-            print('⚠️  File extension is missing')
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print('⚠️  File extension is missing')
         
 
     @staticmethod
@@ -712,7 +750,7 @@ class Model:
         if location.endswith('.json'):
             MidasAPI("POST","/doc/EXPORT",{"Argument":str(location)})
         else:
-            print('⚠️  Location data in exportJSON is missing file extension')
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print('⚠️  Location data in exportJSON is missing file extension')
 
     @staticmethod
     def exportMCT(location=""):
@@ -721,7 +759,7 @@ class Model:
         if location.endswith('.mct'):
             MidasAPI("POST","/doc/EXPORTMXT",{"Argument":str(location)})
         else:
-            print('⚠️  Location data in exportMCT is missing file extension')
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print('⚠️  Location data in exportMCT is missing file extension')
 
     @staticmethod
     def sendMCT(mctData=""):
@@ -736,7 +774,7 @@ class Model:
         if location.endswith('.json'):
             MidasAPI("POST","/doc/IMPORT",{"Argument":str(location)})
         else:
-            print('⚠️  Location data in importJSON is missing file extension')
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print('⚠️  Location data in importJSON is missing file extension')
 
     @staticmethod
     def importMCT(location=""):
@@ -745,7 +783,7 @@ class Model:
         if location.endswith('.mct'):
             MidasAPI("POST","/doc/IMPORTMXT",{"Argument":str(location)})
         else:
-            print('⚠️  Location data in importMCT is missing file extension')
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print('⚠️  Location data in importMCT is missing file extension')
 
     @staticmethod
     def get_element_connectivity():
@@ -844,7 +882,7 @@ class Model:
             Snap(name)
             return True
         except:
-            print("   ⚠️   ERROR OCCURRED WHILE TAKING SNAPSHOT ...")
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print("   ⚠️   ERROR OCCURRED WHILE TAKING SNAPSHOT ...")
             return None
     
 
@@ -1092,6 +1130,7 @@ class Model:
 
             common_gridStr = _returnCommonGrid_(gridStr,x1,x2,y1,y2,z1,z2)
 
+
             for eachAvailGrid in common_gridStr:
                 for elm in grid_complete[eachAvailGrid]:
                     point = elm.CENTER if bELEM else elm.LOC
@@ -1154,7 +1193,6 @@ class Model:
                 if bSec: _temp_list = set(_sec_list)
                 elif bType: _temp_list = set(_type_list)
 
-            # print(_temp_list)
 
             if bMat: _temp_list.intersection_update(set(_mat_list))
             if bSec: _temp_list.intersection_update(set(_sec_list))
@@ -1392,5 +1430,5 @@ class Model:
         elif item == 'ELEM_ID':
             return resp["SELECT"]["ELEM_LIST"]
         else:
-            print("No item is selected...")
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print("No item is selected...")
             return []

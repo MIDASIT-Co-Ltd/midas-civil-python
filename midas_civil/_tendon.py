@@ -1,5 +1,5 @@
 
-from ._mapi import MidasAPI
+from ._mapi import MidasAPI,NX
 # from ._utils import *
 from ._load import Load_Case
 from ._group import Group
@@ -1137,7 +1137,7 @@ class Tendon:
                             tdn_check=1
                             break
                     if not tdn_check: 
-                        print(f'⚠️   "{self.TDN_NAME}" Tendon name is not found for Prestress load application. Prestress load skipped.\n📑  Try Tendon.Profile.sync() to retrieve Profile Names first')
+                        if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'⚠️   "{self.TDN_NAME}" Tendon name is not found for Prestress load application. Prestress load skipped.\n📑  Try Tendon.Profile.sync() to retrieve Profile Names first')
                         continue
 
 

@@ -68,8 +68,6 @@ class _SS_GENERAL(_common):
         if sect.PART_2 !=None: sect.PART_2.__createSHAPE__("#8ee6d740")
         if sect.PART_3 !=None: sect.PART_3.__createSHAPE__("#e26d9040")
         if sect.PART_4 !=None: sect.PART_4.__createSHAPE__("#dd986040")
-
-
         plt.grid(False)
         plt.axis('equal')   # Optional: equal scaling on both axes
         plt.show()

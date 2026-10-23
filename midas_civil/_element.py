@@ -262,7 +262,7 @@ def _pointOffset(pts,yEcc=0,zEcc=0,angle=0):
     return pt_new
 
 
-def _ADD(self):
+def _ADD_ELEM(self):
     """
     Adds an element to the main list. If the ID is 0, it auto-increments.
     If the ID already exists, it replaces the existing element.
@@ -279,10 +279,10 @@ def _ADD(self):
             Element.ids.add(int(self.ID))
             Element.maxID+= 1
         elif id in Element.ids:
-            self.ID = int(id)
-            print(f'⚠️  Element with ID {id} already exists! It will be replaced.')
-            index = Element.ids.index(id)
-            Element.elements[index] = self
+            # self.ID = int(id)
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'⚠️  Element with ID {id} already exists! It will be skipped.')
+            # index = Element.ids.index(id)
+            # Element.elements[index] = self
         else:
             self.ID = id
             Element.elements.append(self)
@@ -587,7 +587,7 @@ class Element():
             self.CENTER = np.average([_n1.LOC,_n2.LOC,_n3.LOC,_n4.LOC],0)
                 
 
-            _ADD(self)
+            _ADD_ELEM(self)
 
 
     class Beam(_common):
@@ -658,7 +658,7 @@ class Element():
 
             Element.lastLoc = (_n2.X,_n2.Y,_n2.Z)
 
-            _ADD(self)
+            _ADD_ELEM(self)
 
         @staticmethod
         def SDL(s_loc:list,dir:list,l:float,n:int=1,mat:int=1,sect:int=1,angle:float=0, group:str = "" , id: int = None,bLocalAxis:bool=False): #CHANGE TO TUPLE
@@ -920,7 +920,7 @@ class Element():
             self.LOCALZ = np.round(_LOCALZ / np.linalg.norm(_LOCALZ),4)
 
             Element.lastLoc = (_n2.X,_n2.Y,_n2.Z)
-            _ADD(self)
+            _ADD_ELEM(self)
 
         @staticmethod
         def SDL(s_loc:list,dir:list,l:float,n:int=1,mat:int=1,sect:int=1,angle:float=0, group = "" , id: int = None):
@@ -1057,7 +1057,7 @@ class Element():
                 
 
 
-            _ADD(self)
+            _ADD_ELEM(self)
 
         @staticmethod
         def fromPoints(points: list, meshSize:float=1.0,meshType:_meshType='Tri', innerPoints:list=None,stype: int = 1, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = None): #CHANGE TO TUPLE
@@ -1138,7 +1138,7 @@ class Element():
             id_new = None
             n_groups = len(strGroups)
             if n_groups < 2 :
-                print("⚠️ No. of structure groups in Plate.loftGroups in less than 2")
+                if NX.SHOW_OUPTUT_IN_TERMINAL: print("⚠️ No. of structure groups in Plate.loftGroups in less than 2")
                 return False
             plate_obj = []
             for ng in range(n_groups-1):
@@ -1150,7 +1150,7 @@ class Element():
 
                 max_len = max(len(nID_A),len(nID_B))
                 if max_len < 2 :
-                    print("⚠️ No. of nodes in Plate.loftGroups in less than 2")
+                    if NX.SHOW_OUPTUT_IN_TERMINAL: print("⚠️ No. of nodes in Plate.loftGroups in less than 2")
                     return False
 
                 nID_A , nID_B = _longestList(nID_A , nID_B)
@@ -1442,7 +1442,7 @@ class Element():
                 self.NON_LEN = non_len
             if tens is not None:
                 self.TENS = tens
-        _ADD(self)
+        _ADD_ELEM(self)
 
     class Compression(_common):
         def __init__(self, i: int, j: int, stype: int, mat: int = 1, sect: int = 1, angle: float = 0, group = "" , id: int = None, tens: float = None, t_limit: float = None, non_len: float = None):
@@ -1510,7 +1510,7 @@ class Element():
             elif stype == 2:  # Gap specific
                 if non_len is not None:
                     self.NON_LEN = non_len
-            _ADD(self)
+            _ADD_ELEM(self)
 
     class Solid(_common):
         def __init__(self, nodes: list, mat: int = 1, group = "" , id: int = None):
@@ -1577,7 +1577,7 @@ class Element():
             
 
             self._GROUP = group
-            _ADD(self)
+            _ADD_ELEM(self)
 
         @staticmethod
         def extrudeFromPlates(elmIDs,dir=[0,0,1],nDiv = 1, mat=1, group="", id=None, bDeletePlate=False):
@@ -2118,7 +2118,7 @@ def elemByID(elemID:int) -> _helperELEM:
     try:
         return (Element.__elemDIC__[str(elemID)])
     except:
-        print(Fore.RED +f'There is no element with ID {elemID}'+Style.RESET_ALL)
+        if NX.SHOW_OUPTUT_IN_TERMINAL: print(Fore.RED +f'There is no element with ID {elemID}'+Style.RESET_ALL)
         return None
     
 def elemsInGroup(groupName:str,unique:bool=True,reverse:bool=False,output:Literal['ID','ELEM']='ID',order:_order=None) -> list[_helperELEM]:
@@ -2133,7 +2133,7 @@ def elemsInGroup(groupName:str,unique:bool=True,reverse:bool=False,output:Litera
                     eIDlist = i.ELIST
                     elist.append(eIDlist)
         if chk:
-            print(f'⚠️   "{gName}" - Structure group not found !')
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'⚠️   "{gName}" - Structure group not found !')
     if unique:
         finalElistID = list(dict.fromkeys(sFlatten(elist)))
     else:

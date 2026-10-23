@@ -17,7 +17,7 @@ from._Tap_CompPSC import _SS_TAP_COMP_PSC_I
 from ._genSec import _SS_GENERAL
 from .._utils import utils
 
-from .._mapi import MidasAPI
+from .._mapi import MidasAPI, NX
 from typing import Literal,TypeVar
 
 
@@ -54,7 +54,7 @@ def _SectionADD(self):
         Section.ids.append(int(self.ID))
     elif id in Section.ids:
         self.ID=int(id)
-        print(f'⚠️  Section with ID {id} already exist! It will be replaced.')
+        if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'⚠️  Section with ID {id} already exist! It will be replaced.')
         index=Section.ids.index(id)
         Section.sect[index]=self
     else:
@@ -919,14 +919,14 @@ class Section:
                 Section.Tapered.bySHAPE("TapGirder", s_i, s_j)
             """
             if not isinstance(Sect_I, type(Sect_J)):
-                print(f"  ⚠️   Section of I and J end does not match for '{Name}' section")
+                if NX.SHOW_OUPTUT_IN_TERMINAL: print(f"  ⚠️   Section of I and J end does not match for '{Name}' section")
                 return False
 
             if isinstance(Sect_I,_SS_DBUSER):
                 if Sect_I.SHAPE == Sect_J.SHAPE:
                     sect_Obj = _SS_TAPERED_DBUSER(Name,Sect_I.SHAPE,Sect_I.PARAMS,Sect_J.PARAMS,Offset,useShear,use7Dof,id)
                 else:
-                    print(f"  ⚠️   Section of I and J end does not match for '{Name}' section")
+                    if NX.SHOW_OUPTUT_IN_TERMINAL: print(f"  ⚠️   Section of I and J end does not match for '{Name}' section")
                     return False
             elif isinstance(Sect_I,_SS_PSC_12CELL):
                 sect_Obj = _SS_TAP_PSC_12CELL(Name,Sect_I.SHAPE,

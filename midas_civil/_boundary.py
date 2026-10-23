@@ -78,6 +78,7 @@ class Boundary:
         cls.RigidLink.clear()
         cls.MLFC.clear()
         cls.PointSpring.clear()
+        cls.BeamEndRelease.clear()
 
     @classmethod
     def sync(cls):

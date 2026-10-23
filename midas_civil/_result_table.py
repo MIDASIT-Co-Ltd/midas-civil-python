@@ -1,5 +1,5 @@
 
-from ._mapi import MidasAPI
+from ._mapi import MidasAPI,NX
 from ._model import Model
 from typing import Literal
 from ._mapi import _getUNIT
@@ -193,9 +193,9 @@ def _JSToDF_ResTable(js_json,excelLoc,sheetName,cellLoc="A1",outputFormat='Polar
     # Check for SS_Table existence
     if "SS_Table" not in js_json:
         if 'message' in js_json:
-            print(f'⚠️  Error from API: {js_json["message"]}')
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'⚠️  Error from API: {js_json["message"]}')
         else:
-            print('⚠️  Error: "SS_Table" not found in the response JSON.')
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print('⚠️  Error: "SS_Table" not found in the response JSON.')
 
         return _emptyDF(backend) # Return empty DataFrame on error
         
@@ -205,7 +205,7 @@ def _JSToDF_ResTable(js_json,excelLoc,sheetName,cellLoc="A1",outputFormat='Polar
     
     # Check for HEAD and DATA existence
     if "HEAD" not in js_json["SS_Table"] or "DATA" not in js_json["SS_Table"]:
-        print('⚠️  Error: "HEAD" or "DATA" not found in "SS_Table".')
+        if NX.SHOW_OUPTUT_IN_TERMINAL: print('⚠️  Error: "HEAD" or "DATA" not found in "SS_Table".')
 
         return _emptyDF(backend) # Return empty DataFrame
         
@@ -245,9 +245,9 @@ def _JSToDF_ResTable_TEXT(table_type, js_json, excelLoc, sheetName, cellLoc="A1"
 
     if table_type not in js_json:
         if 'message' in js_json:
-            print(f'⚠️  Error from API: {js_json["message"]}')
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'⚠️  Error from API: {js_json["message"]}')
         else:
-            print(f'⚠️  Error: "{table_type}" not found in the response JSON.')
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'⚠️  Error: "{table_type}" not found in the response JSON.')
         return _emptyDF(backend) # Return empty DataFrame on error
 
     res_json = {}
@@ -255,7 +255,7 @@ def _JSToDF_ResTable_TEXT(table_type, js_json, excelLoc, sheetName, cellLoc="A1"
 
     # Check for HEAD and DATA existence
     if "HEAD" not in js_json[table_type] or "DATA" not in js_json[table_type]:
-        print(f'⚠️  Error: "HEAD" or "DATA" not found in "{table_type}".')
+        if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'⚠️  Error: "HEAD" or "DATA" not found in "{table_type}".')
         return _emptyDF(backend) # Return empty DataFrame
 
     for heading in js_json[table_type]["HEAD"]:
@@ -306,16 +306,16 @@ def _JSToDF_ResTable_Eigen(js_json, output, excelLoc, sheetName, cellLoc="A1",ou
 
     if "SS_Table" not in js_json:
         if 'message' in js_json:
-            print(f'⚠️  Error from API: {js_json["message"]}')
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'⚠️  Error from API: {js_json["message"]}')
         else:
-            print('⚠️  Error: "SS_Table" not found in the response JSON.')
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print('⚠️  Error: "SS_Table" not found in the response JSON.')
         return _emptyDF(backend) # Return empty DataFrame on error
 
     table_json = js_json["SS_Table"]
 
     if output == "EigenVector" or output == "BucklingVector":
         if "HEAD" not in table_json or "DATA" not in table_json:
-            print('⚠️  Error: "HEAD" or "DATA" not found in "SS_Table".')
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print('⚠️  Error: "HEAD" or "DATA" not found in "SS_Table".')
             return _emptyDF(backend) # Return empty DataFrame on error
 
         res_json = {}
@@ -334,11 +334,11 @@ def _JSToDF_ResTable_Eigen(js_json, output, excelLoc, sheetName, cellLoc="A1",ou
     else:
         sub_key = _EIGEN_SUBTABLE_MAP.get(output)
         if sub_key is None:
-            print(f'⚠️  Error: Unknown output type "{output}".')
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'⚠️  Error: Unknown output type "{output}".')
             return _emptyDF(backend) # Return empty DataFrame on error
 
         if "SUB_TABLES" not in table_json:
-            print('⚠️  Error: "SUB_TABLES" not found in "SS_Table".')
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print('⚠️  Error: "SUB_TABLES" not found in "SS_Table".')
             return _emptyDF(backend) # Return empty DataFrame on error
 
         sub_table_data = None
@@ -350,11 +350,11 @@ def _JSToDF_ResTable_Eigen(js_json, output, excelLoc, sheetName, cellLoc="A1",ou
                 break
 
         if sub_table_data is None:
-            print(f'⚠️  Error: Sub-table for "{output}" not found in response.')
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'⚠️  Error: Sub-table for "{output}" not found in response.')
             return _emptyDF(backend) # Return empty DataFrame on error
 
         if "HEAD" not in sub_table_data or "DATA" not in sub_table_data:
-            print(f'⚠️  Error: "HEAD" or "DATA" not found in sub-table for "{output}".')
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'⚠️  Error: "HEAD" or "DATA" not found in sub-table for "{output}".')
             return _emptyDF(backend) # Return empty DataFrame on error
 
         res_json = _Head_Data_2_DF_JSON(sub_table_data["HEAD"], sub_table_data["DATA"])
@@ -406,12 +406,12 @@ def _JSToDF_UserDefined(tableName,js_json,summary,excelLoc,sheetName,cellLoc="A1
 
     # CHECKING IF TABLE NAME EXISTS
     if 'message' in js_json:
-        print(f'⚠️  {tableName} table name does not exist.')
+        if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'⚠️  {tableName} table name does not exist.')
         Result.TABLE.UserDefinedTables_list()
         return _emptyDF(backend)
     
     if tableName not in js_json:
-        print(f'⚠️  Error: Table "{tableName}" not found in API response.')
+        if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'⚠️  Error: Table "{tableName}" not found in API response.')
         return _emptyDF(backend)
 
     if summary == 0:
@@ -424,7 +424,7 @@ def _JSToDF_UserDefined(tableName,js_json,summary,excelLoc,sheetName,cellLoc="A1
             head = sub_tab1[key_name]["HEAD"]
             data = sub_tab1[key_name]["DATA"]
         except :
-            print(' ⚠️  No Summary table exist')
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print(' ⚠️  No Summary table exist')
             return _emptyDF(backend)
 
 
@@ -459,8 +459,8 @@ def _write_df_to_existing_excel(res_df, existing_excel_input: list):
     try:
         excel_path, sheet_name, start_cell = existing_excel_input
         if not all([excel_path, sheet_name, start_cell]):
-             print("⚠️  `existing_excel_input` has empty values. Skipping update.")
-             return
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print("⚠️  `existing_excel_input` has empty values. Skipping update.")
+            return
 
         # Load workbook
         try:
@@ -478,7 +478,7 @@ def _write_df_to_existing_excel(res_df, existing_excel_input: list):
         if sheet_name in wb.sheetnames:
             ws = wb[sheet_name]
         else:
-            print(f"      ⚠️  Sheet '{sheet_name}' not found in {excel_path}. Creating new sheet.")
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print(f"      ⚠️  Sheet '{sheet_name}' not found in {excel_path}. Creating new sheet.")
             ws = wb.create_sheet(sheet_name)
         
         # Find start row and column from cell_name (e.g., "A1")
@@ -519,10 +519,10 @@ def _write_df_to_existing_excel(res_df, existing_excel_input: list):
         # Save the workbook
         wb.save(excel_path)
         wb.close()
-        print(f"      ✅ Updated excel file: {excel_path} | Sheet: {sheet_name} | Cell: {start_cell} |")
+        if NX.SHOW_OUPTUT_IN_TERMINAL: print(f"      ✅ Updated excel file: {excel_path} | Sheet: {sheet_name} | Cell: {start_cell} |")
 
     except Exception as e:
-        print(f"⚠️  Error writing to existing Excel file: {e}")
+        if NX.SHOW_OUPTUT_IN_TERMINAL: print(f"⚠️  Error writing to existing Excel file: {e}")
 
 def _write_json_to_existing_excel(res_json:dict, existing_excel_input: list):
     """
@@ -537,8 +537,8 @@ def _write_json_to_existing_excel(res_json:dict, existing_excel_input: list):
     try:
         excel_path, sheet_name, start_cell = existing_excel_input
         if not all([excel_path, sheet_name, start_cell]):
-             print("⚠️  `existing_excel_input` has empty values. Skipping update.")
-             return
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print("⚠️  `existing_excel_input` has empty values. Skipping update.")
+            return
 
         # Load workbook
         try:
@@ -556,7 +556,7 @@ def _write_json_to_existing_excel(res_json:dict, existing_excel_input: list):
         if sheet_name in wb.sheetnames:
             ws = wb[sheet_name]
         else:
-            print(f"      ⚠️  Sheet '{sheet_name}' not found in {excel_path}. Creating new sheet.")
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print(f"      ⚠️  Sheet '{sheet_name}' not found in {excel_path}. Creating new sheet.")
             ws = wb.create_sheet(sheet_name)
         
         # Find start row and column from cell_name (e.g., "A1")
@@ -582,7 +582,7 @@ def _write_json_to_existing_excel(res_json:dict, existing_excel_input: list):
 
         # Write header
         headers = list(res_json.keys())
-        print(headers)
+        if NX.SHOW_OUPTUT_IN_TERMINAL: print(headers)
 
         for c_idx, header in enumerate(headers):
             cell = ws.cell(row=start_row, column=start_col + c_idx, value=header)
@@ -605,10 +605,10 @@ def _write_json_to_existing_excel(res_json:dict, existing_excel_input: list):
         # Save the workbook
         wb.save(excel_path)
         wb.close()
-        print(f"      ✅ Updated excel file: {excel_path} | Sheet: {sheet_name} | Cell: {start_cell} |")
+        if NX.SHOW_OUPTUT_IN_TERMINAL: print(f"      ✅ Updated excel file: {excel_path} | Sheet: {sheet_name} | Cell: {start_cell} |")
 
     except Exception as e:
-        print(f"⚠️  Error writing to existing Excel file: {e}")
+        if NX.SHOW_OUPTUT_IN_TERMINAL: print(f"⚠️  Error writing to existing Excel file: {e}")
 
 def _changeUNITandGetData(js_dat,force_unit,len_unit,jsonloc,keyName):
     # currUNIT = _getUNIT()
@@ -793,10 +793,10 @@ class Result :
                 for tabName in ss_json['UTBLTYPES']:
                     table_name.append(tabName)
                 
-                print('Available user-defined tables in MIDAS CIVIL NX are : ')
-                print(*table_name,sep=' , ')
+                if NX.SHOW_OUPTUT_IN_TERMINAL: print('Available user-defined tables in MIDAS CIVIL NX are : ')
+                if NX.SHOW_OUPTUT_IN_TERMINAL: print(*table_name,sep=' , ')
             except:
-                print(' ⚠️  There are no user-defined tables in MIDAS CIVIL NX')
+                if NX.SHOW_OUPTUT_IN_TERMINAL: print(' ⚠️  There are no user-defined tables in MIDAS CIVIL NX')
 
             return table_name
 

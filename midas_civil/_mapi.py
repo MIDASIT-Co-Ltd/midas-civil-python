@@ -204,30 +204,38 @@ _functionMapping = {
 
 def Midas_help():
     """MIDAS Documnetation : https://midas-rnd.github.io/midasapi-python """
-    print('\n╭────────────────────────────────────────────────────────────────────────────────────╮')
-    print("│         HELP MANUAL   :     https://midas-rnd.github.io/midasapi-python/           │")
-    print('╰────────────────────────────────────────────────────────────────────────────────────╯\n')
+    if NX.SHOW_OUPTUT_IN_TERMINAL:
+        print('\n╭────────────────────────────────────────────────────────────────────────────────────╮')
+        print("│         HELP MANUAL   :     https://midas-rnd.github.io/midasapi-python/           │")
+        print('╰────────────────────────────────────────────────────────────────────────────────────╯\n')
 
 
 
 class NX:
-    version_check = True    # CHANGE IT TO FALSE TO SKIP VERSION CHECK OF LIBRARY
+    version_check = False    # CHANGE IT TO FALSE TO SKIP VERSION CHECK OF LIBRARY
     user_print = True
+
     debug_request = False
     debug_requestJSON = False
     debug_response = False
+
     onlyNode = False
     visualiser = True
     modelIDs = {} # Handles the fast MAX ID
     autoTaperGroup = False
     dispWarning = True
+    
+    _isSyncUnit = False
+
     PRODUCT = 'CIVIL'
+    USER_ID = None
     SOLVER = 'FES'
     _MEC_VERSIONS = ['9.7.5']
-    _isSyncUnit = False
-    save_debug_log = False
+    SAVE_DEBUG_LOG = False
     OFFLINE = False     # DISABLE MAPI CALLS
     SEND_IN_CHUNKS = False
+    SYS_EXIT_ON_ERROR = True
+    SHOW_OUPTUT_IN_TERMINAL = True
 
     units = {
         "FORCE": "KN",
@@ -235,6 +243,8 @@ class NX:
         "HEAT": "KJ",
         "TEMPER": "C"
     }
+
+
 
     # Function for quick saving of JSON
     @staticmethod
@@ -322,11 +332,12 @@ class MAPI_BASEURL:
 
             url_comb = f'https://{url_reg_key}:{port_reg_key}/civil'
 
-            tqdm.write(f' 🌐   BASE URL is taken from Registry entry.  >>  {url_comb}')
+            if NX.SHOW_OUPTUT_IN_TERMINAL: tqdm.write(f' 🌐   BASE URL is taken from Registry entry.  >>  {url_comb}')
             MAPI_BASEURL(url_comb)
         except:
-            tqdm.write(" 🌐   BASE URL is not defined. Click on Apps > API Settings to copy the BASE URL Key.\nDefine it using MAPI_BASEURL('https://moa-engineers.midasit.com:443/civil')")
-            sys.exit(0)
+            if NX.SHOW_OUPTUT_IN_TERMINAL: tqdm.write(" 🌐   BASE URL is not defined. Click on Apps > API Settings to copy the BASE URL Key.\nDefine it using MAPI_BASEURL('https://moa-engineers.midasit.com:443/civil')")
+            if NX.SYS_EXIT_ON_ERROR: sys.exit(0)
+            pass
 
     @staticmethod
     def autoURL():
@@ -353,8 +364,8 @@ class MAPI_BASEURL:
                 chk=1
                 break
         if chk==0:
-            tqdm.write(f" 🌐   Kindly manually enter the BASE URL. \nRefer to https://moa.midasit.com/services to find the correct URL.")
-            sys.exit(0)
+            if NX.SHOW_OUPTUT_IN_TERMINAL: tqdm.write(f" 🌐   Kindly manually enter the BASE URL. \nRefer to https://moa.midasit.com/services to find the correct URL.")
+            if NX.SYS_EXIT_ON_ERROR: sys.exit(0)
             
 class MAPI_KEY:
     """MAPI key from MIDAS CIVIL NX.\n\nEg: MAPI_Key("eadsfjaks568wqehhf.ajkgj345qfhh")"""
@@ -373,10 +384,10 @@ class MAPI_KEY:
                 value = winreg.QueryValueEx(registry_key, "Key")
                 my_key = value[0]
                 MAPI_KEY(my_key)
-                tqdm.write(f' 🔑   MAPI-KEY is taken from Registry entry.  >>  {my_key[:35]}...')
+                if NX.SHOW_OUPTUT_IN_TERMINAL: tqdm.write(f' 🔑   MAPI-KEY is taken from Registry entry.  >>  {my_key[:35]}...')
             except:
-                tqdm.write(f"🔑   MAPI KEY is not defined. Click on Apps > API Settings to copy the MAPI Key.\n Define it using MAPI_KEY('xxxx')")
-                sys.exit(0)
+                if NX.SHOW_OUPTUT_IN_TERMINAL: tqdm.write(f"🔑   MAPI KEY is not defined. Click on Apps > API Settings to copy the MAPI Key.\n Define it using MAPI_KEY('xxxx')")
+                if NX.SYS_EXIT_ON_ERROR: sys.exit(0)
         else:
             my_key = MAPI_KEY.data
         
@@ -412,10 +423,10 @@ def MidasAPI(method:_httpMethod, command:str, body:dict={})->dict:
         if NX.OFFLINE:
             NX.box_print("  OFFLINE MODE ACTIVE  ",pad=30,text_col=Fore.RED,border_col=Fore.RED)
 
-        if NX.user_print:
+        if NX.SHOW_OUPTUT_IN_TERMINAL and NX.user_print:
             _checkUSER()
 
-        if NX.save_debug_log:
+        if NX.SAVE_DEBUG_LOG:
             NX.debug_request = True
             sys.stdout = open("midas_civil_debug_log.txt", "w", encoding="utf-8")
 
@@ -457,20 +468,25 @@ def MidasAPI(method:_httpMethod, command:str, body:dict={})->dict:
     if MAPI_KEY.count == 0:
         MAPI_KEY.count = -1
         if response.status_code == 404:
-            print(Fore.RED +'\n╭─ 💀   ─────────────────────────────────────────────────────────────────────────────╮')
-            print(f"│  Civil NX model is not connected.  Click on 'Apps > Connect' in Civil NX.          │")
-            print(f"│  Make sure the MAPI Key in python code is matching with the MAPI key in Civil NX.  │")
-            print('╰────────────────────────────────────────────────────────────────────────────────────╯\n'+Style.RESET_ALL)
-            sys.exit(0)
+
+            if NX.SHOW_OUPTUT_IN_TERMINAL: 
+                print(Fore.RED +'\n╭─ 💀   ─────────────────────────────────────────────────────────────────────────────╮')
+                print(f"│  Civil NX model is not connected.  Click on 'Apps > Connect' in Civil NX.          │")
+                print(f"│  Make sure the MAPI Key in python code is matching with the MAPI key in Civil NX.  │")
+                print('╰────────────────────────────────────────────────────────────────────────────────────╯\n'+Style.RESET_ALL)
+            if NX.SYS_EXIT_ON_ERROR: 
+                sys.exit(0)
         elif response.status_code == 401:
-            print(Fore.RED +'\n╭─ 💀   ─────────────────────────────────────────────────────────────────────────────╮')
-            print(f"│  MAPI KEY entered is invalid.                                                      │")
-            print(f"│  Please consider refreshing MAPI-Key in CIVIL NX and resending the request.        │")
-            print('╰────────────────────────────────────────────────────────────────────────────────────╯\n'+Style.RESET_ALL)
-            sys.exit(0)
+            if NX.SHOW_OUPTUT_IN_TERMINAL: 
+                print(Fore.RED +'\n╭─ 💀   ─────────────────────────────────────────────────────────────────────────────╮')
+                print(f"│  MAPI KEY entered is invalid.                                                      │")
+                print(f"│  Please consider refreshing MAPI-Key in CIVIL NX and resending the request.        │")
+                print('╰────────────────────────────────────────────────────────────────────────────────────╯\n'+Style.RESET_ALL)
+            if NX.SYS_EXIT_ON_ERROR: 
+                sys.exit(0)
     
     resp = response.json()
-    if NX.dispWarning:
+    if NX.SHOW_OUPTUT_IN_TERMINAL and NX.dispWarning:
         if 'error' in resp:
             cmd = _functionMapping.get(command.lower(),command)
             tqdm.write(f'    ⚠️      Error observed in {cmd}.   |   URL : {command}')
@@ -550,17 +566,17 @@ def _sendAPI_cmd(method, command, body, headers):
     elif method == "DELETE":
         response = _sumit_req.delete(url=url, headers=headers)
     else:
-        print(f"Invalid HTTP method entered {method}.")
+        if NX.SHOW_OUPTUT_IN_TERMINAL: print(f"Invalid HTTP method entered {method}.")
 
     
     end_time = time.perf_counter()
     elapsed_time = end_time - start_time
 
-    if NX.debug_request:
+    if NX.SHOW_OUPTUT_IN_TERMINAL and NX.debug_request:
         tqdm.write(Fore.RED+f">>   METHOD : {method} |  URL : {command} | STATUS :  {response.status_code} | TIME : {elapsed_time:.4f} sec "+Style.RESET_ALL)
-    if NX.debug_requestJSON:
+    if NX.SHOW_OUPTUT_IN_TERMINAL and NX.debug_requestJSON:
         tqdm.write(Fore.CYAN+">>  "+str(body)+Style.RESET_ALL)
-    if NX.debug_response:
+    if NX.SHOW_OUPTUT_IN_TERMINAL and NX.debug_response:
         tqdm.write(Fore.GREEN+"<<  "+str(response.json())+Style.RESET_ALL)
 
     return response

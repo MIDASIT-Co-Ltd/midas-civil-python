@@ -648,14 +648,16 @@ def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList,reverse):
 
 
     # ORIGINAL ALIGNMENT
-    pbar = tqdm(total=14,desc="Converting Line to Plate ")
+    if NX.SHOW_OUPTUT_IN_TERMINAL: 
+        pbar = tqdm(total=14,desc="Converting Line to Plate ")
 
-    pbar.update(1)
-    pbar.set_description_str("Updating Units...")
+        pbar.update(1)
+        pbar.set_description_str("Updating Units...")
     Model.units()
-    
-    pbar.update(1)
-    pbar.set_description_str("Getting Section Data...")
+
+    if NX.SHOW_OUPTUT_IN_TERMINAL: 
+        pbar.update(1)
+        pbar.set_description_str("Getting Section Data...")
     Section.sync()
 
     #------------ NEWEST UPDATE fOR DB SECTIONS --------
@@ -681,14 +683,14 @@ def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList,reverse):
                     Section.DBUSER(f"{sec.NAME}_conv",sec.SHAPE,dicParams[str(sec.ID)],sec.OFFSET,sec.USESHEAR,sec.USE7DOF,sec.ID)
 
     #----------------------------------------------------
-
-    pbar.update(1)
-    pbar.set_description_str("Processing Sections...")
+    if NX.SHOW_OUPTUT_IN_TERMINAL: 
+        pbar.update(1)
+        pbar.set_description_str("Processing Sections...")
 
     getCGdata2()
-
-    pbar.update(1)
-    pbar.set_description_str("Deleting Elements and Nodes...")
+    if NX.SHOW_OUPTUT_IN_TERMINAL: 
+        pbar.update(1)
+        pbar.set_description_str("Deleting Elements and Nodes...")
     sorted_node_list , align_points, align_beta_angle , elm_list, matID , align_sectID_list_sorted,k = delSelectElements(elemList,reverse) # Select elements
 
     L2P.sorted_nodes = sorted_node_list
@@ -711,9 +713,9 @@ def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList,reverse):
         for sect in Section.sect:
             if sect.ID == Sid:
                 sect_shape_arr.append(sect)
-
-    pbar.update(1)
-    pbar.set_description_str("Generating Shell definition...")
+    if NX.SHOW_OUPTUT_IN_TERMINAL: 
+        pbar.update(1)
+        pbar.set_description_str("Generating Shell definition...")
     for shape in sect_shape_arr:
         sect_shape, sect_thk , sect_thk_off, sect_cg , sect_lin_con = Mesh_SHAPE(shape,meshSize)
         sect_points_arr.append(sect_shape)
@@ -727,15 +729,16 @@ def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList,reverse):
     # print('- . '*20)
     # print(sect_points_arr) 
     # print('- . '*20)        
- 
-    pbar.update(1)
-    pbar.set_description_str("Getting existing Node data...")
+    if NX.SHOW_OUPTUT_IN_TERMINAL: 
+        pbar.update(1)
+        pbar.set_description_str("Getting existing Node data...")
     Node.clear()
     # Node.sync()
     Node.maxID=Model.maxID('NODE',True)
 
-    pbar.update(1)
-    pbar.set_description_str("Getting existing Element and Thickness data...")
+    if NX.SHOW_OUPTUT_IN_TERMINAL: 
+        pbar.update(1)
+        pbar.set_description_str("Getting existing Element and Thickness data...")
     Element.clear()
     Thickness.clear()
     # Element.ids = [Model.maxID('ELEM')]
@@ -747,30 +750,35 @@ def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList,reverse):
             Thickness.ids = [int(data[2])+1]
 
     if bRigdLnk:
-        pbar.update(1)
-        pbar.set_description_str("Getting existing Rigid Link data...")
+        if NX.SHOW_OUPTUT_IN_TERMINAL: 
+            pbar.update(1)
+            pbar.set_description_str("Getting existing Rigid Link data...")
         Boundary.RigidLink.clear()
         Boundary.RigidLink.ids = [Model.maxID('RIGD',False)]
 
- 
-    pbar.update(1)
-    pbar.set_description_str("Creating Shell data...")
+    if NX.SHOW_OUPTUT_IN_TERMINAL: 
+        pbar.update(1)
+        pbar.set_description_str("Creating Shell data...")
     myTapShape = plateTapSection(sect_points_arr,cg_arr,align_t_param,lin,thk_arr,thk_off_arr)
  
 
     createTapPlateAlign(fine_align_points,fine_t_param,fine_beta_angle,myTapShape,bRigdLnk,matID)
 
-    pbar.update(1)
-    pbar.set_description_str("Creating Nodes...")
+    if NX.SHOW_OUPTUT_IN_TERMINAL: 
+        pbar.update(1)
+        pbar.set_description_str("Creating Nodes...")
     Node.create()
-    pbar.update(1)
-    pbar.set_description_str("Creating Elements...")
+    if NX.SHOW_OUPTUT_IN_TERMINAL: 
+        pbar.update(1)
+        pbar.set_description_str("Creating Elements...")
     Element.create()
-    pbar.update(1)
-    pbar.set_description_str("Creating Thickness...")
+    if NX.SHOW_OUPTUT_IN_TERMINAL: 
+        pbar.update(1)
+        pbar.set_description_str("Creating Thickness...")
     Thickness.create()
-    pbar.update(1)
-    pbar.set_description_str("Creating Rigid Links...")
+    if NX.SHOW_OUPTUT_IN_TERMINAL: 
+        pbar.update(1)
+        pbar.set_description_str("Creating Rigid Links...")
     Boundary.RigidLink.create()
 
     # RESET the function
@@ -786,7 +794,8 @@ def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList,reverse):
     L2P.lastTapSectPlate = ()
     L2P.bFirstlastTapSectPlate = True
 
-    pbar.update(1)
-    pbar.set_description_str(Fore.GREEN+"Line to Plate conversion done"+Style.RESET_ALL)
+    if NX.SHOW_OUPTUT_IN_TERMINAL: 
+        pbar.update(1)
+        pbar.set_description_str(Fore.GREEN+"Line to Plate conversion done"+Style.RESET_ALL)
 
 # SS_create(0,1,True,0.5)

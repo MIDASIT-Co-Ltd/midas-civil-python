@@ -1,4 +1,4 @@
-from ._mapi import MidasAPI
+from ._mapi import MidasAPI, NX
 from ._group import Group
 from ._element import elemByID
 import numpy as np
@@ -121,7 +121,7 @@ class Load_Case:
                     }
             else:
                 ng.append(i.TYPE)
-        if ng != []: print(f"These load case types are incorrect: {ng}.\nPlease check API Manual.")
+        if NX.SHOW_OUPTUT_IN_TERMINAL and ng != []: print(f"These load case types are incorrect: {ng}.\nPlease check API Manual.")
         return json
     
     @staticmethod
@@ -597,7 +597,7 @@ class Load:
                 for i in Load_Case.cases:
                     if case in i.NAME:
                         chk = 1
-                if chk == 0:
+                if NX.SHOW_OUPTUT_IN_TERMINAL and chk == 0:
                     print(f"Warning: Load case '{case}' does not exist!")
             
             self.DIR = dir
@@ -1343,7 +1343,9 @@ class Load:
                 self.LOAD = point_load
 
             if _valid: Load.PlaneLoad_Define.data.append(self)
-            else: print(f"   ⚠️   Plane Load Define: {name} definition is invalid.")
+            else: 
+                if NX.SHOW_OUPTUT_IN_TERMINAL: 
+                    print(f"   ⚠️   Plane Load Define: {name} definition is invalid.")
 
 
         @classmethod
@@ -1658,7 +1660,7 @@ class Load:
             elements = [element] if isinstance(element, (int, str)) else list(element)
 
             if not elements:
-                print("No elements provided.")
+                if NX.SHOW_OUPTUT_IN_TERMINAL: print("No elements provided.")
                 return
 
             nodes_data = Node.json().get('Assign', {})
@@ -1677,10 +1679,10 @@ class Load:
                     nodes = elems_data[elem_id_int].get('NODE', [])
                     selected_nodes.update(nodes)
                 else:
-                    print(f"Warning: Element {elem_id} not found in model.")
+                    if NX.SHOW_OUPTUT_IN_TERMINAL: print(f"Warning: Element {elem_id} not found in model.")
 
             if not selected_nodes:
-                print("Error: Could not find coordinate data for the provided elements.")
+                if NX.SHOW_OUPTUT_IN_TERMINAL: print("Error: Could not find coordinate data for the provided elements.")
                 return
 
             global_top_coord = None
@@ -1692,7 +1694,7 @@ class Load:
                 if ref_node_int in nodes_data:
                     global_top_coord = nodes_data[ref_node_int].get(axis_key, 0.0)
                 else:
-                    print(f"Error: Reference node {reference_node} not found.")
+                    if NX.SHOW_OUPTUT_IN_TERMINAL: print(f"Error: Reference node {reference_node} not found.")
                     return
             else:
                 # Automatically find highest/lowest point among all nodes of the selected elements
@@ -1702,7 +1704,7 @@ class Load:
                     if int(nid) in nodes_data
                 ]
                 if not coords:
-                    print("Error: Failed to retrieve coordinates for calculation.")
+                    if NX.SHOW_OUPTUT_IN_TERMINAL: print("Error: Failed to retrieve coordinates for calculation.")
                     return
                 global_top_coord = max(coords) if is_negative else min(coords)
 

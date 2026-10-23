@@ -1,5 +1,5 @@
 
-from ._mapi import MidasAPI
+from ._mapi import MidasAPI,NX
 from ._utils import _convItem2List,sFlatten
 from colorama import Fore, Style
 from typing import Literal
@@ -103,7 +103,7 @@ class Group:
             
 
             if name in Group.Structure._names:
-                print(Fore.YELLOW +f'    ⚠️   Group with name "{name}" already exist. Assigned Element and Node IDs are updated \n'+Style.RESET_ALL)
+                if NX.SHOW_OUPTUT_IN_TERMINAL: print(Fore.YELLOW +f'    ⚠️   Group with name "{name}" already exist. Assigned Element and Node IDs are updated \n'+Style.RESET_ALL)
                 for grp in Group.Structure.Groups:
                     if name == grp.NAME:
                         grp.ELIST = grp.ELIST+(sFlatten(elist))
@@ -134,7 +134,7 @@ class Group:
                         i.ELIST = i.ELIST + elist
                         i.NLIST = i.NLIST + nlist
                     return i
-            if up == 0: print(f"⚠️  Structure group {name} is not defined!")
+            if NX.SHOW_OUPTUT_IN_TERMINAL and up == 0: print(f"⚠️  Structure group {name} is not defined!")
         
         @classmethod
         def json(cls) -> dict:

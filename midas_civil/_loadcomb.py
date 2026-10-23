@@ -26,24 +26,24 @@ class LoadCombination:
         Sample: LoadCombination('LCB1', [('Dead Load(CS)',1.5), ('Temperature(ST)',0.9)], 'General', 'Active', 'Add')"""
         if id == None: id =0
         if not isinstance(case, list):
-            print("case should be a list that contains tuple of load cases & factors.\nEg: [('Load1(ST)', 1.5), ('Load2(ST)',0.9)]")
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print("case should be a list that contains tuple of load cases & factors.\nEg: [('Load1(ST)', 1.5), ('Load2(ST)',0.9)]")
             return
         for i in case:
             if not isinstance(i, tuple):
-                print(f"{i} is not a tuple.  case should be a list that contains tuple of load cases & factors.\nEg: [('Load1(ST)', 1.5), ('Load2(ST)',0.9)]")
+                if NX.SHOW_OUPTUT_IN_TERMINAL: print(f"{i} is not a tuple.  case should be a list that contains tuple of load cases & factors.\nEg: [('Load1(ST)', 1.5), ('Load2(ST)',0.9)]")
                 return
             if not isinstance(i[0], str):
-                print(f"{i[0]} is not a string.  case should be a list that contains tuple of load cases & factors.\nEg: [('Load1(ST)', 1.5), ('Load2(ST)',0.9)]")
+                if NX.SHOW_OUPTUT_IN_TERMINAL: print(f"{i[0]} is not a string.  case should be a list that contains tuple of load cases & factors.\nEg: [('Load1(ST)', 1.5), ('Load2(ST)',0.9)]")
                 return
             if i[0][-1] != ")":
-                print(f"Load case type is not mentioned for {i[0]}.  case should be a list that contains tuple of load cases & factors.\nEg: [('Load1(ST)', 1.5), ('Load2(ST)',0.9)]")
+                if NX.SHOW_OUPTUT_IN_TERMINAL: print(f"Load case type is not mentioned for {i[0]}.  case should be a list that contains tuple of load cases & factors.\nEg: [('Load1(ST)', 1.5), ('Load2(ST)',0.9)]")
                 return
             if not isinstance(i[1],(int, float)):
-                print(f"{i[1]} is not a number.  case should be a list that contains tuple of load cases & factors.\nEg: [('Load1(ST)', 1.5), ('Load2(ST)',0.9)]")
+                if NX.SHOW_OUPTUT_IN_TERMINAL: print(f"{i[1]} is not a number.  case should be a list that contains tuple of load cases & factors.\nEg: [('Load1(ST)', 1.5), ('Load2(ST)',0.9)]")
                 return
 
         if classification not in LoadCombination.valid[:-1]:
-            print(f'"{classification}" is not a valid input.  It is changed to "General".')
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'"{classification}" is not a valid input.  It is changed to "General".')
             classification = "General"
             
         if classification in ["General", "Seismic"]:
@@ -61,7 +61,7 @@ class LoadCombination:
             id = max([i.ID for i in LoadCombination.data]) + 1
         elif id != 0 and id in [i.ID for i in LoadCombination.data]:
             if classification in [i.CLS for i in LoadCombination.data if i.ID == id]:
-                print(f"ID {id} is already defined.  Existing combination would be replaced.")
+                if NX.SHOW_OUPTUT_IN_TERMINAL: print(f"ID {id} is already defined.  Existing combination would be replaced.")
                 
         
         combo = []
@@ -86,10 +86,10 @@ class LoadCombination:
     @classmethod
     def json(cls, classification = "All"):
         if len(LoadCombination.data) == 0:
-            print("No Load Combinations defined!  Define the load combination using the 'LoadCombination' class before making json file.")
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print("No Load Combinations defined!  Define the load combination using the 'LoadCombination' class before making json file.")
             return
         if classification not in LoadCombination.valid:
-            print(f'"{classification}" is not a valid input.  It is changed to "General".')
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'"{classification}" is not a valid input.  It is changed to "General".')
             classification = "General"
         json = {k:{'Assign':{}} for k in LoadCombination.valid[:-1]}
         for i in LoadCombination.data:
@@ -107,7 +107,7 @@ class LoadCombination:
     @classmethod
     def get(cls, classification = "All"):
         if classification not in LoadCombination.valid:
-            print(f'"{classification}" is not a valid input.  It is changed to "General".')
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'"{classification}" is not a valid input.  It is changed to "General".')
             classification = "General"
         combos = {k:{} for k in LoadCombination.valid[:-1]}
         for i in LoadCombination.valid[:-1]:
@@ -122,7 +122,7 @@ class LoadCombination:
             # print("No Load Combinations defined!  Define the load combination using the 'LoadCombination' class before creating these in the model.")
             return
         if classification not in LoadCombination.valid:
-            print(f'"{classification}" is not a valid input.  It is changed to "General".')
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'"{classification}" is not a valid input.  It is changed to "General".')
             classification = "General"
         json = LoadCombination.json(classification)
         for i in LoadCombination.valid[:-1]:
@@ -160,7 +160,7 @@ class LoadCombination:
             a += str(ids[i]) + ","
         a = "/" + a[:-1]
         if json == {}: 
-            print("No load combinations are defined to delete.")
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print("No load combinations are defined to delete.")
         for i in list(json.keys()):
             MidasAPI("DELETE",LoadCombination.com_map.get(i) + a)
 
