@@ -1,5 +1,5 @@
 
-from ._mapi import MidasAPI,NX
+from ._mapi import MidasAPI,NX,MidasAPIError
 from ._model import Model
 from typing import Literal
 from ._mapi import _getUNIT
@@ -36,7 +36,18 @@ _FLOAT_PATTERN = (
     "Tolerance|Sig-|Time/Step|Force-"
 )
 
+_LAST_TABLE_ERROR = [""]
+
+def _tableWarn(msg):
+    """Problem while reading a result table: printed when output is enabled and remembered for _emptyDF."""
+    _LAST_TABLE_ERROR[0] = str(msg).strip()
+    if NX.SHOW_OUPTUT_IN_TERMINAL: print(msg)
+
 def _emptyDF(backend):
+        # SYS_EXIT_ON_ERROR = False -> the caller handles errors : raise instead of silently returning an empty table
+        if not NX.SYS_EXIT_ON_ERROR:
+            msg, _LAST_TABLE_ERROR[0] = _LAST_TABLE_ERROR[0], ""
+            raise MidasAPIError(msg or "Result table could not be retrieved.")
         if backend == 'json':
             return {}
 
@@ -193,9 +204,9 @@ def _JSToDF_ResTable(js_json,excelLoc,sheetName,cellLoc="A1",outputFormat='Polar
     # Check for SS_Table existence
     if "SS_Table" not in js_json:
         if 'message' in js_json:
-            if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'⚠️  Error from API: {js_json["message"]}')
+            _tableWarn(f'⚠️  Error from API: {js_json["message"]}')
         else:
-            if NX.SHOW_OUPTUT_IN_TERMINAL: print('⚠️  Error: "SS_Table" not found in the response JSON.')
+            _tableWarn('⚠️  Error: "SS_Table" not found in the response JSON.')
 
         return _emptyDF(backend) # Return empty DataFrame on error
         
@@ -205,7 +216,7 @@ def _JSToDF_ResTable(js_json,excelLoc,sheetName,cellLoc="A1",outputFormat='Polar
     
     # Check for HEAD and DATA existence
     if "HEAD" not in js_json["SS_Table"] or "DATA" not in js_json["SS_Table"]:
-        if NX.SHOW_OUPTUT_IN_TERMINAL: print('⚠️  Error: "HEAD" or "DATA" not found in "SS_Table".')
+        _tableWarn('⚠️  Error: "HEAD" or "DATA" not found in "SS_Table".')
 
         return _emptyDF(backend) # Return empty DataFrame
         
@@ -245,9 +256,9 @@ def _JSToDF_ResTable_TEXT(table_type, js_json, excelLoc, sheetName, cellLoc="A1"
 
     if table_type not in js_json:
         if 'message' in js_json:
-            if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'⚠️  Error from API: {js_json["message"]}')
+            _tableWarn(f'⚠️  Error from API: {js_json["message"]}')
         else:
-            if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'⚠️  Error: "{table_type}" not found in the response JSON.')
+            _tableWarn(f'⚠️  Error: "{table_type}" not found in the response JSON.')
         return _emptyDF(backend) # Return empty DataFrame on error
 
     res_json = {}
@@ -255,7 +266,7 @@ def _JSToDF_ResTable_TEXT(table_type, js_json, excelLoc, sheetName, cellLoc="A1"
 
     # Check for HEAD and DATA existence
     if "HEAD" not in js_json[table_type] or "DATA" not in js_json[table_type]:
-        if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'⚠️  Error: "HEAD" or "DATA" not found in "{table_type}".')
+        _tableWarn(f'⚠️  Error: "HEAD" or "DATA" not found in "{table_type}".')
         return _emptyDF(backend) # Return empty DataFrame
 
     for heading in js_json[table_type]["HEAD"]:
@@ -306,16 +317,16 @@ def _JSToDF_ResTable_Eigen(js_json, output, excelLoc, sheetName, cellLoc="A1",ou
 
     if "SS_Table" not in js_json:
         if 'message' in js_json:
-            if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'⚠️  Error from API: {js_json["message"]}')
+            _tableWarn(f'⚠️  Error from API: {js_json["message"]}')
         else:
-            if NX.SHOW_OUPTUT_IN_TERMINAL: print('⚠️  Error: "SS_Table" not found in the response JSON.')
+            _tableWarn('⚠️  Error: "SS_Table" not found in the response JSON.')
         return _emptyDF(backend) # Return empty DataFrame on error
 
     table_json = js_json["SS_Table"]
 
     if output == "EigenVector" or output == "BucklingVector":
         if "HEAD" not in table_json or "DATA" not in table_json:
-            if NX.SHOW_OUPTUT_IN_TERMINAL: print('⚠️  Error: "HEAD" or "DATA" not found in "SS_Table".')
+            _tableWarn('⚠️  Error: "HEAD" or "DATA" not found in "SS_Table".')
             return _emptyDF(backend) # Return empty DataFrame on error
 
         res_json = {}
@@ -334,11 +345,11 @@ def _JSToDF_ResTable_Eigen(js_json, output, excelLoc, sheetName, cellLoc="A1",ou
     else:
         sub_key = _EIGEN_SUBTABLE_MAP.get(output)
         if sub_key is None:
-            if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'⚠️  Error: Unknown output type "{output}".')
+            _tableWarn(f'⚠️  Error: Unknown output type "{output}".')
             return _emptyDF(backend) # Return empty DataFrame on error
 
         if "SUB_TABLES" not in table_json:
-            if NX.SHOW_OUPTUT_IN_TERMINAL: print('⚠️  Error: "SUB_TABLES" not found in "SS_Table".')
+            _tableWarn('⚠️  Error: "SUB_TABLES" not found in "SS_Table".')
             return _emptyDF(backend) # Return empty DataFrame on error
 
         sub_table_data = None
@@ -350,11 +361,11 @@ def _JSToDF_ResTable_Eigen(js_json, output, excelLoc, sheetName, cellLoc="A1",ou
                 break
 
         if sub_table_data is None:
-            if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'⚠️  Error: Sub-table for "{output}" not found in response.')
+            _tableWarn(f'⚠️  Error: Sub-table for "{output}" not found in response.')
             return _emptyDF(backend) # Return empty DataFrame on error
 
         if "HEAD" not in sub_table_data or "DATA" not in sub_table_data:
-            if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'⚠️  Error: "HEAD" or "DATA" not found in sub-table for "{output}".')
+            _tableWarn(f'⚠️  Error: "HEAD" or "DATA" not found in sub-table for "{output}".')
             return _emptyDF(backend) # Return empty DataFrame on error
 
         res_json = _Head_Data_2_DF_JSON(sub_table_data["HEAD"], sub_table_data["DATA"])
@@ -406,12 +417,12 @@ def _JSToDF_UserDefined(tableName,js_json,summary,excelLoc,sheetName,cellLoc="A1
 
     # CHECKING IF TABLE NAME EXISTS
     if 'message' in js_json:
-        if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'⚠️  {tableName} table name does not exist.')
+        _tableWarn(f'⚠️  {tableName} table name does not exist.')
         Result.TABLE.UserDefinedTables_list()
         return _emptyDF(backend)
     
     if tableName not in js_json:
-        if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'⚠️  Error: Table "{tableName}" not found in API response.')
+        _tableWarn(f'⚠️  Error: Table "{tableName}" not found in API response.')
         return _emptyDF(backend)
 
     if summary == 0:
@@ -424,7 +435,7 @@ def _JSToDF_UserDefined(tableName,js_json,summary,excelLoc,sheetName,cellLoc="A1
             head = sub_tab1[key_name]["HEAD"]
             data = sub_tab1[key_name]["DATA"]
         except :
-            if NX.SHOW_OUPTUT_IN_TERMINAL: print(' ⚠️  No Summary table exist')
+            _tableWarn(' ⚠️  No Summary table exist')
             return _emptyDF(backend)
 
 
@@ -610,11 +621,31 @@ def _write_json_to_existing_excel(res_json:dict, existing_excel_input: list):
     except Exception as e:
         if NX.SHOW_OUPTUT_IN_TERMINAL: print(f"⚠️  Error writing to existing Excel file: {e}")
 
+def _requestInUnits(force_unit,len_unit,method,url,js_dat):
+    '''Sends the request with the model in the table units, then restores the model's own units.
+    (Fetching a table must not change the units the user is modelling in.)'''
+    if force_unit not in ["KN", "N", "KGF", "TONF", "LBF", "KIPS"]: force_unit = "KN"
+    if len_unit not in ["M", "CM", "MM", "FT", "IN"]: len_unit = "M"
+
+    try:
+        previous = _getUNIT()
+    except (KeyError, TypeError):
+        previous = None         # units unknown (eg. OFFLINE) -> cannot restore
+
+    if previous is not None and previous.get("FORCE") == force_unit and previous.get("DIST") == len_unit:
+        return MidasAPI(method,url,js_dat)      # already in the requested units
+
+    _setUNIT({"FORCE":force_unit,"DIST":len_unit})
+    try:
+        return MidasAPI(method,url,js_dat)
+    finally:
+        if previous is not None:
+            _setUNIT(previous)
+            NX.units = previous
+            NX._isSyncUnit = True
+
 def _changeUNITandGetData(js_dat,force_unit,len_unit,jsonloc,keyName):
-    # currUNIT = _getUNIT()
-    Model.units(force=force_unit,length=len_unit)
-    ss_json = MidasAPI("POST","/post/TABLE",js_dat)
-    # _setUNIT(currUNIT)
+    ss_json = _requestInUnits(force_unit,len_unit,"POST","/post/TABLE",js_dat)
     if jsonloc:
         if "SS_Table" in ss_json:
             ss_json[keyName] = ss_json.pop("SS_Table")
@@ -625,8 +656,7 @@ def _changeUNITandGetData(js_dat,force_unit,len_unit,jsonloc,keyName):
     return ss_json
 
 def _changeUNITandGetDataText(js_dat,force_unit,len_unit,jsonloc,keyName):
-    Model.units(force=force_unit,length=len_unit)
-    ss_json = MidasAPI("POST","/post/TEXT",js_dat)
+    ss_json = _requestInUnits(force_unit,len_unit,"POST","/post/TEXT",js_dat)
     if jsonloc:
         if "SS_Table" in ss_json:
             ss_json[keyName] = ss_json.pop("SS_Table")
@@ -709,7 +739,7 @@ class TableOptions:
         self.FORCE_UNIT = force_unit or TableOptions.FORCE_UNIT
         self.LEN_UNIT = len_unit or TableOptions.LEN_UNIT
         self.NUM_FORMAT = num_format or TableOptions.NUM_FORMAT
-        self.DECIMAL_PLACE = decimal_place or TableOptions.DECIMAL_PLACE
+        self.DECIMAL_PLACE = decimal_place if decimal_place is not None else TableOptions.DECIMAL_PLACE
         # self.JSON_OUTPUT_LOC = JSONLoc or TableOptions.JSON_OUTPUT_LOC
         self.JSON_FILE_LOC = JSONFileLoc
         self.EXCEL_FILE_LOC = ExcelFileLoc or TableOptions.EXCEL_FILE_LOC
@@ -823,10 +853,8 @@ class Result :
                 "Local": "REACTIONL",
                 "SurfaceSpring": "REACTIONLSURFACESPRING"
             }
-            table_type = table_type_map.get(type, "REACTIONG") # Default to Global
+            table_type = {k.lower(): v for k, v in table_type_map.items()}.get(str(type).lower(), "REACTIONG") # Default to Global
             js_dat = _generate(table_type,keys,loadcase,components,cs_stage,options)
-
-            print(table_type)
 
             ResultJSON = _changeUNITandGetData(js_dat,options.FORCE_UNIT,options.LEN_UNIT,options.JSON_FILE_LOC,table_type)
             polarDF = _JSToDF_ResTable(ResultJSON,options.EXCEL_FILE_LOC,sheetName,options.EXCEL_CELL_POS, options.BACKEND)
@@ -857,7 +885,7 @@ class Result :
                 "Global": "DISPLACEMENTG",
                 "Local": "DISPLACEMENTL"
             }
-            table_type = table_type_map.get(type.capitalize(), "DISPLACEMENTG") 
+            table_type = {k.lower(): v for k, v in table_type_map.items()}.get(str(type).lower(), "DISPLACEMENTG") 
 
             js_dat = _generate(table_type,keys,loadcase,components,cs_stage,options)
 
@@ -1187,7 +1215,7 @@ class Result :
                 "Local": "PLATEFORCEL",
                 "Global": "PLATEFORCEG"
             }
-            table_type = table_type_map.get(type.capitalize(), "PLATEFORCEL")
+            table_type = {k.lower(): v for k, v in table_type_map.items()}.get(str(type).lower(), "PLATEFORCEL")
             
             js_dat = _generate(table_type, keys, loadcase, components, cs_stage, options)
             
@@ -1257,7 +1285,7 @@ class Result :
                 "Local": "PLATEFORCEUL",
                 "Global": "PLATEFORCEUG" 
             }
-            table_type = table_type_map.get(type.capitalize(), "PLATEFORCEUL")
+            table_type = {k.lower(): v for k, v in table_type_map.items()}.get(str(type).lower(), "PLATEFORCEUL")
             
             js_dat = _generate(table_type, keys, loadcase, components, cs_stage, options)
             
@@ -1301,7 +1329,7 @@ class Result :
                 "Local": "PLATEFORCEULVBM",
                 "Global": "PLATEFORCEUGVBM" 
             }
-            table_type = table_type_map.get(type.capitalize(), "PLATEFORCEULVBM")
+            table_type = {k.lower(): v for k, v in table_type_map.items()}.get(str(type).lower(), "PLATEFORCEULVBM")
             
             js_dat = _generate(table_type, keys, loadcase, components, cs_stage, options)
             
@@ -2386,8 +2414,6 @@ class Result :
 
 
                 
-                # return bs64_img
-                return Image(temp_img)
             
             
         else:

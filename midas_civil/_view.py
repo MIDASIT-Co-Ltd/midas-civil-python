@@ -1170,7 +1170,7 @@ class ResultGraphic:
                     
                     color = (item_data.get('R', 0), item_data.get('G', 0), item_data.get('B', 0))
                     
-                    cls(Name=name, Direction=direction, Point1=pt1, Point2=pt2, Point3=pt3, Color=color, id=int(item_id))
+                    cls(Name=name, Direction=direction, Point1=pt1, Point2=pt2, Point3=pt3, id=int(item_id))
                     
     
 

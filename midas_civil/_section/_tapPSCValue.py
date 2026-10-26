@@ -1,4 +1,5 @@
 from ._offsetSS import Offset
+from .._mapi import NX
 from ._offsetSS import _common
 
 
@@ -101,7 +102,7 @@ class _SS_TAP_PSC_Value(_common):
             self.InnerPolygon_J.append(_poly_dir(temp_arr_J[i],'CW'))
 
         if n_inner_J != self.N_INNER_POLYGON:
-            print("  ⚠️ Number of inner polygons don't match")
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print("  ⚠️ Number of inner polygons don't match")
 
 
     def __str__(self):

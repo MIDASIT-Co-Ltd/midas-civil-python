@@ -112,7 +112,7 @@ class Settlement:
             self.MIN = min_groups
             self.MAX = max_groups
             self.ST_GROUPS = settlement_groups
-            if id == "": id = len(Settlement.Case.data) + 1
+            if id is None or id == "": id = len(Settlement.Case.data) + 1
             self.ID = id
             
             Settlement.Case.data.append(self)
@@ -152,10 +152,10 @@ class Settlement:
                 for i in a['SMLC'].keys():
                     Settlement.Case(
                         a['SMLC'][i]['NAME'],
-                        a['SMLC'][i]['DESC'], 
+                        a['SMLC'][i]['ST_GROUPS'],
                         a['SMLC'][i]['FACTOR'],
                         a['SMLC'][i]['MIN'],
                         a['SMLC'][i]['MAX'],
-                        a['SMLC'][i]['ST_GROUPS'],
+                        a['SMLC'][i]['DESC'], 
                         int(i)
                     )

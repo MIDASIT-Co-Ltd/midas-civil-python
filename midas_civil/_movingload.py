@@ -529,6 +529,7 @@ class MovingLoad:
                 
                 # Simple deletion
                 MidasAPI("DELETE", endpoint, {"Remove": lane_ids})
+                cls.clear()
                 
             @classmethod
             def clear(cls):
@@ -1142,7 +1143,6 @@ class MovingLoad:
             if euro_cases: MidasAPI("PUT", "/db/MVLDeu", cls.json(euro_cases))
             if general_cases: MidasAPI("PUT", "/db/MVLD", cls.json(general_cases))
             
-            cls.cases.clear()
 
         @classmethod
         def json(cls, case_list=None):
@@ -1168,6 +1168,7 @@ class MovingLoad:
             if "MVLDID" in all_cases_in_model: MidasAPI("DELETE", "/db/MVLDid")
             if "MVLDEU" in all_cases_in_model: MidasAPI("DELETE", "/db/MVLDeu")
             if "MVLD" in all_cases_in_model: MidasAPI("DELETE", "/db/MVLD")
+            cls.clear()
 
         @classmethod
         def clear(cls):

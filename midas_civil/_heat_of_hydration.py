@@ -892,7 +892,7 @@ class HoH:
 
                     
                     if use_concrete_data and (cement_type is None or temperature is None or cement_type is None):
-                        raise ValueError("cemenet_type, temperature and cemenet_type are required when use_concrete_data is True.")
+                        raise ValueError("cement_type, temperature and cement_type are required when use_concrete_data is True.")
 
                     if not use_concrete_data and (k is None or alpha is None):
                         raise ValueError("k and alpha are required when use_concrete_data is False.")                    
@@ -1065,7 +1065,7 @@ class HoH:
             def delete():
                 """Deletes all AssignHeatSource objects from the active Midas database."""
                 MidasAPI("DELETE", "/db/HAHS")
-                HoH.PrescribedTemperature.clear()
+                HoH.HeatSource.AssignHeatSource.clear()
 
 
     class HY_Result_Graph:

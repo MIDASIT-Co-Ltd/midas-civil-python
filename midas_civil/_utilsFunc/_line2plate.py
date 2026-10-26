@@ -68,7 +68,7 @@ def arrangeNodeList(n_list,elm_list):
         arrangeNode(ord_list,n_list_2,add_pos,flip_count,e_list2,e_ord_list)
 
     if len(ord_list) < len(n_list):
-        print('⚠️  Element not in a single continuous line | Smaller segment is returned')
+        if NX.SHOW_OUPTUT_IN_TERMINAL: print('⚠️  Element not in a single continuous line | Smaller segment is returned')
     
     simple_ord_list = [ord_list[0][0],ord_list[0][1]]
     for i in range(len(ord_list)-1):

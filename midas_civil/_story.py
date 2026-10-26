@@ -97,7 +97,7 @@ class Story:
         if a != {'message': ''}:
             if list(a['STOR'].keys()) != []:
                 for j in a['STOR'].keys():
-                    Story(a["STOR"][j]['STORY_LEVEL'],a["STOR"][j]['STORY_NAME'],int(j))
+                    Story(level=a["STOR"][j]['STORY_LEVEL'],name=a["STOR"][j]['STORY_NAME'],id=int(j))
 
     @staticmethod
     def autoGenerate():
