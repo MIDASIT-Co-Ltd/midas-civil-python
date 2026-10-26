@@ -11,6 +11,7 @@ _load_config_inLIB()
 
 
 from ._mapi import NX,MidasAPI,MAPI_KEY,MAPI_BASEURL,MAPI_COUNTRY,Midas_help
+# from ._mapi import MidasError,MidasConnectionError,MidasAuthError,MidasAPIError,MidasInputError
 
 if NX.SHOW_OUPTUT_IN_TERMINAL and __name__ == 'midas_civil':
     print('\n╭────────────────────────────────────────────────────────────────────────────────────╮')

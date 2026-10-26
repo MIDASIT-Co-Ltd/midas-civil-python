@@ -34,7 +34,8 @@ def _add_elem_2_stGroup(elemID,groupName):
     if groupName in Group.Structure._names:
         for i in Group.Structure.Groups:
             if i.NAME == groupName:
-                i.ELIST = list(i.ELIST + [elemID])
+                i.ELIST.append(elemID)      # in place (was a full list copy per element -> O(n^2))
+                break
     else:
         Group.Structure(groupName)
         _add_elem_2_stGroup(elemID,groupName)
@@ -45,9 +46,8 @@ def _add_node_2_stGroup(nodeID,groupName):
     if groupName in Group.Structure._names:
         for i in Group.Structure.Groups:
             if i.NAME == groupName:
-                # if nodeID not in i.NLIST:
-                #     i.NLIST = list(i.NLIST + [nodeID])
-                i.NLIST = i.NLIST + _convItem2List(nodeID)
+                i.NLIST.extend(_convItem2List(nodeID))      # in place (was a full list copy per element -> O(n^2))
+                break
     else:
         Group.Structure(groupName)
         _add_node_2_stGroup(nodeID,groupName)
@@ -128,11 +128,11 @@ class Group:
                 if name == i.NAME:
                     up = 1
                     if operation == "r":
-                        i.ELIST = elist
-                        i.NLIST = nlist
+                        i.ELIST = sFlatten(elist)       # own copy (lists are extended in place later)
+                        i.NLIST = sFlatten(nlist)
                     if operation == "a":
-                        i.ELIST = i.ELIST + elist
-                        i.NLIST = i.NLIST + nlist
+                        i.ELIST = i.ELIST + sFlatten(elist)
+                        i.NLIST = i.NLIST + sFlatten(nlist)
                     return i
             if NX.SHOW_OUPTUT_IN_TERMINAL and up == 0: print(f"⚠️  Structure group {name} is not defined!")
         
@@ -145,8 +145,8 @@ class Group:
                     _json["Assign"][i.ID] = {
                         "NAME": i.NAME,
                         "P_TYPE": 0,
-                        "N_LIST": i.NLIST,
-                        "E_LIST": i.ELIST
+                        "N_LIST": list(dict.fromkeys(i.NLIST)),     # unique IDs, order kept
+                        "E_LIST": list(dict.fromkeys(i.ELIST))
                     }
             return _json
         

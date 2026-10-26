@@ -185,12 +185,12 @@ class Model:
     @staticmethod
     def getBounds():
         '''Get the bounds of the model'''
-        min_z = 0
-        max_z = 0
-        min_x = 0
-        max_x = 0
-        min_y = 0
-        max_y = 0
+        min_z = math.inf
+        max_z = -math.inf
+        min_x = math.inf
+        max_x = -math.inf
+        min_y = math.inf
+        max_y = -math.inf
         for nd in Node.nodes:
             min_z = min(min_z,nd.Z)
             max_z = max(max_z,nd.Z)
@@ -315,21 +315,27 @@ class Model:
             if temp not in ["C","F"]:
                 temp="C"
             unitJS["TEMPER"] = temp
+            NX.units["TEMPER"] = temp
 
         if force is not None:
             if force not in ["KN", "N", "KGF", "TONF", "LBF", "KIPS"]:
                 force = "KN"
             unitJS["FORCE"] = force
+            NX.units["FORCE"] = force
+            
 
         if length is not None:  
             if length not in ["M", "CM", "MM", "FT", "IN"]:
                 length = "M"
             unitJS["DIST"] = length
+            NX.units["DIST"] = length
 
         if heat is not None:
             if heat not in ["CAL", "KCAL", "J", "KJ", "BTU"]:
                 heat = "KJ"
             unitJS["HEAT"] = heat
+            NX.units["HEAT"] = heat
+
 
         if all([force is None , length is None , heat is None , temp is None]):
             unitJS = {
@@ -339,12 +345,6 @@ class Model:
                 "TEMPER":"C"
             }
 
-        NX.units = {
-                "FORCE":force,
-                "DIST":length,
-                "HEAT":heat,
-                "TEMPER":temp
-            }
         MidasAPI("PUT","/db/UNIT",{"Assign":{1:unitJS}})
         NX._isSyncUnit = True
         return NX.units
@@ -1276,7 +1276,7 @@ class Model:
             ydif = y2-y1
             zdif = z2-z1
 
-            if xdif < min(ydif,ydif):
+            if xdif < min(ydif,zdif):
                 plane = 'YZ'
             elif ydif < min(xdif,zdif):
                 plane = 'XZ'

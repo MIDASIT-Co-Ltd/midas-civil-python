@@ -413,7 +413,7 @@ class AnalysisControl:
                     # Convert load_vector to vritz format
                     ground_acc_types = ["ACCX", "ACCY", "ACCZ"]
                     
-                    for item in load_Vectors:
+                    for i, item in enumerate(load_Vectors):
                         if not isinstance(item, (list,tuple)) or len(item) != 2:
                             raise ValueError(f"load_vector[{i}] must be a list with exactly 2 elements [name, nog]")
                         

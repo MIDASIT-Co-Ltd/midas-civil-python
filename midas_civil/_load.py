@@ -1,4 +1,5 @@
 from ._mapi import MidasAPI, NX
+from ._utils import _isInt, _isIntList
 from ._group import Group
 from ._element import elemByID
 import numpy as np
@@ -25,24 +26,27 @@ _PlaneLoadType= Literal['POINT','LINE','AREA']
 # -----  Extend for list of nodes/elems -----
 
 def _ADD_NodalLoad(self):
-    if isinstance(self.NODE,int):
+    if _isInt(self.NODE):
+        self.NODE = int(self.NODE)
         Load.Nodal.data.append(self)
-    elif isinstance(self.NODE,(list,tuple,set)):
+    elif _isIntList(self.NODE):
         for nID in self.NODE:
             Load.Nodal(nID,self.LCN,self.LDGR,self.FX,self.FY,self.FZ,self.MX,self.MY,self.MZ,self.ID)
 
 def _ADD_PressureLoad(self):
-    if isinstance(self.ELEM,int):
+    if _isInt(self.ELEM):
+        self.ELEM = int(self.ELEM)
         Load.Pressure.data.append(self)
-    elif isinstance(self.ELEM,(list,tuple,set)):
+    elif _isIntList(self.ELEM):
         for eID in self.ELEM:
             Load.Pressure(eID,self.LCN,self.LDGR,self.DIR,self.PRES,self.VECTOR,self.bPROJ,self.ID)
 
 
 def _ADD_BeamLoad(self):
-    if isinstance(self.ELEMENT,int):
+    if _isInt(self.ELEMENT):
+        self.ELEMENT = int(self.ELEMENT)
         Load.Beam.data.append(self)
-    elif isinstance(self.ELEMENT,(list,tuple,set)):
+    elif _isIntList(self.ELEMENT):
         for eID in self.ELEMENT:
             Load.Beam(eID,self.LCN,self.LDGR,self.VALUE,self.DIRECTION,self.D,self.P,self.CMD,self.TYPE,self.USE_ECCEN,self.USE_PROJECTION,
                       self.ECCEN_DIR,self.ECCEN_TYPE,self.IECC,self.JECC,self.USE_H,self.I_H,self.J_H,self.ID)
@@ -60,16 +64,18 @@ def _ADD_LoadCase(self):
         Load_Case.maxNO = max(Load_Case.maxNO,self.NO[i])
         
 def _ADD_NodalMass(self):
-    if isinstance(self.NODE_ID,int):
+    if _isInt(self.NODE_ID):
+        self.NODE_ID = int(self.NODE_ID)
         Load.NodalMass.data.append(self)
-    elif isinstance(self.NODE_ID,(list,tuple,set,)):
+    elif _isIntList(self.NODE_ID):
         for nID in self.NODE_ID:
             Load.NodalMass(nID,self.MX,self.MY,self.MZ,self.RMX,self.RMY,self.RMZ)
 
 def _ADD_SpDisp(self):
-    if isinstance(self.NODE,int):
+    if _isInt(self.NODE):
+        self.NODE = int(self.NODE)
         Load.SpDisp.data.append(self)
-    elif isinstance(self.NODE,(list,tuple,set,)):
+    elif _isIntList(self.NODE):
         for nID in self.NODE:
             Load.SpDisp(nID,self.LCN,self.LDGR,self.VALUES,self.ID)
 
@@ -199,7 +205,7 @@ class Load:
 
             chk = 0
             for i in Load_Case.cases:
-                if load_case in i.NAME: chk = 1
+                if load_case == i.NAME: chk = 1
             if chk == 0: Load_Case("D", load_case)
             
             if load_group != "":
@@ -291,7 +297,7 @@ class Load:
 
             chk = 0
             for i in Load_Case.cases:
-                if load_case in i.NAME: chk = 1
+                if load_case == i.NAME: chk = 1
             if chk == 0: Load_Case("D", load_case)
             if load_group != "":
                 chk = 0
@@ -400,7 +406,7 @@ class Load:
 
             chk = 0
             for i in Load_Case.cases:
-                if load_case in i.NAME: chk = 1
+                if load_case == i.NAME: chk = 1
             if chk == 0: Load_Case("D", load_case)
             if load_group != "":
                 chk = 0
@@ -440,7 +446,7 @@ class Load:
             self.P = P
             self.USE_H = adnl_h
             self.I_H = adnl_h_i
-            if adnl_h == 0:
+            if adnl_h_j == 0:
                 self.USE_JH = False
                 self.J_H = 0
             else:
@@ -485,7 +491,7 @@ class Load:
                         "USE_ADDITIONAL": i.USE_H,
                         "ADDITIONAL_I_END": i.I_H,
                         "ADDITIONAL_J_END": i.J_H,
-                        "USE_ADDITIONAL_J_END": i.J_H
+                        "USE_ADDITIONAL_J_END": i.USE_JH
                     })
                 if i.ELEMENT not in json["Assign"]:
                     json["Assign"][i.ELEMENT] = {"ITEMS": []}
@@ -595,7 +601,7 @@ class Load:
             for case in load_case:
                 chk = 0
                 for i in Load_Case.cases:
-                    if case in i.NAME:
+                    if case == i.NAME:
                         chk = 1
                 if NX.SHOW_OUPTUT_IN_TERMINAL and chk == 0:
                     print(f"Warning: Load case '{case}' does not exist!")
@@ -1026,7 +1032,7 @@ class Load:
             # Check if load case exists - give warning if not
             chk = 0
             for i in Load_Case.cases:
-                if load_case in i.NAME:
+                if load_case == i.NAME:
                     chk = 1
             if chk == 0:
                 Load_Case("D", load_case)
@@ -1210,7 +1216,7 @@ class Load:
 
             chk = 0
             for i in Load_Case.cases:
-                if load_case in i.NAME: chk = 1
+                if load_case == i.NAME: chk = 1
             if chk == 0: Load_Case("D", load_case)
             if load_group != "":
                 chk = 0
@@ -1488,7 +1494,7 @@ class Load:
             
             chk = 0
             for i in Load_Case.cases:
-                if load_case in i.NAME: chk = 1
+                if load_case == i.NAME: chk = 1
             if chk == 0: Load_Case("D", load_case)
             if load_group != "":
                 chk = 0

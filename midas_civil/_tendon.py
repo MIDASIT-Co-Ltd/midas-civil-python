@@ -847,7 +847,7 @@ class Tendon:
                         else: trans_len_opt = "AUTO2"
                         break
             if trans_len_opt == 'AUTO':
-                trans_len_opt == 'AUTO1'
+                trans_len_opt = 'AUTO1'
 
             self.LENG_OPT = trans_len_opt
             self.BLEN = trans_len_begin
@@ -1085,7 +1085,7 @@ class Tendon:
             if id > -1 :
                 chk = 0
                 for i in Load_Case.cases:
-                    if load_case in i.NAME: chk = 1
+                    if load_case == i.NAME: chk = 1     
                 if chk == 0: Load_Case("PS", load_case)
                 if load_group != "":
                     chk = 0

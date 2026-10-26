@@ -687,10 +687,11 @@ def nodesInRadius(point_location, radius: float = 0, output: Literal['ID','NODE'
     if output == 'NODE':
         if ifRemove:
             close_nodes.remove(nodeByID(id2Remove))
-            if bDistOutput:
-                return [(node,_dist_record[node.ID]) for node in close_nodes]
-            else:
-                return close_nodes
+        if bDistOutput:
+            return [(node,_dist_record[node.ID]) for node in close_nodes]
+        else:
+            return close_nodes
+        
     if ifRemove:
         close_nodesID.remove(id2Remove)
     

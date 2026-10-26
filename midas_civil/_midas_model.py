@@ -4,10 +4,9 @@ import sys
 import importlib
 import itertools
 from typing import TYPE_CHECKING , Union
-from types import ModuleType
 from functools import partial, wraps
-import inspect
 from copy import deepcopy
+import time
 
 MAX_COPIES = 100                        # slots 0..49, then wraps to 0
 _slots = itertools.cycle(range(MAX_COPIES))
@@ -85,6 +84,8 @@ class cvl_lib:
             __dest__.Section.sect = deepcopy(source.Section.sect)
             __dest__.Section.ids = deepcopy(source.Section.ids)
             __dest__.Section._dic = deepcopy(source.Section._dic)
+        else:
+            raise ValueError(f"replaceData: unsupported data {data!r}. Use 'Node', 'Element', 'Material' or 'Section'.")
 
     @staticmethod
     def mergeData(source,data:_modelData='Node',__dest__=None):
@@ -101,13 +102,38 @@ class cvl_lib:
             for elm in source.Element.elements:
                 elm._GROUP = ''
                 __dest__._ADD_ELEM(elm)
+        else:
+            raise ValueError(f"mergeData: unsupported data {data!r}. Use 'Node', 'Element', 'Material' or 'Section'.")
 
 
     @staticmethod
     def shutDown(__dest__=None):
         ''' Closes the launched CIVIL NX instance.'''
         print("     CLOSING CIVIL NX....")
-        __dest__.MidasAPI('POST','/DOC/EXIT',{"Argument":{}})
+
+
+        # # APPROACH A - through API
+        # import requests
+        # mapi_key = __dest__.MAPI_KEY.data
+        # cmdURL = __dest__.MAPI_BASEURL.baseURL + "/doc/EXIT"
+        # headers = {
+        #                 "Content-Type": "application/json",
+        #                 "MAPI-Key": mapi_key
+        #             }
+
+        # try:
+        #     requests.post(url=cmdURL, headers=headers , json={"Argument":{}},timeout=1)   # Excepting the timeout error
+        # except:
+        #     pass
+
+
+        # APPROACH B - through process
+        time.sleep(1)
+        _Process = __dest__.NX._NX_PROCESS
+        _Process.terminate()
+
+        __dest__.Model.clear()
+        _purge(__dest__.__name__)
                     
 
 
@@ -129,6 +155,12 @@ def MIDAS_Model(MAPI_Key=None,bAutoURL=True):
         CVL_LIB.MAPI_KEY(MAPI_Key)
         if bAutoURL:
             CVL_LIB.MAPI_BASEURL.autoURL()
+
+
+    # MANUALLY MAPPING THE CURRENT OPTIONS
+    CVL_LIB.NX.SHOW_OUPTUT_IN_TERMINAL = NX.SHOW_OUPTUT_IN_TERMINAL
+    CVL_LIB.NX.SYS_EXIT_ON_ERROR = NX.SYS_EXIT_ON_ERROR
+    CVL_LIB.NX.OFFLINE = NX.OFFLINE
 
 
     # Adding new functions
@@ -173,8 +205,12 @@ def LaunchNX(bNewMAPIKey=True,returnType:_rType='PY_LIB',NX_exePath:str=None):
     mapi_reg = winreg.QueryValueEx(registry_key, "Key")
     mapi_key = str(mapi_reg[0])
 
-    startup_reg = winreg.QueryValueEx(registry_key, "STARTUP")
-    startup_orig = startup_reg[0]
+    startup_orig = 0
+
+    try:
+        startup_reg = winreg.QueryValueEx(registry_key, "STARTUP")
+        startup_orig = startup_reg[0]
+    except: pass
 
 
     # PRINT DATA
@@ -227,9 +263,9 @@ def LaunchNX(bNewMAPIKey=True,returnType:_rType='PY_LIB',NX_exePath:str=None):
     else:
         civilNX_path = NX_exePath
 
-    import subprocess , time
+    import subprocess
     print(f"     Launching {NX.PRODUCT} NX ",end=" ",flush=True)
-    subprocess.Popen([civilNX_path])
+    _NX_PROCESS = subprocess.Popen([civilNX_path])
     # ---------------------------------------------------------------------------
     time.sleep(6)   # Initial time gap
     status_open = 'progress'
@@ -265,10 +301,16 @@ def LaunchNX(bNewMAPIKey=True,returnType:_rType='PY_LIB',NX_exePath:str=None):
             CVL_LIB = _importLIB_SS('midas_civil')  # what actually runs
 
         # CVL_LIB = CVLLib(_importLIB_SS('midas_civil'))  # what actually runs
+        
         CVL_LIB.MAPI_KEY(final_mapi_key)
         CVL_LIB.MAPI_BASEURL.autoURL()
         CVL_LIB.Model.clear()
+        CVL_LIB.NX._NX_PROCESS = _NX_PROCESS
 
+        # MANUALLY MAPPING THE CURRENT OPTIONS
+        CVL_LIB.NX.SHOW_OUPTUT_IN_TERMINAL = NX.SHOW_OUPTUT_IN_TERMINAL
+        CVL_LIB.NX.SYS_EXIT_ON_ERROR = NX.SYS_EXIT_ON_ERROR
+        CVL_LIB.NX.OFFLINE = NX.OFFLINE
 
         # Adding new functions
         setattr(CVL_LIB, "replaceData", partial(cvl_lib.replaceData, __dest__=CVL_LIB))

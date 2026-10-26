@@ -1,4 +1,5 @@
 from ._mapi import MidasAPI
+from ._utils import _isInt, _isIntList
 # from ._model import *
 # from ._node import Node
 from ._group import Group
@@ -41,9 +42,10 @@ def convList(item):
 # -----  Extend for list of nodes/elems -----
 
 def _ADD_Support(self):
-    if isinstance(self.NODE,int):
+    if _isInt(self.NODE):
+        self.NODE = int(self.NODE)
         Boundary.Support.sups.append(self)
-    elif isinstance(self.NODE,(list,tuple,set)):
+    elif _isIntList(self.NODE):
         for nID in self.NODE:
             Boundary.Support(nID,self.CONST,self.GROUP)
 
@@ -53,12 +55,12 @@ class Boundary:
     @classmethod
     def create(cls):
         """Creates Boundary elements in MIDAS CIVIL NX"""
-        if cls.Support.sups!=[]: cls.Support.create()
-        if cls.ElasticLink.links!=[]: cls.ElasticLink.create()
-        if cls.RigidLink.links!=[]: cls.RigidLink.create()
-        if cls.MLFC.func!=[]: cls.RigidLink.create()
-        if cls.PointSpring.springs!=[]: cls.PointSpring.create()
-        if cls.BeamEndRelease.releases!=[]: cls.BeamEndRelease.create()
+        if cls.Support.sups: cls.Support.create()
+        if cls.MLFC.func: cls.MLFC.create()     # functions first: links can refer to them
+        if cls.ElasticLink.links: cls.ElasticLink.create()
+        if cls.RigidLink.links: cls.RigidLink.create()
+        if cls.PointSpring.springs: cls.PointSpring.create()
+        if cls.BeamEndRelease.releases: cls.BeamEndRelease.create()
 
     
     @classmethod
@@ -69,6 +71,7 @@ class Boundary:
         cls.RigidLink.delete()
         cls.MLFC.delete()
         cls.PointSpring.delete()
+        cls.BeamEndRelease.delete()
 
     @classmethod
     def clear(cls):
@@ -88,6 +91,7 @@ class Boundary:
         cls.RigidLink.sync()
         cls.MLFC.sync()
         cls.PointSpring.sync()
+        cls.BeamEndRelease.sync()
 
 
     class Support:
@@ -198,7 +202,6 @@ class Boundary:
                     beta_angle: float = 0, 
                     dir: _eLinkDir = "Dy", 
                     func_id: int = 1, 
-                    stiffness_rigid:list[bool]=[False,False,False,False,False,False],
                     distance_ratio: float = 0,
                     id: int = None, ):
             """
@@ -678,8 +681,7 @@ class Boundary:
         
         @classmethod
         def sync(cls):
-            
-            cls.links = []
+            cls.clear()
             a = cls.get()
             if a != {'message': ''}:
                 for i in a['MLFC'].keys():
@@ -705,6 +707,7 @@ class Boundary:
             Deletes all func from the database and resets the class.
             """
             cls.links = []
+            cls._id = []
 
 #--------------------------------------------------------------------------------------------------------------------------------------
 
@@ -985,7 +988,7 @@ class Boundary:
 
             # Auto-assign ID if not provided
             if id is None:
-                self.ID = max(Boundary.RigidLink.ids) + 1
+                self.ID = max(Boundary.BeamEndRelease.ids) + 1
             else:
                 self.ID = id
                 

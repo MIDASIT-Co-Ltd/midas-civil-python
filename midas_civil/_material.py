@@ -1798,7 +1798,7 @@ class ChangeProperty:
     @staticmethod
     def delete():
         MidasAPI("DELETE","/db/EDMP")
-        TDMatLink.clear()
+        ChangeProperty.clear()
 
     @staticmethod
     def clear():

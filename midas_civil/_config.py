@@ -2,6 +2,11 @@
 import os
 from pathlib import Path
 import json
+from typing import Literal
+
+# Options stored in the config file (all booleans)
+_CONFIG_KEYS = ("SHOW_OUPTUT_IN_TERMINAL","SAVE_DEBUG_LOG","SEND_IN_CHUNKS","SYS_EXIT_ON_ERROR","debug_request","dispWarning","OFFLINE")
+_configField = Literal["SAVE_DEBUG_LOG","debug_request","OFFLINE","SEND_IN_CHUNKS","SYS_EXIT_ON_ERROR","SHOW_OUPTUT_IN_TERMINAL","dispWarning"]
 
 
 def _user_config_path() -> Path:
@@ -13,28 +18,19 @@ def _user_config_path() -> Path:
         base = Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming"))
     else:
         base = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
-        
+
     return base / "midas_civil_python" / "config.json"
 
 
 def _generate_configJSON():
-    '''Generates and returns the JSON data'''
+    '''Generates and returns the JSON data from the current NX options'''
     from ._mapi import NX
-    _CONFIG_JSON = {}
-    _CONFIG_JSON["SHOW_OUPTUT_IN_TERMINAL"] = NX.SHOW_OUPTUT_IN_TERMINAL
-    _CONFIG_JSON["SAVE_DEBUG_LOG"] = NX.SAVE_DEBUG_LOG
-    _CONFIG_JSON["SEND_IN_CHUNKS"] = NX.SEND_IN_CHUNKS
-    _CONFIG_JSON["SYS_EXIT_ON_ERROR"] = NX.SYS_EXIT_ON_ERROR
-    _CONFIG_JSON["debug_request"] = NX.debug_request
-    _CONFIG_JSON["dispWarning"] = NX.dispWarning
-    _CONFIG_JSON["OFFLINE"] = NX.OFFLINE
+    return {key: getattr(NX, key) for key in _CONFIG_KEYS}
 
-    return _CONFIG_JSON
 
-    
 # SAVE THE JSON FILE
 def _save_config_file(data):
-    '''Generates current config data and saves'''
+    '''Saves the config data (atomic write)'''
     import tempfile
     p = _user_config_path()
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -49,46 +45,60 @@ def _save_config_file(data):
         raise
     if os.name != "nt":
         try:
-            os.chmod(p, 0o600)      # file holds the MAPI key -> owner-only
+            os.chmod(p, 0o600)      # owner-only (the file holds options only, never the MAPI key)
         except OSError:
             pass
     return p
 
 
+def _read_config_file() -> dict:
+    '''Returns the stored config dict, or {} when the file is missing or unreadable.'''
+    path = _user_config_path()
+    try:
+        if path.is_file():
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if isinstance(data, dict):
+                return data
+    except Exception:
+        pass
+    return {}
+
+
 # LOAD THE CONFIG IN CIVIL LIB
 def _load_config_inLIB():
-    path = _user_config_path()
-    if not path.is_file():
-        _CONFIG_JSON =  _generate_configJSON()
-        _save_config_file(_CONFIG_JSON)
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        _CONFIG_JSON =  data
-    except Exception as e:
-        _CONFIG_JSON =  _generate_configJSON()
+    '''Applies the stored options to NX. Missing / invalid keys keep their defaults, so an
+    older or hand-edited file never breaks the import. A read-only location is ignored.'''
+    from ._mapi import NX
+    data = _read_config_file()
+
+    for key in _CONFIG_KEYS:
+        value = data.get(key)
+        if isinstance(value, bool):
+            setattr(NX, key, value)
+
+    # Complete the file with any missing key (keeps unknown keys untouched)
+    if any(not isinstance(data.get(key), bool) for key in _CONFIG_KEYS):
+        try:
+            _save_config_file({**data, **_generate_configJSON()})
+        except OSError:
+            pass
+
+
+def MIDAS_Configure(data:_configField,value:bool):
+    '''Saves an option in the config file (used by every future session) and applies it to the current session.
+
+    MIDAS_Configure("SHOW_OUPTUT_IN_TERMINAL", False)
+    MIDAS_Configure("SYS_EXIT_ON_ERROR", False)
+    '''
+    if data not in _CONFIG_KEYS:
+        raise ValueError(f"Unknown config option {data!r}. Valid options are: {', '.join(_CONFIG_KEYS)}")
+    if not isinstance(value, bool):
+        raise ValueError(f"Config option {data!r} must be True or False, got {value!r}")
 
     from ._mapi import NX
-    NX.SHOW_OUPTUT_IN_TERMINAL = _CONFIG_JSON["SHOW_OUPTUT_IN_TERMINAL"]
-    NX.SAVE_DEBUG_LOG = _CONFIG_JSON["SAVE_DEBUG_LOG"]
-    NX.SEND_IN_CHUNKS = _CONFIG_JSON["SEND_IN_CHUNKS"]
-    NX.OFFLINE = _CONFIG_JSON["OFFLINE"]
-    NX.SYS_EXIT_ON_ERROR = _CONFIG_JSON["SYS_EXIT_ON_ERROR"]
-    NX.debug_request = _CONFIG_JSON["debug_request"]
-    NX.dispWarning = _CONFIG_JSON["dispWarning"]
+    setattr(NX, data, value)
 
-from typing import Literal
-_configField = Literal["SAVE_DEBUG_LOG","debug_request","OFFLINE","SEND_IN_CHUNKS","SYS_EXIT_ON_ERROR","SHOW_OUPTUT_IN_TERMINAL","dispWarning"]
-
-
-def MIDAS_Configure(data:_configField,value):
-
-    path = _user_config_path()
-
-    with open(path, "r", encoding="utf-8") as f:
-        js_config = json.load(f)
-    _CONFIG_JSON =  js_config
-
+    _CONFIG_JSON = {**_generate_configJSON(), **_read_config_file()}
     _CONFIG_JSON[data] = value
-    
     _save_config_file(_CONFIG_JSON)

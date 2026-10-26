@@ -13,6 +13,45 @@ _sumit_req = requests.Session()
 # import polars as pl
 
 _httpMethod = Literal["PUT","POST","DELETE","GET"]
+
+
+# ----------------------------  ERRORS  ------------------------------------------------
+class MidasError(Exception):
+    """Base class of all errors raised by midas_civil (when NX.SYS_EXIT_ON_ERROR is False)."""
+
+class MidasConnectionError(MidasError):
+    """CIVIL NX is not reachable / not connected, or the request timed out."""
+
+class MidasAuthError(MidasError):
+    """MAPI key is missing or rejected."""
+
+class MidasAPIError(MidasError):
+    """CIVIL NX returned an unusable response (HTTP error with a non-JSON body)."""
+
+class MidasInputError(MidasError, ValueError):
+    """Invalid input passed to a midas_civil function."""
+
+
+def _fail(exc:MidasError):
+    """Single exit point for fatal errors.
+    NX.SYS_EXIT_ON_ERROR = True  -> stop the script with exit code 1 (non-zero, so CI/automation sees the failure)
+    NX.SYS_EXIT_ON_ERROR = False -> raise `exc` so the caller can handle it
+    The message is printed only when NX.SHOW_OUPTUT_IN_TERMINAL is True."""
+    if NX.SHOW_OUPTUT_IN_TERMINAL:
+        tqdm.write(Fore.RED + f" ❌   {exc}" + Style.RESET_ALL)
+    if NX.SYS_EXIT_ON_ERROR:
+        sys.exit(1)
+    raise exc
+
+
+def _inputError(msg:str):
+    """Invalid user input.
+    Default mode (SYS_EXIT_ON_ERROR = True): message is printed (if output is enabled) and execution continues as before.
+    SYS_EXIT_ON_ERROR = False (caller handles errors): MidasInputError is raised instead of failing silently."""
+    if not NX.SYS_EXIT_ON_ERROR:
+        raise MidasInputError(msg)
+    if NX.SHOW_OUPTUT_IN_TERMINAL:
+        print(msg)
 _functionMapping = {
 
 '/doc/new' : 'New Project' ,
@@ -226,6 +265,7 @@ class NX:
     dispWarning = True
     
     _isSyncUnit = False
+    _isSyncNodeElem = False
 
     PRODUCT = 'CIVIL'
     USER_ID = None
@@ -236,6 +276,7 @@ class NX:
     SEND_IN_CHUNKS = False
     SYS_EXIT_ON_ERROR = True
     SHOW_OUPTUT_IN_TERMINAL = True
+    # TIMEOUT = (15, None)    # (connect, read) seconds for every request. Read timeout None = wait for long analyses. eg. NX.TIMEOUT = (15, 600)
 
     units = {
         "FORCE": "KN",
@@ -314,7 +355,8 @@ class MAPI_BASEURL:
         ```
         '''
         MAPI_BASEURL.baseURL = baseURL
-        
+        if MAPI_KEY.count < 0: MAPI_KEY.count = 0     # re-check the connection on the next request
+
     @classmethod
     def get_url(cls):
         return MAPI_BASEURL.baseURL
@@ -334,10 +376,8 @@ class MAPI_BASEURL:
 
             if NX.SHOW_OUPTUT_IN_TERMINAL: tqdm.write(f' 🌐   BASE URL is taken from Registry entry.  >>  {url_comb}')
             MAPI_BASEURL(url_comb)
-        except:
-            if NX.SHOW_OUPTUT_IN_TERMINAL: tqdm.write(" 🌐   BASE URL is not defined. Click on Apps > API Settings to copy the BASE URL Key.\nDefine it using MAPI_BASEURL('https://moa-engineers.midasit.com:443/civil')")
-            if NX.SYS_EXIT_ON_ERROR: sys.exit(0)
-            pass
+        except Exception:
+            _fail(MidasConnectionError("BASE URL is not defined. Click on Apps > API Settings to copy the BASE URL Key.\nDefine it using MAPI_BASEURL('https://moa-engineers.midasit.com:443/civil')"))
 
     @staticmethod
     def autoURL():
@@ -357,16 +397,18 @@ class MAPI_BASEURL:
                 "Content-Type": "application/json",
                 "MAPI-Key": mapi_key
             }
-            response = _sumit_req.get(url=url, headers=headers)
+            try:
+                response = _sumit_req.get(url=url, headers=headers, timeout=(5, 15))
+            except requests.exceptions.RequestException:
+                continue        # server not reachable -> try the next one
             if response.status_code == 200:
                 MAPI_BASEURL(base_url)
                 MAPI_BASEURL.server_loc = serv_locations[i]
                 chk=1
                 break
         if chk==0:
-            if NX.SHOW_OUPTUT_IN_TERMINAL: tqdm.write(f" 🌐   Kindly manually enter the BASE URL. \nRefer to https://moa.midasit.com/services to find the correct URL.")
-            if NX.SYS_EXIT_ON_ERROR: sys.exit(0)
-            
+            _fail(MidasConnectionError("Could not find the BASE URL automatically. Kindly enter it manually using MAPI_BASEURL(...).\nRefer to https://moa.midasit.com/services to find the correct URL."))
+
 class MAPI_KEY:
     """MAPI key from MIDAS CIVIL NX.\n\nEg: MAPI_Key("eadsfjaks568wqehhf.ajkgj345qfhh")"""
     data = ""
@@ -374,20 +416,20 @@ class MAPI_KEY:
     
     def __init__(self, mapi_key:str):
         MAPI_KEY.data = mapi_key
-        
+        if MAPI_KEY.count < 0: MAPI_KEY.count = 0     # re-check the connection on the next request
+
     @classmethod
     def get_key(cls):
         if MAPI_KEY.data == "":
             try:
-                key_path = f"Software\\MIDAS\\CVLwNX_{MAPI_COUNTRY.country}\\CONNECTION"  
+                key_path = f"Software\\MIDAS\\CVLwNX_{MAPI_COUNTRY.country}\\CONNECTION"
                 registry_key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_READ)
                 value = winreg.QueryValueEx(registry_key, "Key")
                 my_key = value[0]
-                MAPI_KEY(my_key)
-                if NX.SHOW_OUPTUT_IN_TERMINAL: tqdm.write(f' 🔑   MAPI-KEY is taken from Registry entry.  >>  {my_key[:35]}...')
-            except:
-                if NX.SHOW_OUPTUT_IN_TERMINAL: tqdm.write(f"🔑   MAPI KEY is not defined. Click on Apps > API Settings to copy the MAPI Key.\n Define it using MAPI_KEY('xxxx')")
-                if NX.SYS_EXIT_ON_ERROR: sys.exit(0)
+            except Exception:
+                _fail(MidasAuthError("MAPI KEY is not defined. Click on Apps > API Settings to copy the MAPI Key.\n Define it using MAPI_KEY('xxxx')"))
+            MAPI_KEY(my_key)
+            if NX.SHOW_OUPTUT_IN_TERMINAL: tqdm.write(f' 🔑   MAPI-KEY is taken from Registry entry.  >>  {my_key[:6]}...')
         else:
             my_key = MAPI_KEY.data
         
@@ -395,7 +437,12 @@ class MAPI_KEY:
 #---------------------------------------------------------------------------------------------------------------
 
 #2 midas API link code:
-def MidasAPI(method:_httpMethod, command:str, body:dict={})->dict:
+_MSG_NOT_CONNECTED = ("Civil NX model is not connected.  Click on 'Apps > Connect' in Civil NX.\n"
+                      "Make sure the MAPI Key in python code is matching with the MAPI key in Civil NX.")
+_MSG_INVALID_KEY = ("MAPI KEY entered is invalid.\n"
+                    "Please consider refreshing MAPI-Key in CIVIL NX and resending the request.")
+
+def MidasAPI(method:_httpMethod, command:str, body:dict=None)->dict:
     """Sends HTTP Request to MIDAS CIVIL NX
             Parameters:
                 Method: "PUT" , "POST" , "GET" or "DELETE"
@@ -405,26 +452,17 @@ def MidasAPI(method:_httpMethod, command:str, body:dict={})->dict:
                 ```python
                 # Create a node
                 MidasAPI("PUT","/db/NODE",{{"Assign":{{"1":{{'X':0, 'Y':0, 'Z':0}}}}}})"""
-    
-    base_url = MAPI_BASEURL.baseURL
-    mapi_key = MAPI_KEY.get_key()
+    if body is None:
+        body = {}
+    if method not in ("PUT","POST","GET","DELETE"):
+        raise ValueError(f"Invalid HTTP method {method!r}. Use 'PUT', 'POST', 'GET' or 'DELETE'.")
 
-    url = base_url + command
-    headers = {
-        "Content-Type": "application/json",
-        "MAPI-Key": mapi_key
-    }
-
-    
     if MAPI_KEY.count == 1:
         # ONLY ONE TIME - WHEN API COMMANDS ARE USED
         MAPI_KEY.count = 0
 
-        if NX.OFFLINE:
+        if NX.OFFLINE and NX.SHOW_OUPTUT_IN_TERMINAL:
             NX.box_print("  OFFLINE MODE ACTIVE  ",pad=30,text_col=Fore.RED,border_col=Fore.RED)
-
-        if NX.SHOW_OUPTUT_IN_TERMINAL and NX.user_print:
-            _checkUSER()
 
         if NX.SAVE_DEBUG_LOG:
             NX.debug_request = True
@@ -433,66 +471,64 @@ def MidasAPI(method:_httpMethod, command:str, body:dict={})->dict:
     if NX.OFFLINE:
         return {}
 
-
-    if not NX.SEND_IN_CHUNKS:
-        response = _sendAPI_cmd(method,command,body,headers)
-    else:
-        # IF IT IS A DB TYPE OF JSON WITH ASSIGN ONLY SEND IN CHUNKS
-        if command.upper().startswith('/DB') and "Assign" in body:
-            LIST_KEYS = list(body["Assign"].keys())
-            NUM_KEYS = len(LIST_KEYS)
-            N_REQ = _sizeToNumReq(_findSizeJSON(body))
-            MAX_NUM= math.ceil(NUM_KEYS/N_REQ)
-
-            if N_REQ == 1:
-                # print("  >>>  SEND DATA IN A SINGLE CHUNKS 💚")
-                response=_sendAPI_cmd(method,command,body,headers)
-
-            else:
-                REMAIN_KEYS = NUM_KEYS
-                for n in range(N_REQ):
-                    json_send = {"Assign":{}}
-                    SEND_KEYS = min(MAX_NUM,REMAIN_KEYS)
-                    for q in range(SEND_KEYS):
-                        i=LIST_KEYS[n*MAX_NUM+q]
-                        json_send["Assign"][i]=body["Assign"][i]
-
-                    # print("   >>>  SEND DATA IN CHUNK   -   ",(n+1)*"🔥")
-                    # NX.saveJSON(json_send,"testJS.json")
-                    response=_sendAPI_cmd(method,command,json_send,headers)
-                    REMAIN_KEYS -= MAX_NUM
-        else:
-            response = _sendAPI_cmd(method,command,body,headers)
-
-    
     if MAPI_KEY.count == 0:
+        # FIRST REQUEST TO THIS KEY/URL : confirm the connection and detect the product.
+        # Runs even when terminal output is disabled (only the banner depends on it).
         MAPI_KEY.count = -1
-        if response.status_code == 404:
+        try:
+            _checkUSER()
+        except BaseException:
+            MAPI_KEY.count = 0      # check again on the next request
+            raise
 
-            if NX.SHOW_OUPTUT_IN_TERMINAL: 
-                print(Fore.RED +'\n╭─ 💀   ─────────────────────────────────────────────────────────────────────────────╮')
-                print(f"│  Civil NX model is not connected.  Click on 'Apps > Connect' in Civil NX.          │")
-                print(f"│  Make sure the MAPI Key in python code is matching with the MAPI key in Civil NX.  │")
-                print('╰────────────────────────────────────────────────────────────────────────────────────╯\n'+Style.RESET_ALL)
-            if NX.SYS_EXIT_ON_ERROR: 
-                sys.exit(0)
-        elif response.status_code == 401:
-            if NX.SHOW_OUPTUT_IN_TERMINAL: 
-                print(Fore.RED +'\n╭─ 💀   ─────────────────────────────────────────────────────────────────────────────╮')
-                print(f"│  MAPI KEY entered is invalid.                                                      │")
-                print(f"│  Please consider refreshing MAPI-Key in CIVIL NX and resending the request.        │")
-                print('╰────────────────────────────────────────────────────────────────────────────────────╯\n'+Style.RESET_ALL)
-            if NX.SYS_EXIT_ON_ERROR: 
-                sys.exit(0)
-    
-    resp = response.json()
+    headers = {
+        "Content-Type": "application/json",
+        "MAPI-Key": MAPI_KEY.get_key()
+    }
+
+    # IF IT IS A DB TYPE OF JSON WITH ASSIGN ONLY SEND IN CHUNKS
+    if NX.SEND_IN_CHUNKS and command.upper().startswith('/DB') and isinstance(body.get("Assign"),dict):
+        LIST_KEYS = list(body["Assign"].keys())
+        N_REQ = min(_sizeToNumReq(_findSizeJSON(body)), max(len(LIST_KEYS),1))
+        MAX_NUM = math.ceil(len(LIST_KEYS)/N_REQ) if LIST_KEYS else 1
+        resp, first_error = None, None
+        for start in range(0, max(len(LIST_KEYS),1), MAX_NUM):
+            json_send = {"Assign":{k:body["Assign"][k] for k in LIST_KEYS[start:start+MAX_NUM]}}
+            response = _sendAPI_cmd(method,command,json_send,headers)
+            resp = _parseResponse(response,method,command)
+            if first_error is None and isinstance(resp,dict) and 'error' in resp:
+                first_error = resp
+        if first_error is not None:
+            resp = first_error      # an error in any chunk is reported, not hidden by later chunks
+    else:
+        response = _sendAPI_cmd(method,command,body,headers)
+        resp = _parseResponse(response,method,command)
+
     if NX.SHOW_OUPTUT_IN_TERMINAL and NX.dispWarning:
-        if 'error' in resp:
+        if isinstance(resp,dict) and 'error' in resp:
             cmd = _functionMapping.get(command.lower(),command)
+            try: err_msg = str(resp["error"]["message"])
+            except Exception: err_msg = str(resp["error"])
             tqdm.write(f'    ⚠️      Error observed in {cmd}.   |   URL : {command}')
-            tqdm.write(f'           Error : {Fore.LIGHTMAGENTA_EX+resp["error"]["message"]+Style.RESET_ALL}\n')        
+            tqdm.write(f'           Error : {Fore.LIGHTMAGENTA_EX+err_msg+Style.RESET_ALL}\n')        
 
 
+    return resp
+
+
+def _parseResponse(response, method, command):
+    """Checks the HTTP status of EVERY response and returns the decoded JSON."""
+    status = response.status_code
+    if status == 401:
+        _fail(MidasAuthError(_MSG_INVALID_KEY))
+    try:
+        resp = response.json()
+    except ValueError:
+        if status == 404:
+            _fail(MidasConnectionError(_MSG_NOT_CONNECTED))
+        _fail(MidasAPIError(f"{method} {command} returned HTTP {status} with a non-JSON response: {str(getattr(response,'text',''))[:200]!r}"))
+    if status == 404 and command.lower().startswith('/config/ver'):
+        _fail(MidasConnectionError(_MSG_NOT_CONNECTED))
     return resp
 
 
@@ -511,10 +547,11 @@ def _setUNIT(unitJS):
 
 
 def _checkUSER():
+    ''' Detects the connected product (CIVIL / GEN) and solver. Prints the banner only when output is enabled. '''
     response =  MidasAPI('GET','/config/ver',{})
-    if 'VER' in response:
+    if isinstance(response,dict) and 'VER' in response:
         resp:dict = response['VER']
-        _product = resp['NAME']
+        _product = str(resp.get('NAME',''))
         if 'CIVIL' in _product:
             NX.PRODUCT = 'CIVIL'
         elif 'GEN' in _product:
@@ -522,14 +559,17 @@ def _checkUSER():
         
         _version = resp.get('VERSION','9.6.0')
         if _version in NX._MEC_VERSIONS:
-            NX.SOLVER == 'MEC'
+            NX.SOLVER = 'MEC'
+
+        if not (NX.SHOW_OUPTUT_IN_TERMINAL and NX.user_print):
+            return
  
 
         # print(f"{' '*15}Connected to {resp['NAME']}")
         # print(f"{' '*15}USER : {resp['USER']}          COMPANY : {resp['COMPANY']}")
 
-        ln1 = f"Connected to {resp['NAME']}            SERVER : {MAPI_BASEURL.server_loc}"
-        ln2 = f"USER : {resp['USER']}          COMPANY : {resp['COMPANY']}"
+        ln1 = f"Connected to {resp.get('NAME','')}            SERVER : {MAPI_BASEURL.server_loc}"
+        ln2 = f"USER : {resp.get('USER','')}          COMPANY : {resp.get('COMPANY','')}"
 
         lg_ln1 = 66-len(ln1)
         lg_ln2 = 70-len(ln2)
@@ -556,17 +596,21 @@ def _sendAPI_cmd(method, command, body, headers):
 
     start_time = time.perf_counter()
 
-    response = {}
-    if method == "POST":
-        response = _sumit_req.post(url=url, headers=headers, json=body)
-    elif method == "PUT":
-        response = _sumit_req.put(url=url, headers=headers, json=body)
-    elif method == "GET":
-        response = _sumit_req.get(url=url, headers=headers)
-    elif method == "DELETE":
-        response = _sumit_req.delete(url=url, headers=headers)
-    else:
-        if NX.SHOW_OUPTUT_IN_TERMINAL: print(f"Invalid HTTP method entered {method}.")
+    try:
+        if method == "POST":
+            response = _sumit_req.post(url=url, headers=headers, json=body)
+        elif method == "PUT":
+            response = _sumit_req.put(url=url, headers=headers, json=body)
+        elif method == "GET":
+            response = _sumit_req.get(url=url, headers=headers)
+        elif method == "DELETE":
+            response = _sumit_req.delete(url=url, headers=headers)
+        else:
+            raise ValueError(f"Invalid HTTP method {method!r}. Use 'PUT', 'POST', 'GET' or 'DELETE'.")
+    except requests.exceptions.Timeout:
+        _fail(MidasConnectionError(f"Request timed out ({method} {command})."))
+    except requests.exceptions.ConnectionError as e:
+        _fail(MidasConnectionError(f"Could not reach {base_url} ({method} {command}): {e}"))
 
     
     end_time = time.perf_counter()
@@ -577,7 +621,7 @@ def _sendAPI_cmd(method, command, body, headers):
     if NX.SHOW_OUPTUT_IN_TERMINAL and NX.debug_requestJSON:
         tqdm.write(Fore.CYAN+">>  "+str(body)+Style.RESET_ALL)
     if NX.SHOW_OUPTUT_IN_TERMINAL and NX.debug_response:
-        tqdm.write(Fore.GREEN+"<<  "+str(response.json())+Style.RESET_ALL)
+        tqdm.write(Fore.GREEN+"<<  "+str(getattr(response,'text',''))+Style.RESET_ALL)
 
     return response
 

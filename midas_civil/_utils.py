@@ -2,6 +2,7 @@
 # from ._mapi import *
 from __future__ import annotations
 from math import hypot,sqrt
+import numbers
 import numpy as np
 from typing import Literal
 from ._mapi import NX,MidasAPI
@@ -45,10 +46,14 @@ def sFlatten(list_of_list):
 #     """Return ID of Node and Element"""
 #     return [beam.ID for beam in sFlatten(element_list)]
 
+def _mapNested(obj, fn):
+    '''Applies fn to every item of a (nested) list and returns NEW lists (the input is not modified)'''
+    if isinstance(obj, list):
+        return [_mapNested(o, fn) for o in obj]
+    return fn(obj)
+
 def getID(*objects):
-    objects = list(objects)
-    _getID2(objects)
-    return objects
+    return [_mapNested(o, lambda x: x.ID) for o in objects]
 
 def _getID2(objects):
     for i in range(len(objects)):
@@ -58,9 +63,8 @@ def _getID2(objects):
             objects[i] = objects[i].ID
 
 def getLOC(objects):
-    ''' Get location for multiple node objects'''
-    _getLOC2(objects)
-    return objects
+    ''' Get location for multiple node objects (the input list is not modified)'''
+    return _mapNested(objects, lambda x: x.LOC)
 
 def _getLOC2(objects):
     for i in range(len(objects)):
@@ -70,9 +74,7 @@ def _getLOC2(objects):
             objects[i] = objects[i].LOC
 
 def getNodeID(*objects):
-    objects = list(objects)
-    _getNodeID2(objects)
-    return objects
+    return [_mapNested(o, lambda x: x.NODE) for o in objects]
 
 def _getNodeID2(objects):
     for i in range(len(objects)):
@@ -106,11 +108,19 @@ def _convItem2List(item):
         return item
     return [item]
 
+def _isInt(item) -> bool:
+    '''True for python and numpy integers (not bool)'''
+    return isinstance(item, numbers.Integral) and not isinstance(item, bool)
+
+def _isIntList(item) -> bool:
+    '''True for list / tuple / set / numpy array of IDs'''
+    return isinstance(item, (list, tuple, set, np.ndarray))
+
 def _matchArray(A,B):
-    '''Matches B to length of A   
+    '''Matches B to length of A
     Return B'''
-    A = _convItem2List(A)
-    B = _convItem2List(B)
+    A = list(_convItem2List(A))
+    B = list(_convItem2List(B))
     n = len(A)
     if len(B) >= n:
         return B[:n]

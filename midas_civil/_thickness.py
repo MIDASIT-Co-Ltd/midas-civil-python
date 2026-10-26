@@ -60,22 +60,24 @@ def _Obj2JS(obj):
 
 
 
-def _JS2Obj(id,js):
+def _JS2Obj(id,js:dict):
     if js['TYPE'] == 'VALUE':
         name = js['NAME']
         type = js['TYPE']
         binout = js['bINOUT']
         t_in = js['T_IN']
         t_out = js['T_OUT']
-        try : offset = js['OFFSET'] 
-        except: offset = 0
-        off_value = js['O_VALUE']
+        offset = js.get('OFFSET',0)
+        off_value = js.get('O_VALUE',0)
 
         t_out2=-1
         if binout:t_out2 = t_out
 
+        offset_map = {1:'rat',2:'val'}
+
+        # print(t_in,t_out2,off_value,offset_map.get(offset,None),name,id)
     
-        Thickness(t_in,t_out2,off_value,offset,name,id)
+        Thickness(t_in,t_out2,off_value,offset_map.get(offset,None),name,id)
     
 
 
@@ -151,10 +153,9 @@ class Thickness(_common):
     @staticmethod
     def sync():
         a = Thickness.get()
+        Thickness.clear()
         if a != {'message': ''}:
             if list(a['THIK'].keys()) != []:
-                Thickness.thick = []
-                Thickness.ids=[]
                 for sect_id in a['THIK'].keys():
                     _JS2Obj(sect_id,a['THIK'][sect_id])
 

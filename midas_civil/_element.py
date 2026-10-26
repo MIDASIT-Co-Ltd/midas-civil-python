@@ -518,6 +518,8 @@ class Element():
             for elem_id, data in a['ELEM'].items():
                 _JS2Obj(elem_id, data)
 
+        NX._isSyncNodeElem = True
+
     @staticmethod
     def delete(ids:list=None):
         if ids is None:
@@ -536,6 +538,7 @@ class Element():
         Element.ids = set()
         Element.__elemDIC__={}
         Element.maxID = 0
+        Element.Grid = {}
         # _curve.curves = []
         # _quadShape.shapes = []
 
@@ -1178,7 +1181,7 @@ class Element():
                         for i in range(max_len-1):
                             if id != None : id_new = id+j
                             pt_array = [nID_dic[q][i],nID_dic[q+1][i],nID_dic[q+1][i+1],nID_dic[q][i+1]]
-                            plate_obj.append(Element.Plate(pt_array,stype,mat,sect,angle,group,id))
+                            plate_obj.append(Element.Plate(pt_array,stype,mat,sect,angle,group,id_new))
                             j+=1
 
             return plate_obj
@@ -1324,9 +1327,14 @@ class Element():
                     if id!=None: id+=nDiv
 
             if bDeleteLine:
-                for eID in elmIDs:
-                    Element._deleteElem(eID)
-                # return finalPlateObj
+                # for eID in elmIDs:
+                #     Element._deleteElem(eID)        # FROM LIBRARY
+                nIDSSTR = [str(eID) for eID in elmIDs]
+                de = [Element._deleteElem(eID) for eID in elmIDs]
+                listofids = ",".join(nIDSSTR)
+                if NX._isSyncNodeElem:                          # Only delete if data is synced
+                    MidasAPI('DELETE',f'/db/ELEM/{listofids}')
+                                    
 
 
             
@@ -1607,8 +1615,12 @@ class Element():
                     nID_A = nID_B
             
             if bDeletePlate:
-                for eID in plateElmIDs:
-                    Element._deleteElem(eID)
+                nIDSSTR = [str(eID) for eID in plateElmIDs]
+                de = [Element._deleteElem(eID) for eID in plateElmIDs]
+                listofids = ",".join(nIDSSTR)
+                if NX._isSyncNodeElem:                          # Only delete if data is synced
+                    MidasAPI('DELETE',f'/db/ELEM/{listofids}')
+                                    
 
         @staticmethod
         def fromPoints(facePts:list,meshSize:float=None,mat:int=1,group='',id:int=None):
@@ -1871,14 +1883,14 @@ class Element():
             """
             Sends all StiffnessScaleFactor data to the API
             """
-            MidasAPI("PUT", "/db/essf", cls.json())
+            MidasAPI("PUT", "/db/ESSF", cls.json())
         
         @classmethod
         def get(cls):
             """
             Retrieves StiffnessScaleFactor data from the API
             """
-            return MidasAPI("GET", "/db/essf")
+            return MidasAPI("GET", "/db/ESSF")
         
         @classmethod
         def sync(cls):
@@ -1889,46 +1901,31 @@ class Element():
             response = cls.get()
             
             if response != {'message': ''}:
-                processed_ids = set()  # To avoid duplicate processing
-                
-                for element_data in response.get("ESSF", {}).items():
-                    for item in element_data.get("ITEMS", []):
-                        scale_factor_id = item.get("ID", 1)
-                        
-                        # Skip if already processed (for multi-element scale factors)
-                        if scale_factor_id in processed_ids:
-                            continue
-                        
-                        # Find all elements with the same scale factor ID
-                        element_ids = []
-                        for eid, edata in response.get("ESSF", {}).items():
-                            for eitem in edata.get("ITEMS", []):
-                                if eitem.get("ID") == scale_factor_id:
-                                    element_ids.append(int(eid))
-                        
+                # Find all elements with the same scale factor ID
+                element_ids = []
+                for eid, edata in response.get("ESSF", {}).items():
+                    for eitem in edata.get("ITEMS", []):                
                         # Create StiffnessScaleFactor object
                         Element.StiffnessScaleFactor(
-                            element_id=element_ids if len(element_ids) > 1 else element_ids[0],
-                            area_sf=item.get("AREA_SF", 1.0),
-                            asy_sf=item.get("ASY_SF", 1.0),
-                            asz_sf=item.get("ASZ_SF", 1.0),
-                            ixx_sf=item.get("IXX_SF", 1.0),
-                            iyy_sf=item.get("IYY_SF", 1.0),
-                            izz_sf=item.get("IZZ_SF", 1.0),
-                            wgt_sf=item.get("WGT_SF", 1.0),
-                            group=item.get("GROUP_NAME", ""),
-                            id=scale_factor_id
+                            element_id=eid,
+                            area_sf=eitem.get("AREA_SF", 1.0),
+                            asy_sf=eitem.get("ASY_SF", 1.0),
+                            asz_sf=eitem.get("ASZ_SF", 1.0),
+                            ixx_sf=eitem.get("IXX_SF", 1.0),
+                            iyy_sf=eitem.get("IYY_SF", 1.0),
+                            izz_sf=eitem.get("IZZ_SF", 1.0),
+                            wgt_sf=eitem.get("WGT_SF", 1.0),
+                            group=eitem.get("GROUP_NAME", ""),
+                            id=eitem.get("ID", 1),
                         )
-                        
-                        processed_ids.add(scale_factor_id)
-        
+            
         @classmethod
         def delete(cls):
             """
             Deletes all stiffness scale factors from the database and resets the class.
             """
             cls.data = []
-            return MidasAPI("DELETE", "/db/essf")
+            return MidasAPI("DELETE", "/db/ESSF")
 
 
     class Wall_StiffnessScaleFactor:

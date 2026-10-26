@@ -823,8 +823,10 @@ class Result :
                 "Local": "REACTIONL",
                 "SurfaceSpring": "REACTIONLSURFACESPRING"
             }
-            table_type = table_type_map.get(type.capitalize(), "REACTIONG") # Default to Global
+            table_type = table_type_map.get(type, "REACTIONG") # Default to Global
             js_dat = _generate(table_type,keys,loadcase,components,cs_stage,options)
+
+            print(table_type)
 
             ResultJSON = _changeUNITandGetData(js_dat,options.FORCE_UNIT,options.LEN_UNIT,options.JSON_FILE_LOC,table_type)
             polarDF = _JSToDF_ResTable(ResultJSON,options.EXCEL_FILE_LOC,sheetName,options.EXCEL_CELL_POS, options.BACKEND)

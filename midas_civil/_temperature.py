@@ -107,7 +107,7 @@ class Temperature:
         def __init__(self, temperature, lcname, group="", id=None):
             chk = 0
             for i in Load_Case.cases:
-                if lcname in i.NAME: chk = 1
+                if lcname == i.NAME: chk = 1
             if chk == 0: Load_Case("T", lcname)
 
             if group:
@@ -204,7 +204,7 @@ class Temperature:
 
             chk = 0
             for i in Load_Case.cases:
-                if lcname in i.NAME: chk = 1
+                if lcname == i.NAME: chk = 1
             if chk == 0: Load_Case("T", lcname)
 
             if group:
@@ -351,7 +351,7 @@ class Temperature:
 
             chk = 0
             for i in Load_Case.cases:
-                if lcname in i.NAME: chk = 1
+                if lcname == i.NAME: chk = 1
             if chk == 0: Load_Case("T", lcname)
             
             if group:
@@ -499,7 +499,7 @@ class Temperature:
 
             chk = 0
             for i in Load_Case.cases:
-                if lcname in i.NAME: chk = 1
+                if lcname == i.NAME: chk = 1
             if chk == 0: Load_Case("T", lcname)
 
             if group:
@@ -757,7 +757,7 @@ class Temperature:
             # ── Load Case ─────────────────────────────────────────────────────────
             chk = 0
             for i in Load_Case.cases:
-                if lcname in i.NAME:
+                if lcname == i.NAME:
                     chk = 1
             if chk == 0:
                 Load_Case("T", lcname)

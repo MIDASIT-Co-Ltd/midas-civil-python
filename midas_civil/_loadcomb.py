@@ -1,4 +1,5 @@
-from ._mapi import MidasAPI , NX
+from ._mapi import MidasAPI , NX , _inputError
+import numbers
 # from ._model import *
 
 from typing import Literal
@@ -26,20 +27,20 @@ class LoadCombination:
         Sample: LoadCombination('LCB1', [('Dead Load(CS)',1.5), ('Temperature(ST)',0.9)], 'General', 'Active', 'Add')"""
         if id == None: id =0
         if not isinstance(case, list):
-            if NX.SHOW_OUPTUT_IN_TERMINAL: print("case should be a list that contains tuple of load cases & factors.\nEg: [('Load1(ST)', 1.5), ('Load2(ST)',0.9)]")
+            _inputError("case should be a list that contains tuple of load cases & factors.\nEg: [('Load1(ST)', 1.5), ('Load2(ST)',0.9)]")
             return
         for i in case:
             if not isinstance(i, tuple):
-                if NX.SHOW_OUPTUT_IN_TERMINAL: print(f"{i} is not a tuple.  case should be a list that contains tuple of load cases & factors.\nEg: [('Load1(ST)', 1.5), ('Load2(ST)',0.9)]")
+                _inputError(f"{i} is not a tuple.  case should be a list that contains tuple of load cases & factors.\nEg: [('Load1(ST)', 1.5), ('Load2(ST)',0.9)]")
                 return
             if not isinstance(i[0], str):
-                if NX.SHOW_OUPTUT_IN_TERMINAL: print(f"{i[0]} is not a string.  case should be a list that contains tuple of load cases & factors.\nEg: [('Load1(ST)', 1.5), ('Load2(ST)',0.9)]")
+                _inputError(f"{i[0]} is not a string.  case should be a list that contains tuple of load cases & factors.\nEg: [('Load1(ST)', 1.5), ('Load2(ST)',0.9)]")
                 return
             if i[0][-1] != ")":
-                if NX.SHOW_OUPTUT_IN_TERMINAL: print(f"Load case type is not mentioned for {i[0]}.  case should be a list that contains tuple of load cases & factors.\nEg: [('Load1(ST)', 1.5), ('Load2(ST)',0.9)]")
+                _inputError(f"Load case type is not mentioned for {i[0]}.  case should be a list that contains tuple of load cases & factors.\nEg: [('Load1(ST)', 1.5), ('Load2(ST)',0.9)]")
                 return
-            if not isinstance(i[1],(int, float)):
-                if NX.SHOW_OUPTUT_IN_TERMINAL: print(f"{i[1]} is not a number.  case should be a list that contains tuple of load cases & factors.\nEg: [('Load1(ST)', 1.5), ('Load2(ST)',0.9)]")
+            if not isinstance(i[1], numbers.Real) or isinstance(i[1], bool):
+                _inputError(f"{i[1]} is not a number.  case should be a list that contains tuple of load cases & factors.\nEg: [('Load1(ST)', 1.5), ('Load2(ST)',0.9)]")
                 return
 
         if classification not in LoadCombination.valid[:-1]:
