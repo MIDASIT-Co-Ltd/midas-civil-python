@@ -76,6 +76,7 @@ class Material:
         """Clear the local material cache without touching the model."""
         Material.mats=[]
         Material.ids=[]
+        Material._dic = {}
 
     @staticmethod
     def sync(bMaterialParam=False):

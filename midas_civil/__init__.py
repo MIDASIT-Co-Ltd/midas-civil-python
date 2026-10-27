@@ -20,7 +20,7 @@ if NX.SHOW_OUPTUT_IN_TERMINAL and __name__ == 'midas_civil':
 
 if NX.SHOW_OUPTUT_IN_TERMINAL and NX.version_check:
     try:
-        resp =  requests.get("https://raw.githubusercontent.com/MIDASIT-Co-Ltd/midas-civil-python/main/version.txt",timeout=0.05)
+        resp =  requests.get("https://raw.githubusercontent.com/MIDASIT-Co-Ltd/midas-civil-python/main/version.txt",timeout=0.1)
         latest_ver = resp.text.strip()
         # print(latest_ver)
         if _version_ != latest_ver:        

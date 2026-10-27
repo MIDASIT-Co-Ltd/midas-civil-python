@@ -1173,10 +1173,11 @@ class Tendon:
         @classmethod
         def clear(cls):
             cls.loads=[]
+            cls.ids = []
         
         @classmethod
         def sync(cls):
-            cls.loads = []
+            cls.clear()
             a = cls.get()
             if a != {'message': ''}:
                 for i in a['TDPL'].keys():

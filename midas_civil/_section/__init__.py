@@ -210,6 +210,7 @@ class Section:
         """Clear the local section database without affecting the MIDAS model."""
         Section.sect=[]
         Section.ids=[]
+        Section._dic={}
 
     @staticmethod
     def sync(bDBSectParams: bool = False, bSectionProperty: bool = False):
@@ -1180,7 +1181,7 @@ class Section:
 
             #GENERATE TAPERED GROUP
             for sectID in _tapSectIDs:
-                if _tapSectElems[sectID]!= {}:
+                if _tapSectElems[sectID]:
                     Section.TaperedGroup(f"TG_SecID{sectID}",_tapSectElems[sectID])
         
         @classmethod
@@ -1202,6 +1203,7 @@ class Section:
         def clear(cls):
             """Clear the local tapered group database without affecting the MIDAS model."""
             cls.data = []
+            
 
         @classmethod
         def sync(cls):

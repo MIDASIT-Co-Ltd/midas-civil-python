@@ -157,11 +157,19 @@ class Boundary:
         def sync():
             """Sync Supports from MIDAS CIVIL NX to Python"""
             a = Boundary.Support.get()
+            Boundary.Support.clear()
             if a != {'message': ''}:
                 if list(a['CONS'].keys()) != []:
-                    Boundary.Support.sups = []
-                    for j in a['CONS'].keys():
-                        Boundary.Support(int(j),a['CONS'][j]['ITEMS'][0]['CONSTRAINT'],a['CONS'][j]['ITEMS'][0]['GROUP_NAME'])
+                    for node_id, node_data in a.get("CONS", {}).items():
+                        for item in node_data.get("ITEMS"):
+                            group = item.get("GROUP_NAME")
+                            cons = item.get("CONSTRAINT")
+
+                            Boundary.Support(int(node_id),cons,group)
+
+
+
+                    
         
         @staticmethod
         def delete():
@@ -706,7 +714,7 @@ class Boundary:
             """
             Deletes all func from the database and resets the class.
             """
-            cls.links = []
+            cls.func = []
             cls._id = []
 
 #--------------------------------------------------------------------------------------------------------------------------------------
@@ -837,8 +845,10 @@ class Boundary:
                     spring_data["DIR"] = spring.DIR
                     spring_data["DV"] = spring.DV
                     spring_data["FUNCTION"] = spring.FUNCTION
-                
-                json_data["Assign"][spring.NODE] = {"ITEMS": [spring_data]}
+
+                if spring.NODE not in list(json_data["Assign"].keys()):
+                    json_data["Assign"][spring.NODE] = {"ITEMS": []}
+                json_data["Assign"][spring.NODE]["ITEMS"].append(spring_data)
             
             return json_data
         
@@ -882,8 +892,8 @@ class Boundary:
                             direction_str = dir_map.get(0, "Dx+")  # Default for LINEAR
                             
                             Boundary.PointSpring(
-                                int(node_id), spring_type, group_name, 
-                                stiffness, fixed_option, damping, direction_str,spring_id
+                                node=int(node_id),spring_type=spring_type, group=group_name, 
+                                stiffness=stiffness,fixed_option= fixed_option, damping=damping,direction=direction_str,id=spring_id
                             )
                             
                         elif spring_type in ["COMP", "TENS"]:
@@ -896,8 +906,8 @@ class Boundary:
                             direction_str = dir_map.get(direction_int, "Dx+")
                             
                             Boundary.PointSpring(
-                                int(node_id), spring_type, group_name, 
-                                stiffness, None, None, direction_str, normal_vector,spring_id
+                                node=int(node_id), spring_type=spring_type, group=group_name, 
+                                stiffness=stiffness,fixed_option= None, damping=None, direction=direction_str, normal_vector=normal_vector,id=spring_id
                             )
                             
                         elif spring_type == "MULTI":
@@ -910,8 +920,8 @@ class Boundary:
                             direction_str = dir_map.get(direction_int, "Dx+")
                             
                             Boundary.PointSpring(
-                                int(node_id), spring_type, group_name, 
-                                None, None, None, direction_str, normal_vector, function_id,spring_id
+                                node=int(node_id), spring_type=spring_type, group=group_name, 
+                                stiffness=None, fixed_option=None, damping=None, direction=direction_str, normal_vector=normal_vector,function_id=function_id,id=spring_id
                             )
         
         @classmethod

@@ -291,6 +291,7 @@ class utils:
             dist_list = np.linspace(start_dist,end_dist,50)
             pts_alignment = [self.getPoint(dist) for dist in dist_list]
             beam_elems = Element.Beam.PLine2(pts_alignment,n_div,2,False,mat,sect,angle,group,id,bLocalAxis,'L',)
+            return beam_elems
 
         def Offset(self,yEcc=0,zEcc=0,superElev=[0]):
             '''Return a new Alignment'''
@@ -370,7 +371,7 @@ class utils:
             :param bElement: If beta angle of element should be modified
             :type bElement: bool
             '''
-            from ._node import Node,MidasAPI,nodeByID
+            from ._node import Node,nodeByID
             from ._element import Element
 
             if bSync:

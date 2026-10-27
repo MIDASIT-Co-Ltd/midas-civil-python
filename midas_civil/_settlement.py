@@ -13,6 +13,12 @@ class Settlement:
         """Deletes Settlement load from MIDAS CIVIL NX and Python"""
         cls.Group.delete()
         cls.Case.delete()
+
+    @classmethod
+    def clear(cls):
+        """Deletes Settlement load from Python"""
+        cls.Group.clear()
+        cls.Case.clear()
     
     @classmethod
     def sync(cls):
@@ -67,8 +73,12 @@ class Settlement:
         
         @classmethod
         def delete(cls):
-            cls.data = []
+            cls.clear()
             return MidasAPI("DELETE", "/db/SMPT")
+        
+        @classmethod
+        def clear(cls):
+            cls.data = []
         
         @classmethod
         def sync(cls):
@@ -141,12 +151,16 @@ class Settlement:
         
         @classmethod
         def delete(cls):
-            cls.data = []
+            cls.clear()
             return MidasAPI("DELETE", "/db/SMLC")
         
         @classmethod
-        def sync(cls):
+        def clear(cls):
             cls.data = []
+        
+        @classmethod
+        def sync(cls):
+            cls.clear()
             a = cls.get()
             if a != {'message': ''}:
                 for i in a['SMLC'].keys():

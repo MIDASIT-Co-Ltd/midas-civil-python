@@ -1126,7 +1126,7 @@ class Element():
 
             plate_obj = []
             for i,elmNd in enumerate(elemNODE):
-                if id != None : id_new = id+i
+                if id is not None : id_new = id+i
                 plate_obj.append(Element.Plate([nID_list[int(x)-1] for x in elmNd],stype,mat,sect,angle,group,id_new))
 
             return plate_obj
@@ -1144,6 +1144,7 @@ class Element():
                 if NX.SHOW_OUPTUT_IN_TERMINAL: print("⚠️ No. of structure groups in Plate.loftGroups in less than 2")
                 return False
             plate_obj = []
+            k=0
             for ng in range(n_groups-1):
                 nID_A = nodesInGroup(strGroups[ng])   
                 nID_B = nodesInGroup(strGroups[ng+1])
@@ -1160,9 +1161,10 @@ class Element():
 
                 if nDiv == 1 :
                     for i in range(max_len-1):
-                        if id != None : id_new = id+i
+                        if id is not None : id_new = id+k
                         pt_array = [nID_A[i],nID_B[i],nID_B[i+1],nID_A[i+1]]
                         plate_obj.append(Element.Plate(pt_array,stype,mat,sect,angle,group,id_new))
+                        k+=1
                 if nDiv > 1 :
                     nID_dic = {}
                     for j in range(nDiv+1):
@@ -1176,14 +1178,13 @@ class Element():
 
                         for j in range(nDiv-1):
                             nID_dic[j+1].append(Node(int_points[j+1][0],int_points[j+1][1],int_points[j+1][2]).ID)
-                    j=0
+                    
                     for q in range(nDiv):
                         for i in range(max_len-1):
-                            if id != None : id_new = id+j
+                            if id is not None : id_new = id+k
                             pt_array = [nID_dic[q][i],nID_dic[q+1][i],nID_dic[q+1][i+1],nID_dic[q][i+1]]
                             plate_obj.append(Element.Plate(pt_array,stype,mat,sect,angle,group,id_new))
-                            j+=1
-
+                            k+=1
             return plate_obj
         
         @staticmethod
@@ -1204,7 +1205,7 @@ class Element():
                 plate_obj = []
                 if nDiv == 1 :
                     for i in range(max_len-1):
-                        if id != None : id_new = id+i
+                        if id is not None : id_new = id+i
                         pt_array = [nID_A[i],nID_B[i],nID_B[i+1],nID_A[i+1]]
                         plate_obj.append(Element.Plate(pt_array,stype,mat,sect,angle,group,id_new))
                 if nDiv > 1 :
@@ -1223,7 +1224,7 @@ class Element():
                     j=0
                     for q in range(nDiv):
                         for i in range(max_len-1):
-                            if id != None : id_new = id+j
+                            if id is not None : id_new = id+j
                             pt_array = [nID_dic[q][i],nID_dic[q+1][i],nID_dic[q+1][i+1],nID_dic[q][i+1]]
                             plate_obj.append(Element.Plate(pt_array,stype,mat,sect,angle,group,id_new))
                             j+=1
@@ -1281,7 +1282,7 @@ class Element():
                 plate_obj = []
                 if nDiv == 1 :
                     for i in range(max_len-1):
-                        if id != None : id_new = id+i
+                        if id is not None : id_new = id+i
                         pt_array = [nID_A[i],nID_B[i],nID_B[i+1],nID_A[i+1]]
                         plate_obj.append(Element.Plate(pt_array,stype,mat,sect,angle,group,id_new))
                 if nDiv > 1 :
@@ -1300,7 +1301,7 @@ class Element():
                     j=0
                     for q in range(nDiv):
                         for i in range(max_len-1):
-                            if id != None : id_new = id+j
+                            if id is not None : id_new = id+j
                             pt_array = [nID_dic[q][i],nID_dic[q+1][i],nID_dic[q+1][i+1],nID_dic[q][i+1]]
                             plate_obj.append(Element.Plate(pt_array,stype,mat,sect,angle,group,id_new))
                             j+=1
@@ -1324,7 +1325,7 @@ class Element():
                         nID_B.append(Node(f_pt[i][0],f_pt[i][1],f_pt[i][2]).ID)
 
                     finalPlateObj+=_createPlateExtrude(nID_A,nID_B,nDiv,id)
-                    if id!=None: id+=nDiv
+                    if id is not None: id+=nDiv
 
             if bDeleteLine:
                 # for eID in elmIDs:
@@ -1336,7 +1337,7 @@ class Element():
                     MidasAPI('DELETE',f'/db/ELEM/{listofids}')
                                     
 
-
+            return finalPlateObj
             
 
 
@@ -1591,7 +1592,7 @@ class Element():
         def extrudeFromPlates(elmIDs,dir=[0,0,1],nDiv = 1, mat=1, group="", id=None, bDeletePlate=False):
             extrusion = [dir[0]/nDiv , dir[1]/nDiv , dir[2]/nDiv]
             id_new = None
-            if id!=None: id_new = id-1
+            if id is not None: id_new = id-1
 
             plateElmIDs= [id for id in elmIDs if elemByID(id).TYPE in ['PLATE','WALL']]
             nPlates = len(plateElmIDs)
@@ -1603,7 +1604,7 @@ class Element():
                 nID_A = eObj.NODE
 
                 for q in range(nDiv):
-                    if id != None : id_new = id_new+1
+                    if id is not None : id_new = id_new+1
                     nLOC_A = [nodeByID(pt).LOC for pt in nID_A]
 
                     nLOC_B = np.add(nLOC_A,extrusion)
@@ -1682,7 +1683,7 @@ class Element():
 
             solid_obj = []
             for i,elmNd in enumerate(elemNODE):
-                if id!=None: id_new=id+i
+                if id is not None: id_new=id+i
                 solid_obj.append(Element.Solid([nID_list[int(x)-1] for x in elmNd],mat,group,id_new))
 
             
@@ -1710,7 +1711,7 @@ class Element():
 
             solid_obj = []
             for i,elmNd in enumerate(elemNODE):
-                if id!=None: id_new=id+i
+                if id is not None: id_new=id+i
                 solid_obj.append(Element.Solid([nID_list[int(x)-1] for x in elmNd],mat,group,id_new))
 
             return solid_obj
@@ -1891,13 +1892,18 @@ class Element():
             Retrieves StiffnessScaleFactor data from the API
             """
             return MidasAPI("GET", "/db/ESSF")
-        
+
+        @classmethod
+        def clear(cls):
+            '''Clears all Stiffness scale data from Python'''
+            cls.data = []
+
         @classmethod
         def sync(cls):
             """
             Updates the StiffnessScaleFactor class with data from the API
             """
-            cls.data = []
+            cls.clear()
             response = cls.get()
             
             if response != {'message': ''}:
@@ -2033,7 +2039,7 @@ class Element():
         @classmethod
         def clear(cls):
             """
-            Sends all StiffnessScaleFactor data to the API
+            Clear all StiffnessScaleFactor data
             """
             cls.data = []
         

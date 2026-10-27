@@ -87,8 +87,8 @@ class LoadCombination:
     @classmethod
     def json(cls, classification = "All"):
         if len(LoadCombination.data) == 0:
-            if NX.SHOW_OUPTUT_IN_TERMINAL: print("No Load Combinations defined!  Define the load combination using the 'LoadCombination' class before making json file.")
-            return
+            # if NX.SHOW_OUPTUT_IN_TERMINAL: print("No Load Combinations defined!  Define the load combination using the 'LoadCombination' class before making json file.")
+            return {}
         if classification not in LoadCombination.valid:
             if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'"{classification}" is not a valid input.  It is changed to "General".')
             classification = "General"
@@ -141,31 +141,46 @@ class LoadCombination:
                     MidasAPI("PUT", LoadCombination.com_map.get(i), json[i])   #Create new combination
     
     @classmethod
-    def sync(cls, classification = "All"):
+    def sync(cls, classification:_classification = "All"):
         LoadCombination.clear()
         json = LoadCombination.get(classification)
         if json != {}:
             keys = list(json.keys())
+            # print(json)
+            # print(keys)
             for i in keys:
-                for k,v in json[i][LoadCombination.com_map.get(i)[4:]].items():
-                    c = []
-                    for j in range(len(v['vCOMB'])):
-                        c.append((v['vCOMB'][j]['LCNAME'] + "("+ v['vCOMB'][j]['ANAL'] + ")", v['vCOMB'][j]['FACTOR']))
-                    LoadCombination(v['NAME'], c, i, v['ACTIVE'], v['iTYPE'], int(k), v['DESC'])
-    
+                if json[i] == {}:
+                    pass
+                else:
+                    for k,v in json[i][LoadCombination.com_map.get(i)[4:]].items():
+                        c = []
+                        for j in range(len(v['vCOMB'])):
+                            c.append((v['vCOMB'][j]['LCNAME'] + "("+ v['vCOMB'][j]['ANAL'] + ")", v['vCOMB'][j]['FACTOR']))
+                        LoadCombination(v['NAME'], c, i, v['ACTIVE'], v['iTYPE'], int(k), v['DESC'])
+        
     @classmethod
-    def delete(cls, classification = "All", ids = []):
-        json = LoadCombination.json(classification)
+    def delete(cls, classification:_classification = "All", ids = []):
+        cls.clear(classification)
+        # json = LoadCombination.json(classification)
         a = ""
         for i in range(len(ids)):
             a += str(ids[i]) + ","
         a = "/" + a[:-1]
-        if json == {}: 
-            if NX.SHOW_OUPTUT_IN_TERMINAL: print("No load combinations are defined to delete.")
-        for i in list(json.keys()):
-            MidasAPI("DELETE",LoadCombination.com_map.get(i) + a)
+        # if json == {}: 
+        #     if NX.SHOW_OUPTUT_IN_TERMINAL: print("No load combinations are defined to delete.")
+        # else:
+        #     for i in list(json.keys()):
+                # MidasAPI("DELETE",LoadCombination.com_map.get(i) + a)
+        if classification == 'All':
+            for name in LoadCombination.com_map:
+                MidasAPI("DELETE",LoadCombination.com_map.get(name) + a)
+        else:
+            cls.data = MidasAPI("DELETE",LoadCombination.com_map.get(classification) + a)
 
     @classmethod
-    def clear(cls):
-        cls.data = []
+    def clear(cls, classification:_classification = "All"):
+        if classification == 'All':
+            cls.data = []
+        else:
+            cls.data = [comb for comb in cls.data if comb.CLS != classification]
 #---------------------------------------------------------------------------------------------------------------

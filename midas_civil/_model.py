@@ -22,6 +22,8 @@ from._analysiscontrol import AnalysisControl
 from ._responseSpectrum import RS
 from ._heat_of_hydration import HoH
 from ._timehistory import TH
+from ._story import Story
+from ._settlement import Settlement
 
 from ._view import View
 
@@ -242,7 +244,8 @@ class Model:
                                 }
 
                     try:
-                        requests.post(url=cmdURL, headers=headers , json=jsBody,timeout=0.05)   # Excepting the timeout error
+                        if not NX.OFFLINE:
+                            requests.post(url=cmdURL, headers=headers , json=jsBody,timeout=0.1)   # Excepting the timeout error
                     except:
                         pass
                 else:
@@ -403,7 +406,7 @@ class Model:
 
         from ._material import CreepShrinkage, CompStrength , TDMatLink
         from ._load import Load_Case
-        from ._settlement import Settlement
+        
 
 
         MODEL = {}
@@ -463,7 +466,7 @@ class Model:
             'Dynamic Nodal Load' : TH.DynamicNodalLoad.sync, 
             'Ground Acceleration' : TH.GroundAccel.sync, 
             'Time Varying Static Load' : TH.TimeVaryingStaticLoad.sync, 
-            'Time History Load' : TH.TimeVaryingStaticLoad.sync, 
+            'Time History Load' : TH.Case.sync,
             'Multiple Support Excitation' : TH.MultipleSupportExcitation.sync,
 
             'Moving Load Code' : [MovingLoad.Code.sync, MovingLoad.LineLane.sync ,   MovingLoad.Vehicle.sync,  MovingLoad.Case.sync,],             
@@ -540,6 +543,7 @@ class Model:
             pbar.set_description_str("Creating Boundary...")
 
             if Element.StiffnessScaleFactor.data: Element.StiffnessScaleFactor.create()
+            if Element.Wall_StiffnessScaleFactor.data: Element.Wall_StiffnessScaleFactor.create()
             Boundary.create()
 
             pbar.update(1)
@@ -580,6 +584,8 @@ class Model:
             pbar.set_description_str("Creating Load Combination...")
 
             LoadCombination.create()
+            if Story.data: Story.create()
+            Settlement.create()
 
             pbar.update(1)
             pbar.set_description_str(Fore.GREEN+"Model creation complete"+Style.RESET_ALL)
@@ -594,6 +600,7 @@ class Model:
             if NodeLocalAxis.skew!=[] : NodeLocalAxis.create()
             Group.create()
             if Element.StiffnessScaleFactor.data: Element.StiffnessScaleFactor.create()
+            if Element.Wall_StiffnessScaleFactor.data: Element.Wall_StiffnessScaleFactor.create()
             Boundary.create()
             Load.create()
             Temperature.create()
@@ -606,6 +613,8 @@ class Model:
             TH.create()
             HoH.create()
             LoadCombination.create()
+            if Story.data: Story.create()
+            Settlement.create()
         
         
     @staticmethod
@@ -625,6 +634,14 @@ class Model:
         LoadCombination.clear()
         CS.clear()
         MovingLoad.clear()
+        RS.clear()
+        TH.clear()
+        HoH.clear()
+        Story.clear()
+        Settlement.clear()
+        Element.StiffnessScaleFactor.clear()
+        Element.Wall_StiffnessScaleFactor.clear()
+        
         
 
     @staticmethod

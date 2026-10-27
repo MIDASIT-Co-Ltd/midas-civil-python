@@ -1,9 +1,10 @@
-from ._mapi import MidasAPI, NX
+from ._mapi import MidasAPI, NX , _inputError
 from ._utils import _isInt, _isIntList
 from ._group import Group
 from ._element import elemByID
 import numpy as np
 from typing import Literal
+import numbers
 
 _presDir = Literal['LX','LY','LZ','GX','GY','GZ','VECTOR']
 _beamLoadDir = Literal['LX','LY','LZ','GX','GY','GZ']
@@ -214,14 +215,14 @@ class Load:
                 if load_group in a: chk = 1
                 if chk == 0: Group.Load(load_group)
 
-            if type(value)==int:
+            if isinstance(value,(int,float)):
                 if dir == "X":
                     fv = [value, 0, 0]
                 elif dir == "Y":
                     fv = [0, value, 0]
                 else:
                     fv = [0, 0, value]
-            elif type(value)==list:
+            elif isinstance(value,(list,tuple,np.ndarray)):
                 fv = value
                 dir = 'VECTOR'
             else: fv = [0,0,-1]
@@ -413,6 +414,8 @@ class Load:
                 a = [v['NAME'] for v in Group.Load.json()["Assign"].values()]
                 if load_group in a: chk = 1
                 if chk == 0: Group.Load(load_group)
+            D = list(D)
+            P = list(P)
             D = (D + [0] * 4)[:4]
             P = (P + [0] * 4)[:4]
             if P == [0, 0, 0, 0]: P = [value, value, 0, 0]
@@ -1150,7 +1153,9 @@ class Load:
                     elem_IDS.append(eID)
                     elem_LEN.append(elm_len)
                     # print(f"ID = {eID} LEN = {elm_len}")
-                except: pass
+                except:
+                    _inputError("Length of Elements cannot be computed. Kindly make sure that elements are Beam type and node information is available.")
+                    
             cum_LEN = np.insert(np.cumsum(elem_LEN),0,0)
             tot_LEN = cum_LEN[-1]
 
@@ -1224,7 +1229,7 @@ class Load:
                 if load_group in a: chk = 1
                 if chk == 0: Group.Load(load_group)
 
-            P = [P] if isinstance(P,(int,float)) else P
+            P = [P] if isinstance(P,numbers.Real) else P
             self.ELEM = element
             self.LCN = load_case
             self.LDGR = load_group

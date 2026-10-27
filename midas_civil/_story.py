@@ -109,7 +109,7 @@ class Story:
         for nd in Node.nodes:
             floorKeys[int(nd.Z*100)]=None
 
-        floor_levels = [float(key)/100 for key in floorKeys.keys()]
+        floor_levels = sorted([float(key)/100 for key in floorKeys.keys()])
 
         nFloorLevels = len(floor_levels)
         for i in range(nFloorLevels):
@@ -118,10 +118,10 @@ class Story:
 
             lvl_Nodes = Model.Select.Plane_XY((0,0,level),'NODE')
 
-            min_x = 0
-            max_x = 0
-            min_y = 0
-            max_y = 0
+            min_x = 1000000
+            max_x = -1000000
+            min_y = 1000000
+            max_y = -1000000
 
             for nd in lvl_Nodes:
                 min_x = min(min_x,nd.X)
