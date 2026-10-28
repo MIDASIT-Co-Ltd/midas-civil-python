@@ -698,7 +698,7 @@ def _generate(table_type,keys,loadcase,components,cs_stage,options):
                     "STYLES": options.Style,
                 }
             }
-
+    js_dat["Argument"].update(options.use_MTable)
     if keys: js_dat["Argument"]['NODE_ELEMS'] = _keys2JSON(keys)
     if loadcase: js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
     if components != ['all']: js_dat["Argument"]['COMPONENTS'] = components
@@ -724,7 +724,7 @@ class TableOptions:
     BACKEND:_TABLE_BACKEND = 'Polars'
 
     def __init__(self,force_unit:_forceType=None,len_unit:_lengthType=None,num_format:_numFormat=None,decimal_place:int=None,
-                 JSONFileLoc=None,ExcelFileLoc=None , ExcelSheetName = None,ExcelCellPos = None , backend:_TABLE_BACKEND = None):
+                 JSONFileLoc=None,ExcelFileLoc=None , ExcelSheetName = None,ExcelCellPos = None , backend:_TABLE_BACKEND = None,useMTable:bool = False):
         
         # existing_excel_input -> excel file , sheet , cell
 
@@ -747,6 +747,8 @@ class TableOptions:
         self.EXCEL_CELL_POS = ExcelCellPos or TableOptions.EXCEL_CELL_POS
         self.BACKEND = backend or TableOptions.BACKEND
 
+        self.USE_MTABLE = useMTable
+
     @property
     def Style(self):
         '''rrr'''
@@ -760,6 +762,16 @@ class TableOptions:
     def Unit(self):
         ''' rr '''
         return {"FORCE": self.FORCE_UNIT, "DIST": self.LEN_UNIT }
+
+    @property
+    def use_MTable(self):
+        '''M table - using for castellated beam forces'''
+        if self.USE_MTABLE:
+            return {"USE_MTABLE": True}
+
+        else:
+            return {}
+
     
 
     def __str__(self):
