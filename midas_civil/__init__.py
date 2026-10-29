@@ -1,7 +1,7 @@
 import requests
 from colorama import Fore,Style
 
-_version_ = "1.7.6"
+_version_ = "1.7.7"
 
 
 
