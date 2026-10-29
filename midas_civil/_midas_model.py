@@ -1,5 +1,5 @@
 
-from ._mapi import NX,_sumit_req
+from ._mapi import NX,_sumit_req,MAPI_COUNTRY,_fail,MidasAuthError,MidasConnectionError,MidasInputError
 import sys
 import importlib
 import itertools
@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING , Union
 from functools import partial, wraps
 from copy import deepcopy
 import time
+from ._config import _CONFIG_KEYS
 
 MAX_COPIES = 100                        # slots 0..49, then wraps to 0
 _slots = itertools.cycle(range(MAX_COPIES))
@@ -140,7 +141,7 @@ class cvl_lib:
     def open(location,__dest__=None):
         '''A wrapper of myModel.Model.open and myModel.Model.sync'''
         __dest__.Model.open(location)
-        __dest__.Model.sync()
+        # __dest__.Model.sync()
         return str('Model opened and synced')
 
     @staticmethod
@@ -152,9 +153,15 @@ class cvl_lib:
 def MIDAS_Model(MAPI_Key=None,BaseURL=None):
     ''' Return isolated python midas model object.     
     Useful when working with multiple CIVIL NX with different MAPI keys in a single python code.      
-    BaseURL = if NONE Automatically obtains the Base URL based on MAPI Key or use the input BaseURL
+    MAPI_Key = MAPI key of the CIVIL NX. If None, the key is taken from the registry (like the main library).    
+    BaseURL = Base URL of the CIVIL NX. If None, it is obtained automatically based on the MAPI Key.
     
     '''
+    if MAPI_Key is not None and (not isinstance(MAPI_Key,str) or MAPI_Key.strip() == ""):
+        _fail(MidasAuthError("MIDAS_Model: MAPI_Key must be a non-empty string (or None to use the registry key)."))
+
+
+
     if TYPE_CHECKING:
         import midas_civil as CVL_LIB       # seen only by the IDE / type checker
     else:
@@ -171,9 +178,8 @@ def MIDAS_Model(MAPI_Key=None,BaseURL=None):
             CVL_LIB.MAPI_BASEURL(BaseURL)
 
     # MANUALLY MAPPING THE CURRENT OPTIONS
-    CVL_LIB.NX.SHOW_OUPTUT_IN_TERMINAL = NX.SHOW_OUPTUT_IN_TERMINAL
-    CVL_LIB.NX.SYS_EXIT_ON_ERROR = NX.SYS_EXIT_ON_ERROR
-    CVL_LIB.NX.OFFLINE = NX.OFFLINE
+    for _opt in _CONFIG_KEYS:
+        setattr(CVL_LIB.NX, _opt, getattr(NX, _opt))
 
 
     # Adding new functions
@@ -254,6 +260,7 @@ def LaunchNX(bNewMAPIKey=True,returnType:_rType='PY_LIB',NX_exePath:str=None):
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER,key_path, 0, winreg.KEY_SET_VALUE) as registry_key:
             winreg.SetValueEx(registry_key, "Key", 0, winreg.REG_SZ, updated_mapi_key)
             winreg.SetValueEx(registry_key, "STARTUP", 0, winreg.REG_DWORD, 1)
+            winreg.SetValueEx(registry_key, "TYPE", 0, winreg.REG_DWORD, 1)
         
         final_mapi_key = updated_mapi_key
         # PRINT DATA
@@ -262,6 +269,7 @@ def LaunchNX(bNewMAPIKey=True,returnType:_rType='PY_LIB',NX_exePath:str=None):
         key_path = "Software\\MIDAS\\CVLwNX_US\\CONNECTION"
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER,key_path, 0, winreg.KEY_SET_VALUE) as registry_key:
             winreg.SetValueEx(registry_key, "STARTUP", 0, winreg.REG_DWORD, 1)
+            winreg.SetValueEx(registry_key, "TYPE", 0, winreg.REG_DWORD, 1)
 
 
     # LAUNCHING THE CIVIL NX ----------------------------------------
@@ -343,9 +351,8 @@ def LaunchNX(bNewMAPIKey=True,returnType:_rType='PY_LIB',NX_exePath:str=None):
         CVL_LIB.NX._NX_PROCESS = _NX_PROCESS
 
         # MANUALLY MAPPING THE CURRENT OPTIONS
-        CVL_LIB.NX.SHOW_OUPTUT_IN_TERMINAL = NX.SHOW_OUPTUT_IN_TERMINAL
-        CVL_LIB.NX.SYS_EXIT_ON_ERROR = NX.SYS_EXIT_ON_ERROR
-        CVL_LIB.NX.OFFLINE = NX.OFFLINE
+        for _opt in _CONFIG_KEYS:
+            setattr(CVL_LIB.NX, _opt, getattr(NX, _opt))
 
         # Adding new functions
         setattr(CVL_LIB, "replaceData", partial(cvl_lib.replaceData, __dest__=CVL_LIB))
