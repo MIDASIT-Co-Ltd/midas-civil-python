@@ -712,9 +712,10 @@ class Model:
     def open(location):
         """Open MIDAS CIVIL NX model file \n Model.open("D:\\model.mcb")"""
         if location.endswith(('.mcb','.mcbz','.mgb','.mgbx')):
-            MidasAPI("POST","/doc/OPEN",{"Argument":str(location)})
+            return MidasAPI("POST","/doc/OPEN",{"Argument":str(location)})
         else:
             if NX.SHOW_OUPTUT_IN_TERMINAL: print('⚠️  File extension is missing')
+            return 'File extension missing or incorrect.'
         
     @staticmethod
     def new():

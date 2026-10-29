@@ -776,3 +776,9 @@ class AnalysisControl:
             json_data["Assign"]['1'] = control_data
 
             MidasAPI("PUT", "/db/HHCT", json_data)
+
+
+    # class MovingLoad:
+    #     data:Optional['AnalysisControl.MovingLoad'] = None
+
+        

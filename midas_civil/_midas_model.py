@@ -136,11 +136,23 @@ class cvl_lib:
         _purge(__dest__.__name__)
                     
 
+    @staticmethod
+    def open(location,__dest__=None):
+        '''A wrapper of myModel.Model.open and myModel.Model.sync'''
+        __dest__.Model.open(location)
+        __dest__.Model.sync()
+        return str('Model opened and synced')
 
-def MIDAS_Model(MAPI_Key=None,bAutoURL=True):
+    @staticmethod
+    def save(location,__dest__=None):
+        '''A wrapper of myModel.Model.save'''
+        return __dest__.Model.save(location)
+
+
+def MIDAS_Model(MAPI_Key=None,BaseURL=None):
     ''' Return isolated python midas model object.     
     Useful when working with multiple CIVIL NX with different MAPI keys in a single python code.      
-    bAutoURL = Automatically obtains the Base URL based on MAPI Key
+    BaseURL = if NONE Automatically obtains the Base URL based on MAPI Key or use the input BaseURL
     
     '''
     if TYPE_CHECKING:
@@ -151,11 +163,12 @@ def MIDAS_Model(MAPI_Key=None,bAutoURL=True):
     
     CVL_LIB.Model.clear()
 
+    CVL_LIB.MAPI_KEY(MAPI_Key)
     if MAPI_Key is not None:
-        CVL_LIB.MAPI_KEY(MAPI_Key)
-        if bAutoURL:
+        if BaseURL is None:
             CVL_LIB.MAPI_BASEURL.autoURL()
-
+        else:
+            CVL_LIB.MAPI_BASEURL(BaseURL)
 
     # MANUALLY MAPPING THE CURRENT OPTIONS
     CVL_LIB.NX.SHOW_OUPTUT_IN_TERMINAL = NX.SHOW_OUPTUT_IN_TERMINAL
@@ -166,6 +179,8 @@ def MIDAS_Model(MAPI_Key=None,bAutoURL=True):
     # Adding new functions
     setattr(CVL_LIB, "replaceData", partial(cvl_lib.replaceData, __dest__=CVL_LIB))
     setattr(CVL_LIB, "mergeData", partial(cvl_lib.mergeData, __dest__=CVL_LIB))
+    setattr(CVL_LIB, "open", partial(cvl_lib.open, __dest__=CVL_LIB))
+    setattr(CVL_LIB, "save", partial(cvl_lib.save, __dest__=CVL_LIB))
 
     _dummyCHECK = True
     if _dummyCHECK:
@@ -256,10 +271,30 @@ def LaunchNX(bNewMAPIKey=True,returnType:_rType='PY_LIB',NX_exePath:str=None):
 
     # ----------------------  CIVIL NX LAUNCH PATH -----------------------------
     if NX_exePath is None:
-        key_path = f"Software\\MIDAS\\CVLwNX_US\\PATH"  
-        registry_key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_READ)
-        ins_path = winreg.QueryValueEx(registry_key, "Installed Path")
-        civilNX_path = ins_path[0]
+
+        # # Approach A. ---------------------------------------
+        # key_path = f"Software\\MIDAS\\CVLwNX_US\\PATH"  
+        # registry_key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_READ)
+        # ins_path = winreg.QueryValueEx(registry_key, "Installed Path")
+        # civilNX_path = ins_path[0]
+
+
+        # Approach B. ------------------------------------------
+        key_path = r"MIDAS/CivilNX.Document\shell\open\command"
+
+        try:
+            with winreg.OpenKey(winreg.HKEY_CLASSES_ROOT, key_path) as key:
+                regPath = str(winreg.QueryValueEx(key, "")[0])
+                # print("Value:", value)
+        except FileNotFoundError:
+            print("Registry key or value not found.")
+        except OSError as e:
+            print("Registry error:", e)
+
+        splitPath = regPath.split('.exe')
+        civilNX_path = splitPath[0]+".exe"
+
+
     else:
         civilNX_path = NX_exePath
 
@@ -277,7 +312,7 @@ def LaunchNX(bNewMAPIKey=True,returnType:_rType='PY_LIB',NX_exePath:str=None):
             break
         time.sleep(1)
         counter+=1
-        if counter > 10:
+        if counter > 20:
             status_open = 'timeout'
             break
         print("..",end="",flush=True)

@@ -175,7 +175,7 @@ class LoadCombination:
             for name in LoadCombination.com_map:
                 MidasAPI("DELETE",LoadCombination.com_map.get(name) + a)
         else:
-            cls.data = MidasAPI("DELETE",LoadCombination.com_map.get(classification) + a)
+            MidasAPI("DELETE",LoadCombination.com_map.get(classification) + a)
 
     @classmethod
     def clear(cls, classification:_classification = "All"):
