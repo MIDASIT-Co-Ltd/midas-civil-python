@@ -1,4 +1,3 @@
-
 from ._mapi import MidasAPI,NX,MidasAPIError
 from ._model import Model
 from typing import Literal
@@ -22,6 +21,8 @@ _dispdiaType = Literal["Global", "Local"]
 _dispType = Literal["Accumulative", "Current", "Real"]
 _plateforce = Literal["Global", "Local"]
 _eigenOutputType = Literal["EigenVector","Eigenvalue_Analysis","Modal_Participation_Percent","Modal_Participation_Mass","Modal_Participation_Factor","Modal_Direction_Factor"]
+# Composite Section for C.S. -> TABLE_TYPE strings (check against the MIDAS API manual page)
+_COMP_CS_TABLE_MAP = {"Force":"COMPSECTBEAMFORCE","Stress":"COMPSECTBEAMSTRESS"}
 _bucklingOutputType = Literal["BucklingVector","Buckling_Analysis"]
 _EIGEN_SUBTABLE_MAP = {"Eigenvalue_Analysis":"EIGENVALUEANALYSIS","Modal_Participation_Percent":"MODALPARTICIPATIONMASSESPRINTOUT(1)","Modal_Participation_Mass":"MODALPARTICIPATIONMASSESPRINTOUT(2)","Modal_Participation_Factor":"MODALPARTICIPATIONFACTORPRINTOUT","Modal_Direction_Factor":"MODALDIRECTIONFACTORPRINTOUT","Buckling_Analysis":"BUCKLINGANALYSIS"}
 
@@ -33,7 +34,7 @@ _FLOAT_PATTERN = (
     "Axial|Shear|Torsion|Moment|FX|FY|FZ|MX|MY|MZ|DX|DY|DZ|RX|RY|RZ|"
     "Fx|Fy|Fz|Mx|My|Mz|Dx|Dy|Dz|Rx|Ry|Rz|Level|Height|Displacement|"
     "Maximum/Average|Elements|Drift|Factor|Frequency|TRAN|ROTN|Period|"
-    "Tolerance|Sig-|Time/Step|Force-"
+    "Tolerance|Sig-|Time/Step|Force-|Bend|Cb|Sax"
 )
 
 _LAST_TABLE_ERROR = [""]
@@ -703,7 +704,7 @@ def _generate(table_type,keys,loadcase,components,cs_stage,options):
     if loadcase: js_dat["Argument"]['LOAD_CASE_NAMES'] = loadcase
     if components != ['all']: js_dat["Argument"]['COMPONENTS'] = components
 
-    if cs_stage !=[]:
+    if cs_stage:
         if cs_stage == 'all' or cs_stage == ['all']:
             js_dat["Argument"]['OPT_CS'] = True
         else:
@@ -2371,6 +2372,76 @@ class Result :
             ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT,options.JSON_FILE_LOC, table_type)
             polarDF = _JSToDF_ResTable_Eigen(ResultJSON, output,options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS)
             return polarDF
+
+        @staticmethod
+        def _groupToElemKeys(group_name):
+            ''' Structure group name -> list of element IDs from /db/GRUP (E_LIST) '''
+            grup = MidasAPI("GET", "/db/GRUP", {})
+            for v in (grup.get("GRUP", {}) or {}).values():
+                if v.get("NAME") == group_name:
+                    return list(v.get("E_LIST", []))
+            return []
+
+        @staticmethod
+        def _compositeCS(table_type, sheet_prefix, keys, loadcase, parts, components, cs_stage, options):
+            if options == None: options = TableOptions()
+            sheetName = options.EXCEL_SHEET_NAME or f"{sheet_prefix} {_case2name(loadcase)}"
+            backend = options.BACKEND.lower()
+
+            # structure group -> element IDs (sent as KEYS)
+            if isinstance(keys, str):
+                elems = Result.TABLE._groupToElemKeys(keys)
+                if not elems:
+                    _tableWarn(f'⚠️  Structure group "{keys}" not found or has no elements.')
+                    return _emptyDF(backend)
+                keys = elems
+
+            loadcase = list(loadcase) if loadcase else []
+            if isinstance(cs_stage, str): cs_stage = [cs_stage]
+            cs_stage = list(cs_stage) if cs_stage else []
+
+            # 1. construction-stage results always come from Summation(CS)
+            if cs_stage and not loadcase:
+                loadcase = ["Summation(CS)"]
+
+            # 2. Summation(CS) only exists inside construction stages -> turn OPT_CS on (all stages)
+            if not cs_stage and any(str(lc).replace(" ", "").upper() == "SUMMATION(CS)" for lc in loadcase):
+                cs_stage = ['all']
+
+            js_dat = _generate(table_type, keys, loadcase, components, cs_stage, options)
+            if parts:
+                js_dat["Argument"]["PARTS"] = parts
+
+            ResultJSON = _changeUNITandGetData(js_dat, options.FORCE_UNIT, options.LEN_UNIT, options.JSON_FILE_LOC, table_type)
+            return _JSToDF_ResTable(ResultJSON, options.EXCEL_FILE_LOC, sheetName, options.EXCEL_CELL_POS, options.BACKEND)
+
+        @staticmethod
+        def CompositeSection_CS_BeamForce(keys=[], loadcase:list=[], parts=["PartI", "PartJ"],
+                   components=['all'], cs_stage=[], options:TableOptions=None):
+            '''
+            Composite Section for C.S. - Beam Force.
+                keys     : element IDs or structure group name 
+                loadcase : post-CS cases e.g. ["Dead Load (CS)(CB)", "Rare Env(CB:max)"]
+                           envelope combinations need (CB:max) / (CB:min) / (CB:all)
+                           leave empty (or "Summation(CS)") for construction stage results
+                cs_stage : 'all' or stage steps e.g. ["Composite Action:002(last)", "Long Term:002(last)"]
+            '''
+            return Result.TABLE._compositeCS(_COMP_CS_TABLE_MAP["Force"], "CompositeCSForce",
+                                             keys, loadcase, parts, components, cs_stage, options)
+
+        @staticmethod
+        def CompositeSection_CS_Stress(keys=[], loadcase:list=[], parts=["PartI", "PartJ"],
+                   components=['all'], cs_stage=[], options:TableOptions=None):
+            '''
+            Composite Section for C.S. - Beam Stress.
+                keys     : element IDs or structure group name 
+                loadcase : post-CS cases e.g. ["Dead Load (CS)(CB)", "Rare Env(CB:max)"]
+                           envelope combinations need (CB:max) / (CB:min) / (CB:all)
+                           leave empty (or "Summation(CS)") for construction stage results
+                cs_stage : 'all' or stage steps e.g. ["Composite Action:002(last)", "Long Term:002(last)"]
+            '''
+            return Result.TABLE._compositeCS(_COMP_CS_TABLE_MAP["Stress"], "CompositeCSStress",
+                                             keys, loadcase, parts, components, cs_stage, options)
 
     @staticmethod
     def IMAGE(ResultGraphic:ResultGraphic,location:str='',image_size:tuple = None,CS_StageName:str='',CS_StepIndex=2, bOutputImage=True):
