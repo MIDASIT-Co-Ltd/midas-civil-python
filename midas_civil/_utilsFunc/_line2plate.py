@@ -611,7 +611,6 @@ def getCGdata2():
         cyp_J,cym_J,czp_J,czm_J = 0,0,0,0
 
         if 'Value' in secPropJS['SECTPROP'][secID]["HEAD"]:
-            # print("UNIFORM SECTION")
             for data_item in secPropJS['SECTPROP'][secID]["DATA"]:
                 # print(data_item)
                 if data_item[0] == 'Cyp': cyp_I,cyp_J = data_item[1],data_item[1]
@@ -629,8 +628,7 @@ def getCGdata2():
 
 
 
-        L2P.CG_data[secID] = {"I" : {"Y1" : float(cyp_I) , "Z1" : float(czp_I) , "Y2" : float(cym_I) , "Z2" : float(czm_I)} , "J" : {"Y1" : float(cyp_J) , "Z1" : float(czp_J) , "Y2" : float(cym_J) , "Z2" : float(czm_J)}}
-
+        L2P.CG_data[secID] = {"I" : {"Y1" : float(cym_I) , "Z1" : float(czp_I) , "Y2" : float(cyp_I) , "Z2" : float(czm_I)} , "J" : {"Y1" : float(cym_J) , "Z1" : float(czp_J) , "Y2" : float(cyp_J) , "Z2" : float(czm_J)}}
 
 def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList,reverse):
     L2P._reverse = reverse
@@ -672,6 +670,8 @@ def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList,reverse):
     dicParams = {}
 
     resp = MidasAPI('POST','/post/TABLE',jsRes)
+    orig_option = bool(NX.SHOW_OUPTUT_IN_TERMINAL)
+    NX.SHOW_OUPTUT_IN_TERMINAL = False
 
     if 'SS_Table' in resp:
         for q in resp['SS_Table']['DATA']:
@@ -681,12 +681,13 @@ def SS_create(nSeg , mSize , bRigdLnk , meshSize, elemList,reverse):
             if sec.TYPE=='DBUSER':
                 if sec.DATATYPE==1:
                     Section.DBUSER(f"{sec.NAME}_conv",sec.SHAPE,dicParams[str(sec.ID)],sec.OFFSET,sec.USESHEAR,sec.USE7DOF,sec.ID)
-
+    
+    NX.SHOW_OUPTUT_IN_TERMINAL = orig_option
     #----------------------------------------------------
     if NX.SHOW_OUPTUT_IN_TERMINAL: 
         pbar.update(1)
         pbar.set_description_str("Processing Sections...")
-
+    # getCGdata()
     getCGdata2()
     if NX.SHOW_OUPTUT_IN_TERMINAL: 
         pbar.update(1)

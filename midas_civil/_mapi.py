@@ -265,7 +265,7 @@ class NX:
     dispWarning = True
     
     _isSyncUnit = False
-    _isSyncNodeElem = False
+    _isSyncNodeElem = False             # Used to delete original elements after extrusion (line and plate)
 
     PRODUCT = 'CIVIL'
     USER_ID = None
@@ -355,7 +355,7 @@ class MAPI_BASEURL:
         ```
         '''
         MAPI_BASEURL.baseURL = baseURL
-        if MAPI_KEY.count < 0: MAPI_KEY.count = 0     # re-check the connection on the next request
+        if MAPI_KEY.count > 0: MAPI_KEY.count = 1     # re-check the connection on the next request
 
     @classmethod
     def get_url(cls):
@@ -416,7 +416,7 @@ class MAPI_KEY:
     
     def __init__(self, mapi_key:str):
         MAPI_KEY.data = mapi_key
-        if MAPI_KEY.count < 0: MAPI_KEY.count = 0     # re-check the connection on the next request
+        if MAPI_KEY.count > 0: MAPI_KEY.count = 1     # re-check the connection on the next request
 
     @classmethod
     def get_key(cls):

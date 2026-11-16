@@ -279,10 +279,12 @@ def _ADD_ELEM(self):
             Element.ids.add(int(self.ID))
             Element.maxID+= 1
         elif id in Element.ids:
-            # self.ID = int(id)
-            if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'⚠️  Element with ID {id} already exists! It will be skipped.')
+            Element._deleteElem(id)
+            if NX.SHOW_OUPTUT_IN_TERMINAL: print(f'⚠️  Element with ID {id} already exists! It will be overwritten.')
             # index = Element.ids.index(id)
             # Element.elements[index] = self
+            Element.elements.append(self)
+            Element.ids.add(id)
         else:
             self.ID = id
             Element.elements.append(self)

@@ -252,6 +252,21 @@ class Model:
                     MidasAPI("POST","/doc/ANAL",jsBody)
         if NX.SHOW_OUPTUT_IN_TERMINAL: print(" 🔒   Model analysed. Switching to post-processing mode.")
 
+    # def analysisStatus():
+    #     respJS = MidasAPI("POST","/OPE/ANALSTATUS",{"Argument":{}})
+
+    #     if 'ANAL_STATUS' in respJS:
+    #         for item in respJS['ANAL_STATUS']:
+    #             if item['STAGE'] == 'Pre-Mode':
+    #                 prog = item['PROGRESS']
+    #                 return int(prog.strip()[:-2])
+    #             elif item['STAGE'] == 'Post-Mode':
+    #                 if item['STATUS']=='Done':
+    #                     return True
+    #                 else: return False
+    #             else:
+    #                 return False
+
     # @staticmethod
     # def merge_nodes(tolerance = 0):
     #     """This functions removes duplicate nodes defined in the Node Class and modifies Element class accordingly.  \nSample: remove_duplicate()"""

@@ -198,7 +198,7 @@ def MIDAS_Model(MAPI_Key=None,BaseURL=None):
 def LaunchNX(bNewMAPIKey=True,returnType:_rType='PY_LIB',NX_exePath:str=None):
     '''
     **THIS FEATURE REQQUIRES ADMIN ACCESS TO MODIFY THE REGISTRY AND LAUNCH CIVIL NX APPLICATION.**       
-    Launches a CIVIL/GEN NX instance.    
+    Launches a CIVIL/GEN NX instance with a new file.    
     The location of EXE file is taken from Registry automatically.    
 
     bNewMAPIKey = True => NX will be launched with a new MAPI key. When launching multiple instances, this must be True, else connection will fail in second and next instances.    
@@ -349,6 +349,7 @@ def LaunchNX(bNewMAPIKey=True,returnType:_rType='PY_LIB',NX_exePath:str=None):
         CVL_LIB.MAPI_BASEURL.autoURL()
         CVL_LIB.Model.clear()
         CVL_LIB.NX._NX_PROCESS = _NX_PROCESS
+        CVL_LIB.Model.new()
 
         # MANUALLY MAPPING THE CURRENT OPTIONS
         for _opt in _CONFIG_KEYS:

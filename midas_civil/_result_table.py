@@ -39,6 +39,11 @@ _FLOAT_PATTERN = (
 
 _LAST_TABLE_ERROR = [""]
 
+_nodalResults = Literal['REAC_G_FX','REAC_G_FY','REAC_G_FZ','REAC_G_MX','REAC_G_MY','REAC_G_MZ','REAC_G_Mb',
+                        'REAC_L_Fx','REAC_L_Fy','REAC_L_Fz','REAC_L_Mx','REAC_L_My','REAC_L_Mz','REAC_L_Mb',
+                        'DISP_G_DX','DISP_G_DY','DISP_G_DZ','DISP_G_RX','DISP_G_RY','DISP_G_RZ',
+                        'DISP_L_Dx','DISP_L_Dy','DISP_L_Dz','DISP_L_Rx','DISP_L_Ry','DISP_L_Rz',]
+
 def _tableWarn(msg):
     """Problem while reading a result table: printed when output is enabled and remembered for _emptyDF."""
     _LAST_TABLE_ERROR[0] = str(msg).strip()
@@ -205,7 +210,7 @@ def _JSToDF_ResTable(js_json,excelLoc,sheetName,cellLoc="A1",outputFormat='Polar
     # Check for SS_Table existence
     if "SS_Table" not in js_json:
         if 'message' in js_json:
-            _tableWarn(f'⚠️  Error from API: {js_json["message"]}')
+            _tableWarn(f'⚠️  Error from API: {js_json["message"]} Result not available')
         else:
             _tableWarn('⚠️  Error: "SS_Table" not found in the response JSON.')
 
@@ -257,7 +262,7 @@ def _JSToDF_ResTable_TEXT(table_type, js_json, excelLoc, sheetName, cellLoc="A1"
 
     if table_type not in js_json:
         if 'message' in js_json:
-            _tableWarn(f'⚠️  Error from API: {js_json["message"]}')
+            _tableWarn(f'⚠️  Error from API: {js_json["message"]} Result not available')
         else:
             _tableWarn(f'⚠️  Error: "{table_type}" not found in the response JSON.')
         return _emptyDF(backend) # Return empty DataFrame on error
@@ -318,7 +323,7 @@ def _JSToDF_ResTable_Eigen(js_json, output, excelLoc, sheetName, cellLoc="A1",ou
 
     if "SS_Table" not in js_json:
         if 'message' in js_json:
-            _tableWarn(f'⚠️  Error from API: {js_json["message"]}')
+            _tableWarn(f'⚠️  Error from API: {js_json["message"]} Result not available')
         else:
             _tableWarn('⚠️  Error: "SS_Table" not found in the response JSON.')
         return _emptyDF(backend) # Return empty DataFrame on error
@@ -2544,3 +2549,28 @@ class Result :
                 return image           
 
         return resp
+
+
+
+    @staticmethod
+    def atNode(nodeID:int, loadcase:str, result:_nodalResults='REAC_G_FZ',cs_stage=[]):
+        __initial_backend = str(TableOptions.BACKEND)
+        TableOptions.BACKEND='JSON'
+        data=0
+        _isGlobalType = 'Local' if result[5]=='L' else 'Global'
+        _comp = result[-2:]
+
+        try:
+            if result.startswith('REAC'):
+                
+                resp = Result.TABLE.Reaction(keys=[nodeID],loadcase=[loadcase],components=[_comp],cs_stage=cs_stage,type=_isGlobalType)
+
+            elif result.startswith('DISP'):
+                resp = Result.TABLE.Displacement(keys=[nodeID],loadcase=[loadcase],components=[_comp],cs_stage=cs_stage,type=_isGlobalType)
+
+            data = float(list(resp.values())[-1][0])
+
+        except: pass
+
+        TableOptions.BACKEND=__initial_backend
+        return data
