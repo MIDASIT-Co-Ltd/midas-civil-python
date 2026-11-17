@@ -99,7 +99,7 @@ class _SS_TAP_PSC_Value(_common):
                 n_inner_J = 1
 
         for i in range(len(temp_arr_J)):
-            self.InnerPolygon_J.append(_poly_dir(temp_arr_J[i],'CW'))
+            self.INNER_POLYGON_J.append(_poly_dir(temp_arr_J[i],'CW'))
 
         if n_inner_J != self.N_INNER_POLYGON:
             if NX.SHOW_OUPTUT_IN_TERMINAL: print("  ⚠️ Number of inner polygons don't match")
@@ -192,8 +192,8 @@ class _SS_TAP_PSC_Value(_common):
                 ver_json_J = {"VERTEX": vi_list_J}
                 mult_ver_J.append(ver_json_J)
 
-            js["SECT_BEFORE"]["SECT_I"]["INNER_POLYGON"] = vi_list_I
-            js["SECT_BEFORE"]["SECT_J"]["INNER_POLYGON"] = vi_list_J
+            js["SECT_BEFORE"]["SECT_I"]["INNER_POLYGON"] = mult_ver_I
+            js["SECT_BEFORE"]["SECT_J"]["INNER_POLYGON"] = mult_ver_J
 
         js['SECT_BEFORE'].update(sect.OFFSET.JS)
         js['SECT_BEFORE']['USE_SHEAR_DEFORM'] = sect.USESHEAR
